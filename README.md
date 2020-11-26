@@ -93,11 +93,15 @@ DS                  :Ordering of T1 and T2: 0 for Exp[T1]Exp[T2], 1 for Exp[T2]E
 print_amp_thres     :Threshold for T amplitudes to be printed
 constraint_lambda   :Constraint for spin 
 
-# For scipy.optimize\\
-opt_method          :Method for optimization\n
+# For scipy.optimize
+opt_method          :Method for optimization
+
 gtol                :Convergence criterion based on gradient
+
 ftol                :Convergence criterion based on energy (cost)
+
 eps                 :Numerical step     
+
 maxiter             :Maximum iterations: if 0, skip VQE and only PySCF --> JW-transformation is carried out. 
 
 
