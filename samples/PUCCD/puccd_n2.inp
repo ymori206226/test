@@ -1,0 +1,10 @@
+basis        = sto-6g
+method       = opt_puccd
+multiplicity = 1
+charge       = 0
+geometry     = N 2. 0 0  N 0 0 0
+n_electrons  = 6
+n_orbitals   = 6
+theta_guess  = read
+rho          = 1
+npar         = 2
