@@ -10,8 +10,7 @@
 
 """
 
-Requisites:
------------
+# Requisites
 
 The following external modules and libraries are required.
  - openfermion        0.10.0 
@@ -26,9 +25,7 @@ You may run this program in your local machine too.
 The environment for Titan is under construction.
 
 
-
-How to use:
------------
+# How to use:
 
 (1) Create an input file as `***.inp` (quick instruction below)
 (2) Run main.py with python3.8
@@ -40,8 +37,7 @@ If run on Ravel, it is recommended to add "nohup" option to prevent it from stop
 
 
 
-File descriptions:
-------------------
+# File descriptions
 
 - `***.inp` is an input file.
 - `***.chk` contains integrals (and energy) from PySCF.
@@ -54,16 +50,14 @@ You may read these files for initial guesses of subsequent calculations.
 
 
 
-How to write `***.inp`: 
----------------------
+# How to write `***.inp`
 
 Simply put options listed below.
 The order does not matter.
 Sample inputs are found in samples directory.
 
-*******************
-* MINIMUM OPTIONS *
-*******************
+
+## MINIMUM OPTIONS 
 method        : method for VQE, either of  uhf, uccsd, sauccsd, phf, opt_puccd, etc.
 geometry      : a sequence of 'atom x y z' (this needs to be re-formatted more cleanly in future).
 n_electrons   : number of electrons 
