@@ -1,5 +1,5 @@
 # quket
-"""
+```
  Quantum Computing Simulator Ver Beta
      Copyright 2019-2020 Takashi Tsuchimochi, Yuto Mori, Takahiro Yoshikura. All rights Reserved.
 
@@ -8,7 +8,7 @@
    
    - Ground state VQE
 
-"""
+```
 
 # Requisites
 
@@ -58,16 +58,16 @@ Sample inputs are found in samples directory.
 
 
 ## MINIMUM OPTIONS 
-method        : method for VQE, either of  uhf, uccsd, sauccsd, phf, opt_puccd, etc.
-geometry      : a sequence of 'atom x y z' with a break.
-n_electrons   : number of electrons 
-n_orbitals    : number of spatial orbitals, Nqubit is twice this value
+- method        : method for VQE, either of  uhf, uccsd, sauccsd, phf, opt_puccd, etc.
+- geometry      : a sequence of 'atom x y z' with a break.
+- n_electrons   : number of electrons 
+- n_orbitals    : number of spatial orbitals, Nqubit is twice this value
 
 
--- Inserting '@@@' in lines separates jobs. This enables multiple jobs with a single input file.
-### CAUTION!! The options from previous jobs remain the same unless redefined.
+- Inserting '@@@' in lines separates jobs. This enables multiple jobs with a single input file.
+##### CAUTION!! The options from previous jobs remain the same unless redefined.
 
--- Options that have a default value (see main.py for details)
+- Options that have a default value (see main.py for details)
 
 # For PySCF
 - basis               :Gaussian Basis Set 
