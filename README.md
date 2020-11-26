@@ -9,6 +9,91 @@
    - Ground state VQE
 
 ```
+# 必要なライブラリ
+
+ - openfermion        0.10.0 
+ - openfermionpyscf   0.4    
+ - Qulacs             0.1.9   
+ - numpy
+ - scipy 
+
+Ravel (ravel01) ではPython3.8が全ユーザー入っている。
+
+Titan (titan2~titan7) では/home/calc/tsuchimochi/binをPATHに入れるように環境設定すれば使えるようになる。 
+
+
+# 使い方
+
+(1) インプットファイル `***.inp` を用意する (具体例は下か`main.py`を見る)
+
+(2) 以下のコマンドで流す
+
+```
+     python3.8 main.py *** 
+```
+`***.log`の中に結果が出力される。
+
+Titanで行う場合は、
+```
+     python3.8 main.py *** &
+```
+と`&`をつけるとログアウトしても実行し続ける。Ravelで行う場合は頭に`nohup`をつけると実行し続ける。
+
+
+# ファイルの説明
+
+- `***.inp` ：　入力ファイル
+- `***.log` ：　出力ファイル
+- `***.chk` ：　PySCFの積分やエネルギーなどの情報が入ってる
+また、手法によっては以下のようなファイルが生成される
+- `***.theta` ：　UCC法のt-amplitudes （VQEパラメータ）. 
+- `***.kappa` ： 軌道変換のためのkappa-amplitudes （UCCのSinglesに対応）.
+これらのファイルはinitial guessとして読み込むことが出来る。
+
+# How to write `***.inp`
+
+オプションを一行ずつ並べる。
+いくつかのサンプルが`samples`ディレクトリにある。
+
+## MINIMUM OPTIONS 
+- `method`        : uhf, uccsd, sauccsd, phf, opt_puccd, etc.
+- `geometry`      : a sequence of 'atom x y z' with a break.
+- `n_electrons`   : number of electrons 
+- `n_orbitals`    : number of spatial orbitals, Nqubit is twice this value
+
+
+Inserting '@@@' in lines separates jobs. This enables multiple jobs with a single input file.
+##### CAUTION!! The options from previous jobs remain the same unless redefined.
+
+Options that have a default value (see main.py for details)
+
+## For PySCF
+- `basis`               :Gaussian Basis Set 
+- `multiplicity`        :Spin multiplicity (defined as Nalpha - Nbeta + 1) 
+- `charge`              :Electron charge (0 for neutral) 
+- `pyscf_guess`         :Guess for pyscf: 'minao', 'chkfile'
+
+## For qulacs (VQE part)
+- `print_level`         :Printing level
+- `mix_level`           :Number of pairs of orbitals to be mixed (to break symmetry)
+- `rho`                 :Trotter number 
+- `kappa_guess`         :Guess for kappa: 'zero', 'read', 'mix', 'random'
+- `theta_guess`         :Guess for T1 and T2 amplitudes: 'zero', 'read', 'mix', 'random'
+- `Kappa_to_T1`         :Flag to use \*\*\*.kappa file (T1-like) for initial guess of T1
+- `spin`                :Spin quantum number for spin-projection
+- `ng`                  :Number of grid points for spin-projection
+- `DS`                  :Ordering of T1 and T2: 0 for Exp[T1]Exp[T2], 1 for Exp[T2]Exp[T1]
+- `print_amp_thres`     :Threshold for T amplitudes to be printed
+- `constraint_lambda`   :Constraint for spin 
+
+## For scipy.optimize
+- `opt_method`          :Method for optimization
+- `gtol`                :Convergence criterion based on gradient
+- `ftol`                :Convergence criterion based on energy (cost)
+- `eps`                 :Numerical step     
+- `maxiter`             :Maximum iterations: if 0, skip VQE and only PySCF --> JW-transformation is carried out. 
+
+
 
 # Requisites
 
@@ -59,10 +144,10 @@ Sample inputs are found in samples directory.
 
 
 ## MINIMUM OPTIONS 
-- method        : method for VQE, either of  uhf, uccsd, sauccsd, phf, opt_puccd, etc.
-- geometry      : a sequence of 'atom x y z' with a break.
-- n_electrons   : number of electrons 
-- n_orbitals    : number of spatial orbitals, Nqubit is twice this value
+- `method`        : method for VQE, either of  uhf, uccsd, sauccsd, phf, opt_puccd, etc.
+- `geometry`      : a sequence of 'atom x y z' with a break.
+- `n_electrons`   : number of electrons 
+- `n_orbitals`    : number of spatial orbitals, Nqubit is twice this value
 
 
 Inserting '@@@' in lines separates jobs. This enables multiple jobs with a single input file.
@@ -70,30 +155,11 @@ Inserting '@@@' in lines separates jobs. This enables multiple jobs with a singl
 
 Options that have a default value (see main.py for details)
 
-# For PySCF
-- basis               :Gaussian Basis Set 
-- multiplicity        :Spin multiplicity (defined as Nalpha - Nbeta + 1) 
-- charge              :Electron charge (0 for neutral) 
-- pyscf_guess         :Guess for pyscf: 'minao', 'chkfile'
+## For PySCF
+- `basis`               :Gaussian Basis Set 
+- `multiplicity`        :Spin multiplicity (defined as Nalpha - Nbeta + 1) 
+- `charge`              :Electron charge (0 for neutral) 
+- `pyscf_guess`         :Guess for pyscf: 'minao', 'chkfile'
 
-# For qulacs (VQE part)
-- print_level         :Printing level
-- mix_level           :Number of pairs of orbitals to be mixed (to break symmetry)
-- rho                 :Trotter number 
-- kappa_guess         :Guess for kappa: 'zero', 'read', 'mix', 'random'
-- theta_guess         :Guess for T1 and T2 amplitudes: 'zero', 'read', 'mix', 'random'
-- Kappa_to_T1         :Flag to use \*\*\*.kappa file (T1-like) for initial guess of T1
-- spin                :Spin quantum number for spin-projection
-- ng                  :Number of grid points for spin-projection
-- DS                  :Ordering of T1 and T2: 0 for Exp[T1]Exp[T2], 1 for Exp[T2]Exp[T1]
-- print_amp_thres     :Threshold for T amplitudes to be printed
-- constraint_lambda   :Constraint for spin 
-
-# For scipy.optimize
-- opt_method          :Method for optimization
-- gtol                :Convergence criterion based on gradient
-- ftol                :Convergence criterion based on energy (cost)
-- eps                 :Numerical step     
-- maxiter             :Maximum iterations: if 0, skip VQE and only PySCF --> JW-transformation is carried out. 
-
-
+## For qulacs (VQE part)
+- `print_level`         :Printing level
