@@ -30,12 +30,12 @@ The environment for Titan is under construction.
 How to use:
 -----------
 
-(1) Create an input file as ***.inp (quick instruction below)
+(1) Create an input file as `***.inp` (quick instruction below)
 (2) Run main.py with python3.8
-
+```
      python3.8 main.py *** 
-
-The result is logged out in ***.log.
+```
+The result is logged out in `***.log`.
 If run on Ravel, it is recommended to add "nohup" option to prevent it from stopping when you log out the workstation (This is not necessary for Titan).
 
 
@@ -43,18 +43,18 @@ If run on Ravel, it is recommended to add "nohup" option to prevent it from stop
 File descriptions:
 ------------------
 
-***.inp is an input file.
-***.chk contains integrals (and energy) from PySCF.
-Depending on the method you choose in ***.inp, there will be also ***.theta and/or ***.kappa. 
-***.theta stores t-amplitudes from UCC. 
-***.kappa stores kappa-amplitudes for orbital rotation.
+- `***.inp` is an input file.
+- `***.chk` contains integrals (and energy) from PySCF.
+- Depending on the method you choose in `***.inp`, there will be also `***.theta` and/or `***.kappa`. 
+- `***.theta` stores t-amplitudes from UCC. 
+- `***.kappa` stores kappa-amplitudes for orbital rotation.
 
 You may read these files for initial guesses of subsequent calculations.
 
 
 
 
-How to write ***.inp: 
+How to write `***.inp`: 
 ---------------------
 
 Simply put options listed below.
