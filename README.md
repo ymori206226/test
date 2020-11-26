@@ -66,10 +66,10 @@ Sample inputs are found in samples directory.
 - n_orbitals    : number of spatial orbitals, Nqubit is twice this value
 
 
-- Inserting '@@@' in lines separates jobs. This enables multiple jobs with a single input file.
+Inserting '@@@' in lines separates jobs. This enables multiple jobs with a single input file.
 ##### CAUTION!! The options from previous jobs remain the same unless redefined.
 
-- Options that have a default value (see main.py for details)
+Options that have a default value (see main.py for details)
 
 # For PySCF
 - basis               :Gaussian Basis Set 
