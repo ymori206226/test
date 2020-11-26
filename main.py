@@ -13,7 +13,7 @@ import os
 import sys
 import datetime
 import re
-from modules import  utils, config
+from src import  utils, config
 with open(config.log,'w') as f:
     print(datetime.datetime.now(),file=f)  # time stamp
 
@@ -192,7 +192,7 @@ while Finish == False:
         iline += 1       # read next line... 
 
     f.close()
-    from modules import driver
+    from src import driver
 
     if n_electrons == 0 :
         utils.error('# electrons = 0 !')
