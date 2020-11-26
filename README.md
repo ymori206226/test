@@ -19,10 +19,9 @@ The following external modules and libraries are required.
  - numpy
  - scipy 
 
-All the necessary libtaries are installed under Python3.8 in Ravel. 
+All the necessary libtaries are installed under Python3.8 in Ravel (ravel01) and Titan (titan2~titan7). 
 Type "pip3.8 list" to check this.
 You may run this program in your local machine too.
-The environment for Titan is under construction.
 
 
 # How to use:
