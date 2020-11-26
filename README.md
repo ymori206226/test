@@ -68,6 +68,7 @@ n_orbitals    : number of spatial orbitals, Nqubit is twice this value
  CAUTION!! The options from previous jobs remain the same unless redefined.
 
 *Options that have a default value (see main.py for details)
+
 # For PySCF
 basis               :Gaussian Basis Set 
 multiplicity        :Spin multiplicity (defined as Nalpha - Nbeta + 1) 
