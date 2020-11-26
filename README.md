@@ -56,10 +56,19 @@ Titanで行う場合は、
 いくつかのサンプルが`samples`ディレクトリにある。
 
 ## MINIMUM OPTIONS 
-- `method`        : uhf, uccsd, sauccsd, phf, opt_puccd, etc.
-- `geometry`      : a sequence of 'atom x y z' with a break.
-- `n_electrons`   : number of electrons 
-- `n_orbitals`    : number of spatial orbitals, Nqubit is twice this value
+- `method`        : 手法を指定。VQEでは uhf, uccsd, sauccsd, phf, opt_puccd, など
+- `geometry`      : 分子構造をXYZフォーマット（元素記号のあとにx,y,z座標）で指定。行の最初の文字が元素記号でない場合読み込みを終える
+```
+geometry
+  A    Ax  Ay  Az
+  B    Bx  By  Bz
+  C    Cx  Cy  Cz 
+  ...
+```
+
+- `n_electrons`   : 電子数 
+
+- `n_orbitals`    : 空間
 
 
 Inserting '@@@' in lines separates jobs. This enables multiple jobs with a single input file.
