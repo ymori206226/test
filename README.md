@@ -81,17 +81,17 @@ charge              :Electron charge (0 for neutral)
 pyscf_guess         :Guess for pyscf: 'minao', 'chkfile'
 
 # For qulacs (VQE part)
-print_level         :Printing level
-mix_level           :Number of pairs of orbitals to be mixed (to break symmetry)
-rho                 :Trotter number 
-kappa_guess         :Guess for kappa: 'zero', 'read', 'mix', 'random'
-theta_guess         :Guess for T1 and T2 amplitudes: 'zero', 'read', 'mix', 'random'
-Kappa_to_T1         :Flag to use ***.kappa file (T1-like) for initial guess of T1
-spin                :Spin quantum number for spin-projection
-ng                  :Number of grid points for spin-projection
-DS                  :Ordering of T1 and T2: 0 for Exp[T1]Exp[T2], 1 for Exp[T2]Exp[T1]
-print_amp_thres     :Threshold for T amplitudes to be printed
-constraint_lambda   :Constraint for spin 
+-print_level         :Printing level
+-mix_level           :Number of pairs of orbitals to be mixed (to break symmetry)
+-rho                 :Trotter number 
+-kappa_guess         :Guess for kappa: 'zero', 'read', 'mix', 'random'
+-theta_guess         :Guess for T1 and T2 amplitudes: 'zero', 'read', 'mix', 'random'
+-Kappa_to_T1         :Flag to use \*\*\*.kappa file (T1-like) for initial guess of T1
+-spin                :Spin quantum number for spin-projection
+-ng                  :Number of grid points for spin-projection
+-DS                  :Ordering of T1 and T2: 0 for Exp[T1]Exp[T2], 1 for Exp[T2]Exp[T1]
+-print_amp_thres     :Threshold for T amplitudes to be printed
+-constraint_lambda   :Constraint for spin 
 
 # For scipy.optimize
 opt_method          :Method for optimization
