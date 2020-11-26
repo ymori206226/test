@@ -28,7 +28,9 @@ The environment for Titan is under construction.
 # How to use:
 
 (1) Create an input file as `***.inp` (quick instruction below)
+
 (2) Run main.py with python3.8
+
 ```
      python3.8 main.py *** 
 ```
