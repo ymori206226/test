@@ -17,7 +17,6 @@ from modules import  utils, config
 with open(config.log,'w') as f:
     print(datetime.datetime.now(),file=f)  # time stamp
 
-
 #############################
 ###    Default options    ###   
 #############################
