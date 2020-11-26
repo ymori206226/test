@@ -42,7 +42,7 @@ If run on Ravel, it is recommended to add "nohup" option to prevent it from stop
 
 - `***.inp` is an input file.
 - `***.chk` contains integrals (and energy) from PySCF.
-- Depending on the method you choose in `***.inp`, there will be also `***.theta` and/or `***.kappa`. 
+Depending on the method you choose in `***.inp`, there will be also `***.theta` and/or `***.kappa`. 
 - `***.theta` stores t-amplitudes from UCC. 
 - `***.kappa` stores kappa-amplitudes for orbital rotation.
 
