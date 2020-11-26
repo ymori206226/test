@@ -59,44 +59,40 @@ Sample inputs are found in samples directory.
 
 ## MINIMUM OPTIONS 
 method        : method for VQE, either of  uhf, uccsd, sauccsd, phf, opt_puccd, etc.
-geometry      : a sequence of 'atom x y z' (this needs to be re-formatted more cleanly in future).
+geometry      : a sequence of 'atom x y z' with a break.
 n_electrons   : number of electrons 
 n_orbitals    : number of spatial orbitals, Nqubit is twice this value
 
 
-*Putting '@@@' in lines separates jobs. This enables multiple jobs with a single input file.
- CAUTION!! The options from previous jobs remain the same unless redefined.
+-- Inserting '@@@' in lines separates jobs. This enables multiple jobs with a single input file.
+### CAUTION!! The options from previous jobs remain the same unless redefined.
 
-*Options that have a default value (see main.py for details)
+-- Options that have a default value (see main.py for details)
 
 # For PySCF
-basis               :Gaussian Basis Set 
-multiplicity        :Spin multiplicity (defined as Nalpha - Nbeta + 1) 
-charge              :Electron charge (0 for neutral) 
-pyscf_guess         :Guess for pyscf: 'minao', 'chkfile'
+- basis               :Gaussian Basis Set 
+- multiplicity        :Spin multiplicity (defined as Nalpha - Nbeta + 1) 
+- charge              :Electron charge (0 for neutral) 
+- pyscf_guess         :Guess for pyscf: 'minao', 'chkfile'
 
 # For qulacs (VQE part)
--print_level         :Printing level
--mix_level           :Number of pairs of orbitals to be mixed (to break symmetry)
--rho                 :Trotter number 
--kappa_guess         :Guess for kappa: 'zero', 'read', 'mix', 'random'
--theta_guess         :Guess for T1 and T2 amplitudes: 'zero', 'read', 'mix', 'random'
--Kappa_to_T1         :Flag to use \*\*\*.kappa file (T1-like) for initial guess of T1
--spin                :Spin quantum number for spin-projection
--ng                  :Number of grid points for spin-projection
--DS                  :Ordering of T1 and T2: 0 for Exp[T1]Exp[T2], 1 for Exp[T2]Exp[T1]
--print_amp_thres     :Threshold for T amplitudes to be printed
--constraint_lambda   :Constraint for spin 
+- print_level         :Printing level
+- mix_level           :Number of pairs of orbitals to be mixed (to break symmetry)
+- rho                 :Trotter number 
+- kappa_guess         :Guess for kappa: 'zero', 'read', 'mix', 'random'
+- theta_guess         :Guess for T1 and T2 amplitudes: 'zero', 'read', 'mix', 'random'
+- Kappa_to_T1         :Flag to use \*\*\*.kappa file (T1-like) for initial guess of T1
+- spin                :Spin quantum number for spin-projection
+- ng                  :Number of grid points for spin-projection
+- DS                  :Ordering of T1 and T2: 0 for Exp[T1]Exp[T2], 1 for Exp[T2]Exp[T1]
+- print_amp_thres     :Threshold for T amplitudes to be printed
+- constraint_lambda   :Constraint for spin 
 
 # For scipy.optimize
-opt_method          :Method for optimization
-
-gtol                :Convergence criterion based on gradient
-
-ftol                :Convergence criterion based on energy (cost)
-
-eps                 :Numerical step     
-
-maxiter             :Maximum iterations: if 0, skip VQE and only PySCF --> JW-transformation is carried out. 
+- opt_method          :Method for optimization
+- gtol                :Convergence criterion based on gradient
+- ftol                :Convergence criterion based on energy (cost)
+- eps                 :Numerical step     
+- maxiter             :Maximum iterations: if 0, skip VQE and only PySCF --> JW-transformation is carried out. 
 
 
