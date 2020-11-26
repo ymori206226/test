@@ -78,30 +78,30 @@ geometry
 ## その他のオプション
 
 ### For PySCF
-- `basis`               :ガウス基底関数 
-- `multiplicity`        :Spin multiplicity (defined as Nalpha - Nbeta + 1) 
-- `charge`              :Electron charge (0 for neutral) 
-- `pyscf_guess`         :Guess for pyscf: 'minao', 'chkfile'
+- `basis`               :ガウス基底関数
+- `multiplicity`        :スピン多重度 (Nalpha - Nbeta + 1) 
+- `charge`              :電荷 (中性は0) 
+- `pyscf_guess`         :pyscfにおけるguess: 'minao', 'chkfile'のいずれか
 
 ### For qulacs (VQE part)
-- `print_level`         :Printing level
-- `mix_level`           :Number of pairs of orbitals to be mixed (to break symmetry)
-- `rho`                 :Trotter number 
-- `kappa_guess`         :Guess for kappa: 'zero', 'read', 'mix', 'random'
-- `theta_guess`         :Guess for T1 and T2 amplitudes: 'zero', 'read', 'mix', 'random'
-- `Kappa_to_T1`         :Flag to use \*\*\*.kappa file (T1-like) for initial guess of T1
-- `spin`                :Spin quantum number for spin-projection
-- `ng`                  :Number of grid points for spin-projection
-- `DS`                  :Ordering of T1 and T2: 0 for Exp[T1]Exp[T2], 1 for Exp[T2]Exp[T1]
-- `print_amp_thres`     :Threshold for T amplitudes to be printed
-- `constraint_lambda`   :Constraint for spin 
+- `print_level`         :出力レベル
+- `mix_level`           :スピン非制限にするために混ぜるスピン軌道の数
+- `rho`                 :トロッター数
+- `kappa_guess`         :kappaのguess: 'zero', 'read', 'mix', 'random'のいずれか
+- `theta_guess`         :T1 と T2 amplitudesのguess: 'zero', 'read', 'mix', 'random'のいずれか
+- `Kappa_to_T1`         :`***.kappa`の内容を使ってT1を作るかの指定
+- `spin`                :スピン射影におけるスピン多重度の指定
+- `ng`                  :スピン射影におけるグリッド点数（通常2~4）
+- `DS`                  :T1とT2がかかる順番。 0 なら Exp[T1]Exp[T2], 1 なら Exp[T2]Exp[T1]
+- `print_amp_thres`     ：出力する T amplitudes のしきい値 
+- `constraint_lambda`   :スピン制限のためのlambda値（大きければ正しいスピン多重度を与える）
 
 ### For scipy.optimize
-- `opt_method`          :Method for optimization
-- `gtol`                :Convergence criterion based on gradient
-- `ftol`                :Convergence criterion based on energy (cost)
-- `eps`                 :Numerical step     
-- `maxiter`             :Maximum iterations: if 0, skip VQE and only PySCF --> JW-transformation is carried out. 
+- `opt_method`          :Minimizeにおける手法（L-BFGS等）
+- `gtol`                :グラジエントの収束しきい値
+- `ftol`                :エネルギーの収束しきい値
+- `eps`                 :数値微分のステップサイズ     
+- `maxiter`             :最大反復数: 0なら PySCFとJW-変換のみ行われて計算が終了（VQEはしない）
 
 
 
@@ -177,7 +177,7 @@ Inserting '@@@' in lines separates jobs. This enables multiple jobs with a singl
 - `rho`                 :Trotter number 
 - `kappa_guess`         :Guess for kappa: 'zero', 'read', 'mix', 'random'
 - `theta_guess`         :Guess for T1 and T2 amplitudes: 'zero', 'read', 'mix', 'random'
-- `Kappa_to_T1`         :Flag to use \*\*\*.kappa file (T1-like) for initial guess of T1
+- `Kappa_to_T1`         :Flag to use `***.kappa` file (T1-like) for initial guess of T1
 - `spin`                :Spin quantum number for spin-projection
 - `ng`                  :Number of grid points for spin-projection
 - `DS`                  :Ordering of T1 and T2: 0 for Exp[T1]Exp[T2], 1 for Exp[T2]Exp[T1]
