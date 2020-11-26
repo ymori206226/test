@@ -55,9 +55,9 @@ Titanで行う場合は、
 オプションを一行ずつ並べる。
 いくつかのサンプルが`samples`ディレクトリにある。
 
-## MINIMUM OPTIONS 
+## 最低限必要なオプション
 - `method`        : 手法を指定。VQEでは uhf, uccsd, sauccsd, phf, opt_puccd, など
-- `geometry`      : 分子構造をXYZフォーマット（元素記号のあとにx,y,z座標）で指定。行の最初の文字が元素記号でない場合読み込みを終える
+- `geometry`      : 分子構造をXYZフォーマット（元素記号のあとにx,y,z座標）で指定。行の最初の文字が元素記号でない場合読み込みを終える。ただし、後述の通り`basis = hubbard`の場合は必要ない。
 ```
 geometry
   A    Ax  Ay  Az
@@ -68,21 +68,22 @@ geometry
 
 - `n_electrons`   : 電子数 
 
-- `n_orbitals`    : 空間
+- `n_orbitals`    : 用いる空間軌道の数（Qubitはこれの2倍）。HOMO-LUMO付近の軌道を取る
 
 
-Inserting '@@@' in lines separates jobs. This enables multiple jobs with a single input file.
-##### CAUTION!! The options from previous jobs remain the same unless redefined.
+オプション間に '@@@' を挿入することでジョブを区切って実行することが出来る。
+##### ただし、前のジョブで使ったオプションは新たに指定しなおさない限りそのまま引き継がれる
 
-Options that have a default value (see main.py for details)
 
-## For PySCF
-- `basis`               :Gaussian Basis Set 
+## その他のオプション
+
+### For PySCF
+- `basis`               :ガウス基底関数 
 - `multiplicity`        :Spin multiplicity (defined as Nalpha - Nbeta + 1) 
 - `charge`              :Electron charge (0 for neutral) 
 - `pyscf_guess`         :Guess for pyscf: 'minao', 'chkfile'
 
-## For qulacs (VQE part)
+### For qulacs (VQE part)
 - `print_level`         :Printing level
 - `mix_level`           :Number of pairs of orbitals to be mixed (to break symmetry)
 - `rho`                 :Trotter number 
@@ -95,7 +96,7 @@ Options that have a default value (see main.py for details)
 - `print_amp_thres`     :Threshold for T amplitudes to be printed
 - `constraint_lambda`   :Constraint for spin 
 
-## For scipy.optimize
+### For scipy.optimize
 - `opt_method`          :Method for optimization
 - `gtol`                :Convergence criterion based on gradient
 - `ftol`                :Convergence criterion based on energy (cost)
@@ -162,13 +163,32 @@ Sample inputs are found in samples directory.
 Inserting '@@@' in lines separates jobs. This enables multiple jobs with a single input file.
 ##### CAUTION!! The options from previous jobs remain the same unless redefined.
 
-Options that have a default value (see main.py for details)
+## Options that have a default value (see main.py for details)
 
-## For PySCF
+### For PySCF
 - `basis`               :Gaussian Basis Set 
 - `multiplicity`        :Spin multiplicity (defined as Nalpha - Nbeta + 1) 
 - `charge`              :Electron charge (0 for neutral) 
 - `pyscf_guess`         :Guess for pyscf: 'minao', 'chkfile'
 
-## For qulacs (VQE part)
+### For qulacs (VQE part)
 - `print_level`         :Printing level
+- `mix_level`           :Number of pairs of orbitals to be mixed (to break symmetry)
+- `rho`                 :Trotter number 
+- `kappa_guess`         :Guess for kappa: 'zero', 'read', 'mix', 'random'
+- `theta_guess`         :Guess for T1 and T2 amplitudes: 'zero', 'read', 'mix', 'random'
+- `Kappa_to_T1`         :Flag to use \*\*\*.kappa file (T1-like) for initial guess of T1
+- `spin`                :Spin quantum number for spin-projection
+- `ng`                  :Number of grid points for spin-projection
+- `DS`                  :Ordering of T1 and T2: 0 for Exp[T1]Exp[T2], 1 for Exp[T2]Exp[T1]
+- `print_amp_thres`     :Threshold for T amplitudes to be printed
+- `constraint_lambda`   :Constraint for spin 
+
+### For scipy.optimize
+- `opt_method`          :Method for optimization
+- `gtol`                :Convergence criterion based on gradient
+- `ftol`                :Convergence criterion based on energy (cost)
+- `eps`                 :Numerical step     
+- `maxiter`             :Maximum iterations: if 0, skip VQE and only PySCF --> JW-transformation is carried out. 
+
+
