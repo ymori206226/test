@@ -34,6 +34,8 @@ else:
     log = './' + log_name + '.log'
 
 PeriodicTable = ["H","He","Li","Be","B","C","N","O","F","Ne"]
+multi_states  = []
+multi_weights = []
 
 
 #######################################
@@ -50,3 +52,5 @@ t_old = 0
 nthreads="1"
 Do1PDM = 0
 Do2PDM = 0
+
+

@@ -7,6 +7,7 @@ from qulacs.gate import PauliRotation, merge
 from qulacs.observable import create_observable_from_openfermion_text
 from openfermion.ops import QubitOperator
 from . import config as cf
+from . import mpilib as mpi
 from .utils     import SaveTheta, print_state, print_amplitudes, print_amplitudes_spinfree
 
 ncnot = 0
@@ -522,7 +523,6 @@ def ucc_singles(circuit,noa,nob,nva,nvb,theta_list,ndim2=0):
             #single_ope(a2,i2,circuit,theta_list[ia])
             single_ope_Pauli(a2,i2,circuit,theta_list[ia])
             ia = ia + 1
-    #print('CNOT gate count for Singles', ncnot)
     
 def ucc_doubles(circuit,noa,nob,nva,nvb,theta_list,ndim1=0):
     """ Function:
@@ -571,12 +571,11 @@ def ucc_doubles(circuit,noa,nob,nva,nvb,theta_list,ndim1=0):
                     #double_ope(b2,a2,j2,i2,circuit,theta_list[ijab])
                     double_ope_Pauli(b2,a2,j2,i2,circuit,theta_list[ijab])
                     ijab = ijab + 1
-    #print('CNOT gate count for doubles', ncnot)
         
-def upcc_Gdoubles(circuit,noa,nob,nva,nvb,theta_list,ndim1=0):
+def upcc_Gdoubles(circuit,noa,nob,nva,nvb,theta_list,ndim1,ndim2,i):
     global ncnot
    
-    ijab = ndim1
+    ijab = (ndim1 + ndim2) * i
     ncnot = 0
     norbs = noa + nva
 
@@ -595,13 +594,12 @@ def upcc_Gdoubles(circuit,noa,nob,nva,nvb,theta_list,ndim1=0):
             double_ope_Pauli(max(a2b,a2),min(a2b,a2),max(i2b,i2),min(i2b,i2),circuit,theta_list[ijab])
             ijab = ijab + 1
 
-    #print('CNOT gate count for doubles', ncnot)
 
-def upcc_Gsingles(circuit,noa,nob,nva,nvb,theta_list,ndim2=0):
+def upcc_Gsingles(circuit,noa,nob,nva,nvb,theta_list,ndim1,ndim2,i):
     """ Function:
     Construct circuit for generalized singles prod_pq exp[theta (p!q - q!p )]
     """
-    ia = ndim2
+    ia = ndim2 + i * (ndim1 + ndim2)
     global ncnot
 ### alpha ###    
     ncnot = 0
@@ -677,17 +675,6 @@ def set_circuit_sauccd(n_qubit,no,nv,theta_list):
     ucc_doubles_spinfree1(circuit,no,no,nv,nv,theta_list,0)
     return circuit
 
-def set_circuit_upccgsd(n_qubit,noa,nob,nva,nvb,theta_list):
-    """ Function:
-    Construct new circuit for UpCCD 
-    """
-    circuit = QuantumCircuit(n_qubit)    
-    norbs = noa + nva
-    ndim2 = int(norbs*(norbs-1)/2)
-    upcc_Gdoubles(circuit,noa,nob,nva,nvb,theta_list)
-    upcc_Gsingles(circuit,noa,nob,nva,nvb,theta_list,ndim2)
-    return circuit
-
 def set_circuit_uccd(n_qubit,noa,nob,nva,nvb,theta_list):
     """ Function:
     Construct new circuit for UCCD 
@@ -696,6 +683,23 @@ def set_circuit_uccd(n_qubit,noa,nob,nva,nvb,theta_list):
     ucc_doubles(circuit,noa,nob,nva,nvb,theta_list)
     return circuit
 
+def set_circuit_upccgsd(n_qubit,noa,nob,nva,nvb,theta_list,k):
+    """ Function:
+    Construct new circuit for UpCCGSD 
+    """
+    norbs = noa + nva
+    ndim1 = int(norbs*(norbs-1))
+    ndim2 = int(ndim1/2)
+    circuit = QuantumCircuit(n_qubit)
+
+    i = 0
+
+    for i in range(k):
+        upcc_Gdoubles(circuit,noa,nob,nva,nvb,theta_list,ndim1,ndim2,i)
+        upcc_Gsingles(circuit,noa,nob,nva,nvb,theta_list,ndim1,ndim2,i)
+        i = i + 1
+
+    return circuit
 
 def cost_uccsd(print_level,n_qubit_system,n_electron,noa,nob,nva,nvb,rho,DS,qulacs_hamiltonian,qulacs_s2,method,kappa_list,theta_list,threshold=0.01):
     """ Function:
@@ -746,10 +750,10 @@ def cost_uccsd(print_level,n_qubit_system,n_electron,noa,nob,nva,nvb,rho,DS,qula
         cost  +=  penalty 
     t2 = time.time() 
     cpu1 = t2 - t1
-    if print_level == -1:
+    if print_level == -1 and mpi.main_rank:
         with open(cf.log,'a') as f:
             print(" Initial E[%s] = " % method, '{:.12f}'.format(Euccsd),  "  <S**2> =", '%2.15f' % S2, "rho = %d" % rho, file=f)
-    if print_level == 1:
+    if print_level == 1 and mpi.main_rank:
         #cf.constraint_lambda *= 1.1
         cput = t2 - cf.t_old 
         cf.t_old = t2
@@ -758,7 +762,7 @@ def cost_uccsd(print_level,n_qubit_system,n_electron,noa,nob,nva,nvb,rho,DS,qula
             if(cf.constraint_lambda != 0):
                 print('lambda = ', cf.constraint_lambda, '<S**4> =', '%2.15f' % S4, '  Penalty = ', '%2.15f' % penalty, file=f)
         SaveTheta(ndim1+ndim2,theta_list,cf.tmp)
-    if print_level > 1:
+    if print_level > 1 and mpi.main_rank:
         with open(cf.log,'a') as f:
             print(" Final E[%s] = " % method, '{:.12f}'.format(Euccsd),  "  <S**2> =", '%2.15f' % S2, "rho = %d" % rho, file=f)
             print('(UCCSD state)', file=f)
@@ -769,7 +773,7 @@ def cost_uccsd(print_level,n_qubit_system,n_electron,noa,nob,nva,nvb,rho,DS,qula
             print_amplitudes_spinfree(theta_list,noa,nva,threshold)
     return cost, S2
 
-def cost_upccgsd(print_level,n_qubit_system,n_electron,noa,nob,nva,nvb,rho,qulacs_hamiltonian,qulacs_s2,kappa_list,theta_list):
+def cost_upccgsd(print_level,n_qubit_system,n_electron,noa,nob,nva,nvb,rho,qulacs_hamiltonian,qulacs_s2,kappa_list,theta_list,k):
     """ Function:
     Energy functional of UpCCGSD 
     !!!!! Not maintained and thus may fail !!!!!
@@ -785,19 +789,19 @@ def cost_upccgsd(print_level,n_qubit_system,n_electron,noa,nob,nva,nvb,rho,qulac
 #        circuit_uhf = set_circuit_uhf(n_qubit_system,noa,nob,nva,nvb,kappa_list)
 #        circuit_uhf.update_quantum_state(state)
 
-    circuit = set_circuit_upccgsd(n_qubit_system,noa,nob,nva,nvb,theta_list)
+    circuit = set_circuit_upccgsd(n_qubit_system,noa,nob,nva,nvb,theta_list,k)
     for i in range(rho):
         circuit.update_quantum_state(state)
     Eupccgsd = qulacs_hamiltonian.get_expectation_value(state)
     S2 = qulacs_s2.get_expectation_value(state)
     t2 = time.time() 
     cput = t2 - t1
-    if print_level > 0:
+    if print_level > 0 and mpi.main_rank:
         with open(cf.log,'a') as f:
             print(" E[UpCCGSD] = ", '{:.12f}'.format(Eupccgsd),  "  <S**2> =", '%2.15f' % S2, "  CPU Time = ", '%2.5f' % cput, file=f)
-    if print_level > 1:
+    if print_level > 1 and mpi.main_rank:
         with open(cf.log,'a') as f:
-            print('(UpCCGSD state)')
+            print('(UpCCGSD state)', file=f)
         print_state(state,n_qubit_system)
     return Eupccgsd, S2
 
@@ -825,12 +829,12 @@ def cost_uccd(print_level,n_qubit_system,n_electron,noa,nob,nva,nvb,rho,qulacs_h
     S2 = qulacs_s2.get_expectation_value(state)
     t2 = time.time() 
     cput = t2 - t1
-    if print_level > 0:
+    if print_level > 0 and mpi.main_rank:
         with open(cf.log,'a') as f:
             print(" E[UCCD] = ", '{:.12f}'.format(Euccd),  "  <S**2> =", '%2.15f' % S2, "  CPU Time = ", '%2.5f' % cput, file=f)
-    if print_level > 1:
+    if print_level > 1 and mpi.main_rank:
         with open(cf.log,'a') as f:
-            print('(UCCD state)')
+            print('(UCCD state)', file=f)
         print_state(state,n_qubit_system)
     return Euccd, S2
 
@@ -883,12 +887,12 @@ def cost_opt_ucc(print_level,n_qubit_system,n_electron,noa,nob,nva,nvb,rho,Gen,o
     S2 = qulacs_s2.get_expectation_value(state)
     t2 = time.time() 
     cput = t2 - t1
-    if print_level > 0:
+    if print_level > 0 and mpi.main_rank:
         with open(cf.log,'a') as f:
             print(" E[%s] = " % method, '{:.12f}'.format(Eucc),  "  <S**2> =", '%2.15f' % S2, "  CPU Time = ", '%2.5f' % cput, file=f)
-    if print_level > 1:
+    if print_level > 1 and mpi.main_rank:
         with open(cf.log,'a') as f:
-            print('(UCC state)')
+            print('(UCC state)', file=f)
         print_state(state,n_qubit_system)
     return Eucc, S2
 
@@ -1017,16 +1021,16 @@ def cost_opttest_uccsd(print_level,n_qubit_system,n_electron,noa,nob,nva,nvb,rho
     S2 = qulacs_s2.get_expectation_value(state)
     t2 = time.time() 
     cput = t2 - t1
-    if print_level == -1:
+    if print_level == -1 and mpi.main_rank:
         with open(cf.log,'a') as f:
             print(" Initial E[%s] = " % method, '{:.12f}'.format(Euccsd),  "  <S**2> =", '%2.15f' % S2, "rho = %d" % rho, file=f)
-    if print_level == 1:
+    if print_level == 1 and mpi.main_rank:
         with open(cf.log,'a') as f:
             print(" E[%s] = " % method, '{:.12f}'.format(Euccsd),  "  <S**2> =", '%2.15f' % S2, "  CPU Time = ", '%2.5f' % cput, file=f)
-    if print_level > 1:
+    if print_level > 1 and mpi.main_rank:
         with open(cf.log,'a') as f:
             print(" Final E[%s] = " % method, '{:.12f}'.format(Euccsd),  "  <S**2> =", '%2.15f' % S2, "rho = %d" % rho, file=f)
-            print('(UCCSD state)')
+            print('(UCCSD state)', file=f)
         print_state(state,n_qubit_system)
         if method=="uccsd":
             print_amplitudes(theta_list,noa,nob,nva,nvb)

@@ -6,6 +6,7 @@ from openfermion.ops import QubitOperator
 from qulacs import QuantumState
 from qulacs import QuantumCircuit
 from . import config as cf
+from . import mpilib as mpi
 from .ucclib import ucc_singles, set_circuit_uccsd, set_circuit_uccd, set_circuit_sauccd
 from .utils     import SaveTheta, print_state, print_amplitudes
 
@@ -95,7 +96,7 @@ def controlled_Ug(circuit,n_qubit,anc,beta):
 
 
 
-def cost_proj(print_level,n_qubit,n_electron,noa,nob,nva,nvb,rho,DS,anc,spin,ng,qulacs_hamiltonianZ,qulacs_s2Z,coef0_H,coef0_S2,ref,kappa_list,theta_list=0,threshold=0.01):
+def cost_proj(print_level,n_qubit,n_electron,noa,nob,nva,nvb,rho,DS,anc,qulacs_hamiltonianZ,qulacs_s2Z,coef0_H,coef0_S2,ref,kappa_list,theta_list=0,threshold=0.01):
     """ Function:
     Energy functional for projected methods (phf, puccsd, puccd, opt_puccd)
     """
@@ -169,32 +170,33 @@ def cost_proj(print_level,n_qubit,n_electron,noa,nob,nva,nvb,rho,DS,anc,spin,ng,
         circuit_uhf = set_circuit_uhfZ(n_qubit,noa,nob,nva,nvb,theta_list)
         circuit_uhf.update_quantum_state(state)
     if(print_level > 1):
-        with open(cf.log,'a') as f:
-            print('State before projection',file=f)
-        print_state(state,n_qubit_system)
+        if mpi.mpi.main_rank:
+            with open(cf.log,'a') as f:
+                print('State before projection',file=f)
+            print_state(state,n_qubit_system)
         if(ref == "puccsd" or ref == "opt_puccd"):
             print_amplitudes(theta_list,noa,nob,nva,nvb,threshold)
 
 
 #    '''
     ### grid loop ###
-    if ng == 4 :
+    if cf.ng == 4 :
         beta = ([0.861136311594053,0.339981043584856,-0.339981043584856,-0.861136311594053])
         wg   = ([0.173927422568724,0.326072577431273,0.326072577431273,0.173927422568724])
-    elif ng == 3:
+    elif cf.ng == 3:
         beta = ([0.774596669241483, 0, -0.774596669241483]) 
-        if spin == 1:
+        if cf.spin == 1:
             wg   = ([0.277777777777776, 0.444444444444444, 0.277777777777776]) 
-        elif spin ==3:
+        elif cf.spin ==3:
             if noa - nob == 2:
                 wg   = ([0.739415278850614, 0.666666666666667, 0.09391805448271476])
             else:
                 wg   = ([0.645497224367899,0, -0.645497224367899]) 
-    elif ng == 2:
+    elif cf.ng == 2:
         beta = ([0.577350269189626,-0.577350269189626])
-        if spin == 1:
+        if cf.spin == 1:
             wg   = ([0.5, 0.5])
-        elif spin ==3:
+        elif cf.spin ==3:
             if noa - nob == 2:
                 wg = ([1.1830127018922187,0.3169872981077805])
             else:
@@ -206,7 +208,7 @@ def cost_proj(print_level,n_qubit,n_electron,noa,nob,nva,nvb,rho,DS,anc,spin,ng,
     Ug = []
     S2 = 0
     Norm = 0
-    for i in range(ng):
+    for i in range(cf.ng):
         ### Copy quantum state of UHF (cannot be done in real device) ###
         state_g = QuantumState(n_qubit)
         state_g.load(state)
@@ -235,22 +237,22 @@ def cost_proj(print_level,n_qubit,n_electron,noa,nob,nva,nvb,rho,DS,anc,spin,ng,
 #    print("Time: ",t2-t1)
     ### Energy calculation <HP>/<P> and <S**2P>/<P> ###
     Ep = 0
-    for i in range(ng):
+    for i in range(cf.ng):
         Ep += wg[i] * HUg[i] / Norm
         S2 += wg[i] * S2Ug[i] / Norm
     t2 = time.time() 
     cpu1 = t2 - t1
     Ep += coef0_H
     S2 += coef0_S2
-    if print_level == -1:
+    if print_level == -1 and mpi.main_rank:
         with open(cf.log,'a') as f:
             print(" Initial E[%s] = " % ref, '{:.12f}'.format(Ep),  "  <S**2> =", '%2.15f' % S2, "rho = %d" % rho, file=f)
-    if print_level == 1:
+    if print_level == 1 and mpi.main_rank:
         cput = t2 - cf.t_old 
         cf.t_old = t2
         with open(cf.log,'a') as f:
             print(" E[%s] = " % ref, '{:.12f}'.format(Ep),  "  <S**2> =", '%2.15f' % S2, "  CPU Time = ", '%2.5f' % cput, " (%2.5f / step)" % cpu1, file=f)
-    if print_level > 1:
+    if print_level > 1 and mpi.main_rank:
         with open(cf.log,'a') as f:
             print(" Final E[%s] = " % ref, '{:.12f}'.format(Ep),  "  <S**2> =", '%2.15f' % S2, "rho = %d" % rho, file=f)
         print_state(state,n_qubit-1)
@@ -262,4 +264,66 @@ def cost_proj(print_level,n_qubit,n_electron,noa,nob,nva,nvb,rho,DS,anc,spin,ng,
 
     return Ep, S2
 
+
+def S2Proj(Q,spin=1,Ms=0,ng=4):
+    '''
+       Perform spin-projection to QuantumState |Q> 
+
+          |Q'>  =  Ps |Q>   
+
+       where Ps is a spin-projection operator (non-unitary).
+       
+          Ps = \sum_i^ng   wg[i] Ug[i] 
+
+       This function provides a shortcut to |Q'>, which is unreal.
+       One actually needs to develop a quantum circuit for this (See PRR 2, 043142 (2020)).
+
+    '''
+    ### Set grid points ###
+    if ng == 4 :
+        beta = ([0.861136311594053,0.339981043584856,-0.339981043584856,-0.861136311594053])
+        if spin == 1:
+            wg   = ([0.173927422568724,0.326072577431273,0.326072577431273,0.173927422568724])
+        elif spin == 3:
+            if Ms == 2:
+                wg   = ([0.485553962586922,0.655396608886142,0.322821123407678,0.03622830511924918])
+            elif Ms == 0:
+                wg   = ([ 0.449325657467673, 0.332575485478464,  -0.332575485478464 ,- 0.449325657467673])
+    elif ng == 3:
+        beta = ([0.774596669241483, 0, -0.774596669241483])
+        if spin == 1:
+            wg   = ([0.277777777777776, 0.444444444444444, 0.277777777777776])
+        elif spin ==3:
+            if Ms == 2:
+                wg   = ([0.739415278850614, 0.666666666666667, 0.09391805448271476])
+            elif Ms == 0:
+                wg   = ([0.645497224367899,0, -0.645497224367899])
+    elif ng == 2:
+        beta = ([0.577350269189626,-0.577350269189626])
+        if spin == 1:
+            wg   = ([0.5, 0.5])
+        elif spin ==3:
+            if Ms == 2:
+                wg = ([1.1830127018922187,0.3169872981077805])
+            elif Ms == 0:
+                wg   = ([0.866025404, -0.866025404])
+    if beta == None:
+        error(" Error in S2Proj. Check ng. ")
+    if wg == None:
+        error(" Error in S2Proj. Check spin and Ms. ")
+
+    n_qubit = Q.get_count_qubits()
+    state_P = QuantumState(n_qubit)
+    state_P.multiply_coef(0)
+    for i in range(ng):
+        ### Copy quantum state of UHF (cannot be done in real device) ###
+        state_g = QuantumState(n_qubit)
+        state_g.load(Q)
+        ### Construct Ug circuit
+        circuit_ug = QuantumCircuit(n_qubit)
+        set_circuit_Ug(circuit_ug,n_qubit,np.arccos(beta[i]))
+        circuit_ug.update_quantum_state(state_g)
+        state_g.multiply_coef(wg[i])
+        state_P.add_state(state_g)
+    return state_P
 

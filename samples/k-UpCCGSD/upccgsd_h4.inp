@@ -9,5 +9,6 @@ H  0  0  1.23
 H  1.23  0  0   
 H  1.23  0  1.23
 maxiter      = 100
-method       = uccsd
+method       = 3-upccgsd
+theta_guess  = random
 rho          = 1

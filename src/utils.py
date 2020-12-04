@@ -1,12 +1,50 @@
+import sys
+import time
 import numpy as np
+from . import config as cf
+from . import mpilib as mpi
 import math
 import pprint
 import itertools
 from openfermion.transforms import jordan_wigner
 from openfermion.ops import QubitOperator
 from qulacs import QuantumState
-from . import config
 
+import copy
+
+
+def jac_cost(cost,theta,stepsize=1e-8):
+    '''
+       Given a cost function of varaibles theta,
+       return the first derivatives (jacobian) 
+       computed with MPI.
+    '''
+    ### Just in case, broadcast theta...
+    mpi.comm.Bcast(theta,root=0)
+    ndim =theta.size
+    theta_d = copy.copy(theta)
+    E0 = cost(theta)
+    grad = np.zeros(ndim)
+    grad_r = np.zeros(ndim)
+    nrem = ndim%mpi.nprocs
+    nblk = int((ndim - nrem)/mpi.nprocs)
+    if mpi.rank < nrem:
+        my_ndim = nblk + 1 
+        ipos    = my_ndim * mpi.rank
+    else:
+        my_ndim = nblk
+        ipos    = my_ndim * mpi.rank + nrem
+    for iloop in range(ipos,ipos+my_ndim):
+        theta_d[iloop] += stepsize
+        Ep = cost(theta_d)
+        #theta_d[iloop] -= stepsize * 2
+        #Em = cost(theta_d)
+        #theta_d[iloop] += stepsize
+        #grad.append((Ep - Em)/(2*stepsize))
+        theta_d[iloop] -= stepsize 
+        grad[iloop] = (Ep - E0)/(stepsize)
+    mpi.comm.Allreduce(grad, grad_r, mpi.MPI.SUM)
+    return grad_r
 def SaveTheta(ndim,theta,filepath):
     """ Function:
     Save theta(0:ndim-1) to filepath (overwritten)
@@ -28,8 +66,9 @@ def LoadTheta(ndim,filepath):
     return theta
 
 def error(message): 
-    with open(config.log,'a') as f:
-        print(message,file=f)
+    if mpi.main_rank:
+        with open(cf.log,'a') as f:
+            print(message,file=f)
     exit()
 
 def T1vec2mat(noa,nob,nva,nvb,kappa_list):
@@ -95,24 +134,25 @@ def T1mult(noa,nob,nva,nvb,kappa1,kappa2):
 
 
 def print_state(state,n_qubit=None):
-    """ Function:
-    Print out quantum state as qubits
+    """
+    print out quantum state as qubits
     """
     if n_qubit==None:
         n_qubit = state.get_qubit_count()
     opt='0'+str(n_qubit)+'b'
-    with open(config.log,'a') as f:
+    with open(cf.log,'a') as f:
+        print(" Basis       Coef")
         for i in range(2**n_qubit):
-            if abs(state.get_vector()[i])**2>0.01:
-                print('|',format(i,opt),'> : ', '%1.4f' % abs(state.get_vector()[i])**2,file=f)
-
+            v = state.get_vector()[i]
+            if abs(v)**2>0.01:
+                print('|',format(i,opt),'> : ', '{a.real:+.4f} {a.imag:+.4f}j'.format(a=v),file=f) 
 
 
 def print_amplitudes(theta_list,noa,nob,nva,nvb,threshold=0.01):
     """ Function:
     Print out amplitudes
     """
-    with open(config.log,'a') as f:
+    with open(cf.log,'a') as f:
         ### print singles amplitudes ###
         ia = 0
         for a in range(nva):
@@ -199,7 +239,7 @@ def print_amplitudes_spinfree(theta_list,no,nv,threshold=0.01):
     """
     from .ucclib import get_baji
     thres_i = int(1/threshold) + 1
-    with open(config.log,'a') as f:
+    with open(cf.log,'a') as f:
         ### print singles amplitudes ###
         ia = 0
         for a in range(nv):

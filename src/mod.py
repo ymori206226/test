@@ -8,7 +8,7 @@ import itertools
 from openfermion.transforms import jordan_wigner
 from openfermion.ops import QubitOperator
 import pyscf
-from pyscf import gto, scf, ao2mo, ci, cc, fci, mp, mcscf
+from pyscf import gto, ao2mo, ci, cc, fci, mp, mcscf, scf
 
 from openfermion import MolecularData
 from openfermionpyscf import PyscfMolecularData
@@ -177,10 +177,9 @@ def run_pyscf_mod(
     molecule.one_body_integrals = one_body_integrals
     molecule.two_body_integrals = two_body_integrals
     molecule.overlap_integrals = pyscf_scf.get_ovlp()
-    
     # CASCI (FCI)
-    molecule.fci_energy  = pyscf_scf.CASCI(n_active_orbitals,n_active_electrons).kernel()[0]
-
+    if run_fci:
+        molecule.fci_energy  = pyscf_scf.CASCI(n_active_orbitals,n_active_electrons).kernel()[0]
     # Return updated molecule instance.
     pyscf_molecular_data = PyscfMolecularData.__new__(PyscfMolecularData)
     pyscf_molecular_data.__dict__.update(molecule.__dict__)
