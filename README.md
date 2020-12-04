@@ -39,6 +39,16 @@ Titanで行う場合は、
 ```
 と`&`をつけるとログアウトしても実行し続ける。Ravelで行う場合は頭に`nohup`をつけると実行し続ける。
 
+<<<<<<< HEAD
+=======
+MPI並列は実装中。
+
+```
+    mpirun -np $NPROCS python3.8 main.py ***
+```
+で流せるが12/3現在結果及びスピードは同じ。
+
+>>>>>>> dev-tsuchimochi
 
 # ファイルの説明
 
@@ -104,6 +114,16 @@ geometry
 - `maxiter`             :最大反復数: 0なら PySCFとJW-変換のみ行われて計算が終了（VQEはしない）
 
 
+<<<<<<< HEAD
+=======
+multiセクションを使うことでJM-UCCが実行できる。左はゼロ次空間のビット列、右はエネルギーの重み
+multi:
+ 00001111      0.5
+ 00110011      0.5
+ (strings)   (weights)
+
+
+>>>>>>> dev-tsuchimochi
 
 # Requisites
 

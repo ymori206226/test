@@ -1,6 +1,6 @@
 import os
+from . import mpilib as mpi
 from . import config as cf
-os.environ["OMP_NUM_THREADS"] = cf.nthreads
 import numpy as np
 from scipy.optimize import minimize
 import sys
@@ -21,6 +21,7 @@ from .utils     import LoadTheta, SaveTheta,  error, T1mult
 from .mod       import run_pyscf_mod, generate_molecular_hamiltonian_mod
 from .phflib    import cost_proj
 from .ucclib    import cost_uccsd, cost_uccd, cost_opt_ucc, cost_opttest_uccsd, cost_upccgsd
+from .jmucc     import cost_jmucc
 from . import sampling
 
 def get_hamiltonian(geometry, basis, multiplicity, charge, n_active_electrons, n_active_orbitals, guess):
@@ -31,9 +32,10 @@ def get_hamiltonian(geometry, basis, multiplicity, charge, n_active_electrons, n
     description = "tmp"
     molecule = MolecularData(geometry, basis, multiplicity, charge, description)
     molecule = run_pyscf_mod(guess,n_active_orbitals,n_active_electrons,molecule,run_scf=1,run_fci=1)
-    with open(cf.log,'a') as f:
-        print("RHF Energy : ", molecule.hf_energy ,file=f)
-        print("FCI Energy : ", molecule.fci_energy ,file=f)
+    if mpi.main_rank:
+        with open(cf.log,'a') as f:
+            print("RHF Energy : ", molecule.hf_energy ,file=f)
+            print("FCI Energy : ", molecule.fci_energy ,file=f)
     ### construct qulacs hamiltonian, S^2 for VQE ###
     ### H ###
     fermionic_hamiltonian = generate_molecular_hamiltonian_mod(guess,geometry, basis, multiplicity, charge, n_active_electrons, n_active_orbitals)
@@ -89,9 +91,9 @@ def openfermion_print_state(state,n_qubit,j_state):
             print('|',format(i,opt),'> : ', '{a.real:+.4f} {a.imag:+.4f}i'.format(a=v))
 
 
-def VQE_driver(jw_hamiltonian,jw_s2,n_active_electrons, n_active_orbitals, method,  
+def VQE_driver(jw_hamiltonian,jw_s2,n_active_electrons, n_active_orbitals, multiplicity, method,  
     kappa_guess,theta_guess,mix_level, rho, DS, opt_method, opt_options, print_level, maxiter,
-    Kappa_to_T1, spin, ng, print_amp_thres):
+    Kappa_to_T1, print_amp_thres):
     """ Function:
     Main driver for VQE
     """
@@ -111,7 +113,7 @@ def VQE_driver(jw_hamiltonian,jw_s2,n_active_electrons, n_active_orbitals, metho
     
     # Number of occupied orbitals of alpha
     # NOA
-    noa = int((n_electron + spin - 1)/2)
+    noa = int((n_electron + multiplicity - 1)/2)
     # Number of occupied orbitals of beta
     # NOB
     nob = n_electron - noa
@@ -167,8 +169,8 @@ def VQE_driver(jw_hamiltonian,jw_s2,n_active_electrons, n_active_orbitals, metho
     if (method == "phf"):
         ### PHF ###
         ndim = ndim1
-        cost_wrap = lambda kappa_list : cost_proj(0,n_qubit,n_electron,noa,nob,nva,nvb,rho,DS,anc,spin,ng,qulacs_hamiltonianZ,qulacs_s2Z,coef0_H,coef0_S2,method,kappa_list)[0]
-        cost_callback = lambda kappa_list : cost_proj(print_control,n_qubit,n_electron,noa,nob,nva,nvb,rho,DS,anc,spin,ng,qulacs_hamiltonianZ,qulacs_s2Z,coef0_H,coef0_S2,method,kappa_list)
+        cost_wrap = lambda kappa_list : cost_proj(0,n_qubit,n_electron,noa,nob,nva,nvb,rho,DS,anc,qulacs_hamiltonianZ,qulacs_s2Z,coef0_H,coef0_S2,method,kappa_list)[0]
+        cost_callback = lambda kappa_list : cost_proj(print_control,n_qubit,n_electron,noa,nob,nva,nvb,rho,DS,anc,qulacs_hamiltonianZ,qulacs_s2Z,coef0_H,coef0_S2,method,kappa_list)
     
     elif (method == "uhf"):
         ### UHF ###
@@ -182,12 +184,19 @@ def VQE_driver(jw_hamiltonian,jw_s2,n_active_electrons, n_active_orbitals, metho
         cost_wrap = lambda theta_list : cost_uccsd(0,n_qubit_system,n_electron,noa,nob,nva,nvb,rho,DS,qulacs_hamiltonian,qulacs_s2,method,kappa_list,theta_list)[0]
         cost_callback = lambda theta_list : cost_uccsd(print_control,n_qubit_system,n_electron,noa,nob,nva,nvb,rho,DS,qulacs_hamiltonian,qulacs_s2,method,kappa_list,theta_list)
 
-    elif(method == "upccgsd"):
+    elif("upccgsd" in method):
         ###UpCCGSD###
+        k_param = method[0:method.find('-upccgsd')]
+        if(not k_param.isdecimal()):
+            if mpi.main_rank:
+                with open(cf.log,'a') as f:
+                    print('Unrecognized k: ',kparam,file=f)
+            error("k-UpCCGSD without specifying k.")
+        k_param = int(k_param)
         ###ndim= noa * nvb
-        ndim = ndim1 + ndim2
-        cost_wrap = lambda theta_list : cost_upccgsd(0,n_qubit_system,n_electron,noa,nob,nva,nvb,rho,qulacs_hamiltonian,qulacs_s2,kappa_list,theta_list)[0]
-        cost_callback = lambda theta_list : cost_upccgsd(print_control,n_qubit_system,n_electron,noa,nob,nva,nvb,rho,qulacs_hamiltonian,qulacs_s2,kappa_list,theta_list)        
+        ndim = k_param*(ndim1 + ndim2)
+        cost_wrap = lambda theta_list : cost_upccgsd(0,n_qubit_system,n_electron,noa,nob,nva,nvb,rho,qulacs_hamiltonian,qulacs_s2,kappa_list,theta_list,k_param)[0]
+        cost_callback = lambda theta_list : cost_upccgsd(print_control,n_qubit_system,n_electron,noa,nob,nva,nvb,rho,qulacs_hamiltonian,qulacs_s2,kappa_list,theta_list,k_param)        
         
     elif (method == "uccd"):
         ### UCCD ###
@@ -203,33 +212,54 @@ def VQE_driver(jw_hamiltonian,jw_s2,n_active_electrons, n_active_orbitals, metho
     elif (method == "puccsd"):
         ### UCCSD ###
         ndim = ndim1 + ndim2
-        cost_wrap = lambda theta_list : cost_proj(0,n_qubit,n_electron,noa,nob,nva,nvb,rho,DS,anc,spin,ng,qulacs_hamiltonianZ,qulacs_s2Z,coef0_H,coef0_S2,method,kappa_list,theta_list)[0]
-        cost_callback = lambda theta_list : cost_proj(print_control,n_qubit,n_electron,noa,nob,nva,nvb,rho,DS,anc,spin,ng,qulacs_hamiltonianZ,qulacs_s2Z,coef0_H,coef0_S2,method,kappa_list,theta_list)
+        cost_wrap = lambda theta_list : cost_proj(0,n_qubit,n_electron,noa,nob,nva,nvb,rho,DS,anc,qulacs_hamiltonianZ,qulacs_s2Z,coef0_H,coef0_S2,method,kappa_list,theta_list)[0]
+        cost_callback = lambda theta_list : cost_proj(print_control,n_qubit,n_electron,noa,nob,nva,nvb,rho,DS,anc,qulacs_hamiltonianZ,qulacs_s2Z,coef0_H,coef0_S2,method,kappa_list,theta_list)
     elif (method == "puccd"):
         ### UCCSD ###
         ndim =  ndim2
-        cost_wrap = lambda theta_list : cost_proj(0,n_qubit,n_electron,noa,nob,nva,nvb,rho,DS,anc,spin,ng,qulacs_hamiltonianZ,qulacs_s2Z,coef0_H,coef0_S2,method,kappa_list,theta_list)[0]
-        cost_callback = lambda theta_list : cost_proj(print_control,n_qubit,n_electron,noa,nob,nva,nvb,rho,DS,anc,spin,ng,qulacs_hamiltonianZ,qulacs_s2Z,coef0_H,coef0_S2,method,kappa_list,theta_list)
+        cost_wrap = lambda theta_list : cost_proj(0,n_qubit,n_electron,noa,nob,nva,nvb,rho,DS,anc,qulacs_hamiltonianZ,qulacs_s2Z,coef0_H,coef0_S2,method,kappa_list,theta_list)[0]
+        cost_callback = lambda theta_list : cost_proj(print_control,n_qubit,n_electron,noa,nob,nva,nvb,rho,DS,anc,qulacs_hamiltonianZ,qulacs_s2Z,coef0_H,coef0_S2,method,kappa_list,theta_list)
     elif method =="opt_puccd" or method == "opt_psauccd":
         ### UCCSD ###
         ndim =  ndim1+ndim2
-        cost_wrap = lambda theta_list : cost_proj(0,n_qubit,n_electron,noa,nob,nva,nvb,rho,DS,anc,spin,ng,qulacs_hamiltonianZ,qulacs_s2Z,coef0_H,coef0_S2,method,kappa_list,theta_list)[0]
-        cost_callback = lambda theta_list : cost_proj(print_control,n_qubit,n_electron,noa,nob,nva,nvb,rho,DS,anc,spin,ng,qulacs_hamiltonianZ,qulacs_s2Z,coef0_H,coef0_S2,method,kappa_list,theta_list)
+        cost_wrap = lambda theta_list : cost_proj(0,n_qubit,n_electron,noa,nob,nva,nvb,rho,DS,anc,qulacs_hamiltonianZ,qulacs_s2Z,coef0_H,coef0_S2,method,kappa_list,theta_list)[0]
+        cost_callback = lambda theta_list : cost_proj(print_control,n_qubit,n_electron,noa,nob,nva,nvb,rho,DS,anc,qulacs_hamiltonianZ,qulacs_s2Z,coef0_H,coef0_S2,method,kappa_list,theta_list)
+    elif method =="jmucc":
+        nstates = len(cf.multi_weights)
+        if nstates == 0:
+            error("JM-UCC specified without state specification!")
+        ndim = nstates * (ndim1 + ndim2)
+        cost_wrap = lambda theta_lists : \
+        cost_jmucc(0,n_qubit_system,n_electron,noa,nob,nva,nvb,rho,DS,\
+        qulacs_hamiltonian,qulacs_s2,theta_lists,print_amp_thres)
+        cost_callback = lambda theta_lists : \
+        cost_jmucc(print_control,n_qubit_system,n_electron,noa,nob,nva,nvb,rho,DS,\
+        qulacs_hamiltonian,qulacs_s2,theta_lists,print_amp_thres)
+    '''
+    elif method == "sauccsd_eigen":
+        ndim = 2 * (ndim1 + ndim2)
+        from .ucc_eigen import cost_sa_XX
+        cost_wrap = lambda theta_lists : cost_sa_XX(0,n_qubit_system,n_electron,noa,nob,nva,nvb,rho,DS,qulacs_hamiltonian,qulacs_s2,theta_lists,print_amp_thres)
+        cost_callback = lambda theta_lists : cost_sa_XX(print_control,n_qubit_system,n_electron,noa,nob,nva,nvb,rho,DS,qulacs_hamiltonian,qulacs_s2,theta_lists,print_amp_thres)
+    '''
 
-    with open(cf.log,'a') as f:
-        print('Number of VQE parameters:',ndim,file=f)
+    if mpi.main_rank:
+        with open(cf.log,'a') as f:
+            print('Number of VQE parameters:',ndim,file=f)
     ############################# 
     ### set up initial kappa  ###
     ############################# 
-    with open(cf.log,'a') as f:
-        print('Kappa values for orbital rotation:',file=f)
+    if mpi.main_rank:
+        with open(cf.log,'a') as f:
+            print('Kappa values for orbital rotation:',file=f)
     kappa_list = np.zeros(ndim1)
     if  kappa_guess=="mix":
         if(mix_level >0):
             mix = mix_orbitals(noa,nob,nva,nvb,mix_level,False,np.pi/4)
             kappa_list[0:ndim1] = mix[0:ndim1]
-            with open(cf.log,'a') as f:
-                pprint(kappa_list,stream=f)
+            if mpi.main_rank:
+                with open(cf.log,'a') as f:
+                    pprint(kappa_list,stream=f)
         elif(mix_level ==0 ):
             error('kappa_guess = mix  but  mix_level = 0 !')
     elif  kappa_guess=="random":
@@ -242,8 +272,9 @@ def VQE_driver(jw_hamiltonian,jw_s2,n_active_electrons, n_active_orbitals, metho
             mix = mix_orbitals(noa,nob,nva,nvb,mix_level,False,np.pi/4)
             temp = T1mult(noa,nob,nva,nvb,mix,temp)
             kappa_list = temp[:ndim1]
-        with open(cf.log,'a') as f:
-            pprint(kappa_list,stream=f)
+        if mpi.main_rank:
+            with open(cf.log,'a') as f:
+                pprint(kappa_list,stream=f)
 
     ############################# 
     ### set up initial theta  ###
@@ -262,8 +293,9 @@ def VQE_driver(jw_hamiltonian,jw_s2,n_active_electrons, n_active_orbitals, metho
         theta_list[:ndim1] = kappa_list[:ndim1]
         for i in range(ndim1):
             kappa_list[i] = 0 
-        with open(cf.log,'a') as f:
-            print('Initial T1 amplitudes will be read from kappa.',file=f)
+        if mpi.main_rank:
+            with open(cf.log,'a') as f:
+                print('Initial T1 amplitudes will be read from kappa.',file=f)
         
     kappa_list = np.array(kappa_list)
     theta_list = np.array(theta_list)
@@ -303,24 +335,23 @@ def VQE_driver(jw_hamiltonian,jw_s2,n_active_electrons, n_active_orbitals, metho
             theta_list = np.array(theta_list)
     else:
         theta_list_fix = 0
-    print(theta_list)
-    print(str(len(theta_list)))
 
     ### print out initial results ###
     print_control = -1
     if (method == "phf" or method == "uhf"):
         cost_callback(kappa_list)
     else:
-        with open(cf.log,'a') as f:
-            if DS:
-                print(' Following order: Exp[T2] Exp[T1] |0>',file=f)
-            else:
-                print(' Following order: Exp[T1] Exp[T2] |0>',file=f)
-        with open(cf.log,'a') as f:
-            print('Initial T1 amplitudes:',file=f)
-            pprint(theta_list[:ndim1],stream=f)
-            print('Intial T2 amplitudes:',file=f)
-            pprint(theta_list[ndim1:ndim1+ndim2],stream=f)
+        if mpi.main_rank:
+            with open(cf.log,'a') as f:
+                if DS:
+                    print(' Following order: Exp[T2] Exp[T1] |0>',file=f)
+                else:
+                    print(' Following order: Exp[T1] Exp[T2] |0>',file=f)
+            with open(cf.log,'a') as f:
+                print('Initial T1 amplitudes:',file=f)
+                pprint(theta_list[:ndim1],stream=f)
+                print('Intial T2 amplitudes:',file=f)
+                pprint(theta_list[ndim1:ndim1+ndim2],stream=f)
         cost_callback(theta_list)
     print_control = 1
 
@@ -329,8 +360,9 @@ def VQE_driver(jw_hamiltonian,jw_s2,n_active_electrons, n_active_orbitals, metho
     ###################    
     ### perform VQE ###
     ###################    
-    with open(cf.log,'a') as f:
-        print("Performing VQE for ",method, file=f)
+    if mpi.main_rank:
+        with open(cf.log,'a') as f:
+            print("Performing VQE for ",method, file=f)
     if(method in ['uhf','phf']):
         opt = minimize(cost_wrap, kappa_list,    
                    method=opt_method,options=opt_options,
@@ -343,7 +375,7 @@ def VQE_driver(jw_hamiltonian,jw_s2,n_active_electrons, n_active_orbitals, metho
     ### print out final results ###
     theta_or_kappa_list = opt.x
     if (method == "phf"):
-        cost_proj(print_control+1,n_qubit,n_electron,noa,nob,nva,nvb,rho,DS,anc,spin,ng,qulacs_hamiltonianZ,qulacs_s2Z,coef0_H,coef0_S2,method,opt.x)
+        cost_proj(print_control+1,n_qubit,n_electron,noa,nob,nva,nvb,rho,DS,anc,qulacs_hamiltonianZ,qulacs_s2Z,coef0_H,coef0_S2,method,opt.x)
         SaveTheta(ndim1,theta_or_kappa_list,cf.kappa_list_file)
 
     elif (method == "uhf"):
@@ -366,13 +398,14 @@ def VQE_driver(jw_hamiltonian,jw_s2,n_active_electrons, n_active_orbitals, metho
             SaveTheta(ndim,theta_or_kappa_list,cf.theta_list_file)
 
     elif (method == "puccsd" or method=="puccd" or method =="opt_puccd" or method == "opt_psauccd"):
-        cost_proj(print_control+1,n_qubit,n_electron,noa,nob,nva,nvb,rho,DS,anc,spin,ng,qulacs_hamiltonianZ,qulacs_s2Z,coef0_H,coef0_S2,method,kappa_list,opt.x,print_amp_thres)
+        cost_proj(print_control+1,n_qubit,n_electron,noa,nob,nva,nvb,rho,DS,anc,qulacs_hamiltonianZ,qulacs_s2Z,coef0_H,coef0_S2,method,kappa_list,opt.x,print_amp_thres)
         SaveTheta(ndim,theta_or_kappa_list,cf.theta_list_file)
      
     t2 = time.time()
     cput = t2 - t1
-    with open(cf.log,'a') as f:
-        print("\n Done: CPU Time =  ",'%15.4f' % cput, file=f)
+    if mpi.main_rank:
+        with open(cf.log,'a') as f:
+            print("\n Done: CPU Time =  ",'%15.4f' % cput, file=f)
     
     
     ##################### 

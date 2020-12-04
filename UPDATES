@@ -1,0 +1,3 @@
+(2020/12/04) Tsuchimochi
+Added k-UpCCGSD (Yoshikura) and JM-UCC (Mori), with modifications. 
+Introduced mpi4py to perform hybrid parallel calculations.
