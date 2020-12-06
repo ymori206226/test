@@ -280,28 +280,42 @@ def cost_jmucc(print_level,n_qubit_system,n_electron,noa,nob,nva,nvb,rho,DS,qula
             for istate in range(nstates):
                 print("E[{i:01}] = {en:.8f} (<S**2> = {s2:.5f})  ".format(i=istate,en=en[istate],s2=s2[istate]), end="", file=f)
             print("  CPU Time = ", '%2.5f' % cput, " (%2.5f / step)" % cpu1, file=f)
-        SaveTheta((ndim1+ndim2)*4,theta_lists,cf.tmp)
+        SaveTheta((ndim1+ndim2)*nstates,theta_lists,cf.tmp)
         # cf.iter_threshold = 0
     if print_level > 1 and mpi.main_rank:
         with open(cf.log,'a') as f:
-            print("Final Energy",file=f)
-            for istate in range(nstates):
-                print("JM Basis ",istate,file=f)
-                print_state(states[istate])
-
+            print("\n------------------------------------",file=f)
+        for istate in range(nstates):
+            with open(cf.log,'a') as f:
+                print("JM Basis   {:01}".format(istate),file=f)
+            print_state(states[istate])
+            with open(cf.log,'a') as f:
+                print("",file=f)
+        with open(cf.log,'a') as f:
             print("Coefficients: ", cvec,file=f)
+            print("------------------------------------\n\n",file=f)
+            print("###############################################",file=f)
+            print("#                  JM states                  #",file=f)
+            print("###############################################",file=f)
 
-            for istate in range(nstates):
-                spstate = QuantumState(n_qubit_system)
-                spstate.multiply_coef(0)
-                for jstate in range(nstates):
-                    state = states[jstate].copy()
-                    coef  = cvec[jstate,istate]
-                    state.multiply_coef(coef)
-                    spstate.add_state(state)
+        for istate in range(nstates):
+            with open(cf.log,'a') as f:
+                print("State        :  {:01} ".format(istate),file=f)
+                print("E            : {:.8f} ".format(en[istate]),file=f)
+                print("<S**2>       : {:.5f} ".format(s2[istate]),file=f)
+                print("Superposition: ",file=f)
+            spstate = QuantumState(n_qubit_system)
+            spstate.multiply_coef(0)
+            for jstate in range(nstates):
+                state = states[jstate].copy()
+                coef  = cvec[jstate,istate]
+                state.multiply_coef(coef)
+                spstate.add_state(state)
 
-                print("Superposition ",istate,file=f)
-                print_state(states[istate])
+            print_state(spstate)
+
+        with open(cf.log,'a') as f:
+            print("###############################################",file=f)
     cost = 0        
     for istate in range(nstates):
         cost += cf.multi_weights[istate] * en[istate]
