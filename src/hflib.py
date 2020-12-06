@@ -1,3 +1,14 @@
+"""
+#######################
+#        quket        #
+#######################
+
+hflib.py
+
+Functions related to initial qubit states (HF,UHF,etc.).
+
+"""
+
 import sys
 import numpy as np
 import time

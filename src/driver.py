@@ -1,3 +1,15 @@
+"""
+#######################
+#        quket        #
+#######################
+
+driver.py
+
+Main driver of VQE.
+
+"""
+
+
 import os
 from . import mpilib as mpi
 from . import config as cf

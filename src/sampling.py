@@ -1,3 +1,15 @@
+"""
+#######################
+#        quket        #
+#######################
+
+sampling.py
+
+Functions related to sampling simulations.
+(2020/12/06) Currently disabled.
+
+"""
+
 import sys
 import numpy as np
 import time
