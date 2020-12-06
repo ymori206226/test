@@ -9,7 +9,6 @@ Multi-reference UCC.
 Jeziorski-Monkhorst UCC.
 
 """
-
 import numpy as np
 import itertools
 import time
