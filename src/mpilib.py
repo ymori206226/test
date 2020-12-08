@@ -1,3 +1,11 @@
+"""
+#######################
+#        quket        #
+#######################
+
+mpilib.py
+Initiating MPI and setting relevant arguments. 
+"""
 from mpi4py import MPI
 
 comm   = MPI.COMM_WORLD

@@ -1,3 +1,15 @@
+"""
+#######################
+#        quket        #
+#######################
+
+utils.py
+
+Utilities.
+
+"""
+
+
 import sys
 import time
 import numpy as np
@@ -12,8 +24,20 @@ from qulacs import QuantumState
 
 import copy
 
+def cost_mpi(cost,theta):
+    '''
+       Simply run the given cost function with varaibles theta,
+       but ensure that all MPI processes contain the same cost.
+       This should help eliminate the possible deadlock caused by numerical round errors.
+    '''
+    if mpi.main_rank:
+        cost_bcast = cost(theta)
+    else:
+        cost_bcast = 0
+    cost_bcast = mpi.comm.bcast(cost_bcast,root=0) 
+    return cost_bcast
 
-def jac_cost(cost,theta,stepsize=1e-8):
+def jac_mpi(cost,theta,stepsize=1e-8):
     '''
        Given a cost function of varaibles theta,
        return the first derivatives (jacobian) 
@@ -141,7 +165,7 @@ def print_state(state,n_qubit=None):
         n_qubit = state.get_qubit_count()
     opt='0'+str(n_qubit)+'b'
     with open(cf.log,'a') as f:
-        print(" Basis       Coef")
+        print(" Basis       Coef", file=f)
         for i in range(2**n_qubit):
             v = state.get_vector()[i]
             if abs(v)**2>0.01:

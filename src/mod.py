@@ -1,8 +1,17 @@
+"""
+#######################
+#        quket        #
+#######################
+
+mod.py
+
+Modified versions of OpenFermionPySCF routines
+to enable active space calculations.
+
+"""
+
 from __future__ import absolute_import
-
 from functools import reduce
-
-
 import numpy 
 import itertools
 from openfermion.transforms import jordan_wigner

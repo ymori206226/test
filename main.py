@@ -10,6 +10,7 @@
 """
 
 import os
+os.environ["OMP_NUM_THREADS"] =  "1"    ### Initial setting
 import sys
 import datetime
 import re
@@ -240,6 +241,7 @@ while Finish == False:
             print('+-------------+',file=f)
             print('|  Job # %3d  |' % job_no,file=f)
             print('+-------------+',file=f)
+            print('{} processes  x  {} threads  =  Total {} cores'.format(mpi.nprocs,cf.nthreads,mpi.nprocs*int(cf.nthreads)),file=f)
 
     if(basis != 'hubbard' and geom_update):
     # Set Jordan-Wigner Hamiltonian and S2 operators using PySCF and Open-Fermion
@@ -274,7 +276,7 @@ while Finish == False:
     driver.VQE_driver(jw_hamiltonian,jw_s2,n_electrons, n_orbitals, multiplicity, method,  
     kappa_guess,theta_guess,mix_level, rho, DS, opt_method, opt_options, print_level, maxiter,
     Kappa_to_T1, print_amp_thres)
-    if mpi.main_rank:
+    if mpi.main_rank and os.path.exists(cf.tmp):
         os.remove(cf.tmp)
     # VQE part done, go to the next job.
 

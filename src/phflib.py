@@ -1,3 +1,15 @@
+"""
+#######################
+#        quket        #
+#######################
+
+phflib.py
+
+Functions related to spin-projection.
+
+"""
+
+
 import sys
 import numpy as np
 import time

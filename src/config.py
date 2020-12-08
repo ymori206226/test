@@ -1,12 +1,21 @@
-# Global arguments
+"""
+#######################
+#        quket        #
+#######################
+
+config.py
+
+Global arguments are stored in this code.
+
+"""
 import re
 import sys
 import os
 import time
 
-################################
-# Setting for input and output #
-################################
+################################################################
+#                   Setting for input and output               #
+################################################################
 len_argv = len(sys.argv)
 if len_argv == 1:
    print("Error! No input loaded.")
@@ -32,25 +41,30 @@ if len_argv == 3:
 else:
     log_name = input_name
     log = './' + log_name + '.log'
+################################################################
 
+# PeriodicTable to check the input atoms are supported. 
 PeriodicTable = ["H","He","Li","Be","B","C","N","O","F","Ne"]
+
+
+# Multi-refernce (State-Average) strings and weights
 multi_states  = []
 multi_weights = []
 
-
-#######################################
-# Setting Jordan-Wigner Operators     #
-#######################################
+# Jordan-Wigner Operator for S**4 
 jw_s4 = 0
 
-#######################################
-# Setting other global parameters     #
-# Default values                      #
-#######################################
+# Lagrange multiplier for Spin-Constrained Calculation
 constraint_lambda = 0
+
+# Time
 t_old = 0
+
+# OMP_NUM_THREADS
 nthreads="1"
+
+# Options to compute PDMs
 Do1PDM = 0
 Do2PDM = 0
 
-
+#

@@ -1,3 +1,15 @@
+"""
+#######################
+#        quket        #
+#######################
+
+driver.py
+
+Main driver of VQE.
+
+"""
+
+
 import os
 from . import mpilib as mpi
 from . import config as cf
@@ -17,7 +29,7 @@ from openfermion.ops import QubitOperator
 
 
 from .hflib     import cost_uhf, mix_orbitals, bs_orbitals
-from .utils     import LoadTheta, SaveTheta,  error, T1mult
+from .utils     import LoadTheta, SaveTheta,  error, T1mult, cost_mpi, jac_mpi
 from .mod       import run_pyscf_mod, generate_molecular_hamiltonian_mod
 from .phflib    import cost_proj
 from .ucclib    import cost_uccsd, cost_uccd, cost_opt_ucc, cost_opttest_uccsd, cost_upccgsd
@@ -363,12 +375,20 @@ def VQE_driver(jw_hamiltonian,jw_s2,n_active_electrons, n_active_orbitals, multi
     if mpi.main_rank:
         with open(cf.log,'a') as f:
             print("Performing VQE for ",method, file=f)
+
+    # Use MPI for evaluating Gradients        
+    cost_wrap_mpi = lambda theta_list : cost_mpi(cost_wrap,theta_list)
+    jac_wrap_mpi  = lambda theta_list : jac_mpi(cost_wrap,theta_list)
+
     if(method in ['uhf','phf']):
-        opt = minimize(cost_wrap, kappa_list,    
+        opt = minimize(cost_wrap_mpi, kappa_list, jac=jac_wrap_mpi,
                    method=opt_method,options=opt_options,
                    callback=lambda x: cost_callback(x))
     else:  ### correlated methods
-        opt = minimize(cost_wrap, theta_list,    
+        #opt = minimize(cost_wrap, theta_list,    
+        #           method=opt_method,options=opt_options,
+        #           callback=lambda x: cost_callback(x))
+        opt = minimize(cost_wrap_mpi, theta_list,jac=jac_wrap_mpi, 
                    method=opt_method,options=opt_options,
                    callback=lambda x: cost_callback(x))
     

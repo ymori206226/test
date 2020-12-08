@@ -1,3 +1,15 @@
+"""
+#######################
+#        quket        #
+#######################
+
+ucclib.py
+
+Functions preparing UCC-type gates and circuits.
+Cost functions are also defined here.
+
+"""
+
 import sys
 import numpy as np
 import math
