@@ -20,17 +20,20 @@ from qulacs import QuantumCircuit
 from qulacs.gate import P0,P1,add, merge, Identity, X, Y, Z
 from .ucclib import ucc_singles
 from . import config
+from .fileio import prints
 
 
 
 def sample_observable(state, obs, n_sample):
-    """
+    """ Function
     Args:
         state (qulacs.QuantumState):
         obs (qulacs.Observable)
         n_sample (int):  number of samples for each observable
     Return:
         :float: sampled expectation value of the observable
+
+    Author(s): Takashi Tsuchimochi
     """
     n_term = obs.get_term_count()
     n_qubit = obs.get_qubit_count()
@@ -124,14 +127,13 @@ def adaptive_sample_observable(state, obs, n_sample):
         measurement_circuit.update_quantum_state(buf_state)
         samples = buf_state.sampling(n_sample_list[i])
         mask = int(mask, 2)
-        #print('n_sample?',n_sample_list[i],coef)
         exp += coef*sum(list(map(lambda x: (-1) **
                                      (bin(x & mask).count('1')), samples)))/n_sample_list[i]
     return exp
 
 
 def test_observable(state, obs, obsZ, n_sample):
-    """
+    """ Function
     Args:
         state (qulacs.QuantumState): This includes entangled ancilla (n_qubit = n_qubit_system + 1)
         obs (qulacs.Observable): This does not include ancilla Z (n_qubit_system)
@@ -141,6 +143,8 @@ def test_observable(state, obs, obsZ, n_sample):
         n_sample (int):  number of samples for each observable
     Return:
         :float: sampled expectation value of the observable
+
+    Author(s): Takashi Tsuchimochi
     """
     n_term = obs.get_term_count()
     n_qubit = obs.get_qubit_count()
@@ -208,7 +212,7 @@ def test_observable(state, obs, obsZ, n_sample):
 def sample_observable_noisy_circuit(circuit, initial_state, obs,
                                     n_circuit_sample=1000,
                                     n_sample_per_circuit=1):
-    """
+    """ Function
     Args:
         circuit (:class:`qulacs.QuantumCircuit`)
         initial_state (:class:`qulacs.QuantumState`)
@@ -217,6 +221,8 @@ def sample_observable_noisy_circuit(circuit, initial_state, obs,
         n_sample (:class:`int`):  number of samples per one circuit samples
     Return:
         :float: sampled expectation value of the observable
+
+    Author(s): Unknown
     """
     exp = 0
     state = QuantumState(obs.get_qubit_count())
@@ -245,12 +251,10 @@ def test_transition_observable(state, obs, poststate0, poststate1, n_sample):
     p0 = state.get_zero_probability(n_qubit-1) 
     p1 = 1-p0
     opt='0'+str(n_qubit)+'b'
-    with open(config.log, 'a') as f:
-        print('p0:',p0, '  p1:' ,p1, file=f)
-        print("post(0)",file=f)
+    prints('p0:',p0, '  p1:' ,p1)
+    prints("post(0)")
     utils.print_state(poststate0,n_qubit)
-    with open(config.log, 'a') as f:
-        print("post(1)",file=f)
+    prints("post(1)")
     utils.print_state(poststate1,n_qubit)
 
     expH =0
@@ -332,6 +336,8 @@ def sample_observable_noisy_circuit(circuit, initial_state, obs,
         n_sample (:class:`int`):  number of samples per one circuit samples
     Return:
         :float: sampled expectation value of the observable
+
+    Author(s): Unknown
     """
     exp = 0
     state = QuantumState(obs.get_qubit_count())
@@ -347,6 +353,8 @@ def cost_phf_sample(print_level,n_qubit,n_electron,noa,nob,nva,nvb,rho,anc,qulac
     """ Function:
     Sample Hamiltonian and S**2 expectation values with PHF and PUCCSD.
     Write out the statistics in csv files.
+
+    Author(s): Takashi Tsuchimochi
     """
     from .phflib import set_circuit_rhfZ, set_circuit_uhfZ, controlled_Ug
     from .ucclib import set_circuit_uccsd
@@ -405,8 +413,7 @@ def cost_phf_sample(print_level,n_qubit,n_electron,noa,nob,nva,nvb,rho,anc,qulac
     ### Array for <HUg>, <S2Ug>, <Ug>
     #samplelist = [10,100,1000,10000,100000,1000000,10000000]
     ncyc = 4
-    with open('./log2.txt', 'w') as f:
-        print("",file=f)
+    prints("",filepath='./log2.txt')
     for i_sample in samplelist:
         i_sample_x = i_sample
         if(i_sample == 10000000):
@@ -433,8 +440,7 @@ def cost_phf_sample(print_level,n_qubit,n_electron,noa,nob,nva,nvb,rho,anc,qulac
         sampleEn = np.zeros((ncyc,1))
         sampleS2 = np.zeros((ncyc,1))
         for icyc in range(ncyc):
-            with open('./log2.txt', 'a') as f:
-                print("n_sample : ",i_sample_x, "(", '%3d' % icyc, "/", ncyc,")", file=f)
+            prints("n_sample : ",i_sample_x, "(", '%3d' % icyc, "/", ncyc,")",filepath='./log2.txt')
             HUg = []
             S2Ug = []
             Ug = []
@@ -574,18 +580,18 @@ def cost_uhf_sample(print_level,n_qubit_system,n_electron,noa,nob,nva,nvb,qulacs
     """ Function:
     Sample Hamiltonian and S**2 expectation values with UHF.
     Write out the statistics in csv files.
+
+    Author(s): Takashi Tsuchimochi
     """
     import csv
     from .hflib import set_circuit_rhf, set_circuit_uhf
     ncyc = 13
-    with open('./log.txt', 'w') as f:
-        print("",file=f)
+    prints("",filepath='./log.txt',opentype='w')
     for i_sample in samplelist:
         sampleEn = np.zeros((ncyc,1))
         sampleS2 = np.zeros((ncyc,1))
         for icyc in range(ncyc):
-            with open('./log.txt', 'a') as f:
-                print("n_sample : ",i_sample, "(", '%3d' % icyc, "/", ncyc,")", file=f)
+            prints("n_sample : ",i_sample, "(", '%3d' % icyc, "/", ncyc,")", filepath='./log.txt')
             opt='0'+str(n_qubit_system)+'b'
             state = QuantumState(n_qubit_system)
             circuit_rhf = set_circuit_rhf(n_qubit_system,n_electron)
@@ -612,6 +618,12 @@ def cost_uhf_sample(print_level,n_qubit_system,n_electron,noa,nob,nva,nvb,qulacs
 
 
 def cost_phf_sample_oneshot(print_level,n_qubit,n_electron,noa,nob,nva,nvb,anc,qulacs_hamiltonianZ,qulacs_s2Z,qulacs_ancZ,coef0_H,coef0_S2,kappa_list):
+    """ Function:
+    Test function for sampling Hamiltonian and S** expectation values with PHF just for once. 
+
+    Author(s): Takashi Tsuchimochi
+    """
+    import csv
     from .phflib import set_circuit_rhfZ, set_circuit_uhfZ, controlled_Ug
     import csv
     import pprint
@@ -653,14 +665,12 @@ def cost_phf_sample_oneshot(print_level,n_qubit,n_electron,noa,nob,nva,nvb,anc,q
     samplelist = [5,50,500,5000,50000,500000,5000000]
     Ng = 4
     ncyc = 10
-    with open('./log.txt', 'w') as f:
-        print("",file=f)
+    prints("",filepath='./log.txt',opentype='w')
     for i_sample in samplelist:
         sampleEn = []
         sampleS2 = []
         for icyc in range(ncyc):
-            with open('./log.txt', 'a') as f:
-                print("n_sample : ",i_sample, "(", '%3d' % icyc, "/", ncyc,")", file=f)
+            prints("n_sample : ",i_sample, "(", '%3d' % icyc, "/", ncyc,")", filepath='./log.txt')
             HUg = []
             S2Ug = []
             Ug = []

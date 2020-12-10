@@ -1,3 +1,18 @@
+(2020/12/10) Tsuchimochi
+Created quket script for running quket with MPI.
+Added prop.py, which includes dipole and get_1RDM functions.
+Replaced `generate_molecular_hamiltonian` (now removed) by `generate_operators`.
+Corrected MPI broadcasting for operators in config.py (bcasted in `generate_operators`).
+Defined printing wrapper `prints` in the newly introduced fileio.py.
+Adjusted print appearances. 
+Defined matrix printing function `printmat` in fileio.py.
+Modified k-UpCCGSD so that singles are spin-free. Parameter # been changed.
+Other cosmetic changes...
+
+TODO
+----
+Need to reconcile the number of orbitals and active orbitals for propery calculations.
+
 (2020/12/04) Tsuchimochi
 Added k-UpCCGSD (Yoshikura) and JM-UCC (Mori), with modifications. 
 Introduced mpi4py to perform hybrid parallel calculations.

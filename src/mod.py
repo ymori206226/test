@@ -22,16 +22,18 @@ from pyscf import gto, ao2mo, ci, cc, fci, mp, mcscf, scf
 from openfermion import MolecularData
 from openfermionpyscf import PyscfMolecularData
 
-from . import config
+from . import config as cf
 
 
 def prepare_pyscf_molecule_mod(molecule):
-    """
+    """ Function
     This function creates and saves a pyscf input file.
     Args:
         molecule: An instance of the MolecularData class.
     Returns:
         pyscf_molecule: A pyscf molecule instance.
+
+    Author(s): Takashi Tsuchimochi
     """
     pyscf_molecule = gto.Mole()
     pyscf_molecule.atom = molecule.geometry
@@ -45,12 +47,14 @@ def prepare_pyscf_molecule_mod(molecule):
 
 
 def compute_scf_mod(pyscf_molecule):
-    """
+    """ Function
     Perform a Hartree-Fock calculation.
     Args:
         pyscf_molecule: A pyscf molecule instance.
     Returns:
         pyscf_scf: A PySCF "SCF" calculation object.
+
+    Author(s): Takashi Tsuchimochi
     """
     if pyscf_molecule.spin:
         pyscf_scf = scf.ROHF(pyscf_molecule)
@@ -60,7 +64,7 @@ def compute_scf_mod(pyscf_molecule):
 
 
 def compute_integrals_mod(pyscf_molecule, pyscf_scf):
-    """
+    """ Function
     Compute the 1-electron and 2-electron integrals.
     Args:
         pyscf_molecule: A pyscf molecule instance.
@@ -68,6 +72,8 @@ def compute_integrals_mod(pyscf_molecule, pyscf_scf):
     Returns:
         one_electron_integrals: An N by N array storing h_{pq}
         two_electron_integrals: An N by N by N by N array storing h_{pqrs}.
+
+    Author(s): Takashi Tsuchimochi
     """
     # Get one electrons integrals.
     n_orbitals = pyscf_scf.mo_coeff.shape[1]
@@ -103,6 +109,11 @@ def generate_molecular_hamiltonian_mod(
         n_active_electrons=None,
         n_active_orbitals=None
         ):
+    """ Function
+    Old subroutine to get molecular hamiltonian by using pyscf.
+
+    Author(s): Takashi Tsuchimochi
+    """
 
     # Run electronic structure calculations
     molecule = run_pyscf_mod(
@@ -141,7 +152,7 @@ def run_pyscf_mod(
               run_fci=False,
               verbose=False
               ):
-    """
+    """ Function
     This function runs a pyscf calculation.
     Args:
         molecule: An instance of the MolecularData or PyscfMolecularData class.
@@ -154,6 +165,8 @@ def run_pyscf_mod(
     Returns:
         molecule: The updated PyscfMolecularData object. Note the attributes
         of the input molecule are also updated in this function.
+
+    Author(s): Takashi Tsuchimochi
     """
     # Prepare pyscf molecule.
     pyscf_molecule = prepare_pyscf_molecule_mod(molecule)
@@ -164,7 +177,7 @@ def run_pyscf_mod(
     # Run SCF.
     pyscf_scf = compute_scf_mod(pyscf_molecule)
     pyscf_scf.verbose = 0
-    pyscf_scf.run(chkfile=config.chk,init_guess=guess, conv_tol=1e-12,conv_tol_grad=1e-12)
+    pyscf_scf.run(chkfile=cf.chk,init_guess=guess, conv_tol=1e-12,conv_tol_grad=1e-12)
     molecule.hf_energy = float(pyscf_scf.e_tot)
     if verbose:
         print('Hartree-Fock energy for {} ({} electrons) is {}.'.format(
@@ -180,6 +193,11 @@ def run_pyscf_mod(
     molecule.canonical_orbitals = pyscf_scf.mo_coeff.astype(float)
     molecule.orbital_energies = pyscf_scf.mo_energy.astype(float)
 
+
+
+
+    
+
     # Get integrals.
     one_body_integrals, two_body_integrals = compute_integrals_mod(
         pyscf_molecule, pyscf_scf)
@@ -193,100 +211,17 @@ def run_pyscf_mod(
     pyscf_molecular_data = PyscfMolecularData.__new__(PyscfMolecularData)
     pyscf_molecular_data.__dict__.update(molecule.__dict__)
     pyscf_molecular_data.save()
+
+
+
+#   Keep molecular data in config.py
+    cf.mo_coeff = pyscf_scf.mo_coeff.astype(float)
+    cf.natom    = pyscf_molecule.natm
+    for i in range(cf.natom):
+        cf.atom_charges.append(pyscf_molecule.atom_charges()[i])
+        cf.atom_coords.append(pyscf_molecule.atom_coords()[i])
+
+    cf.rint     = pyscf_molecule.intor('int1e_r')
+
     return pyscf_molecular_data
 
-
-def jordan_wigner0(iop, n_qubits=None):
-    """ Function:
-    
-    """
-    # Initialize qubit operator as constant.
-    qubit_operator = QubitOperator((), iop.constant)
-
-    # Transform diagonal one-body terms
-    for p in range(n_qubits):
-        coefficient = iop[(p, 1), (p, 0)]
-        qubit_operator += jordan_wigner_one_body0(p, p, coefficient)
-
-    # Transform other one-body terms and "diagonal" two-body terms
-    for p, q in itertools.combinations(range(n_qubits), 2):
-        # One-body
-        coefficient = .5 * (iop[(p, 1), (q, 0)] + iop[(q, 1), (p, 0)].conjugate())
-        qubit_operator += jordan_wigner_one_body0(p, q, coefficient)
-
-        # Two-body
-        coefficient = (iop[(p, 1), (q, 1), (p, 0), (q, 0)] -
-                       iop[(p, 1), (q, 1), (q, 0), (p, 0)] -
-                       iop[(q, 1), (p, 1), (p, 0), (q, 0)] +
-                       iop[(q, 1), (p, 1), (q, 0), (p, 0)])
-        qubit_operator += jordan_wigner_two_body0(p, q, p, q, coefficient)
-    return qubit_operator
-
-
-def jordan_wigner_one_body0(p, q, coefficient=1.):
-    """Map the term a^\dagger_p a_q + h.c. to QubitOperator.
-    Note that the diagonal terms are divided by a factor of 2
-    because they are equal to their own Hermitian conjugate.
-    """
-    # Handle diagonal terms.
-    qubit_operator = QubitOperator()
-    if p == q:
-        qubit_operator += QubitOperator((), .5 * coefficient)
-
-    return qubit_operator
-
-
-def jordan_wigner_two_body0(p, q, r, s, coefficient=1.):
-    """Map the term a^\dagger_p a^\dagger_q a_r a_s + h.c. to QubitOperator.
-    Note that the diagonal terms are divided by a factor of two
-    because they are equal to their own Hermitian conjugate.
-    """
-    # Initialize qubit operator.
-    qubit_operator = QubitOperator()
-
-    # Return zero terms.
-    if (p == q) or (r == s):
-        return qubit_operator
-
-    # Handle case of two unique indices.
-    elif len(set([p, q, r, s])) == 2:
-
-        # Get coefficient.
-        if p == s:
-            coeff = -.25 * coefficient
-        else:
-            coeff = .25 * coefficient
-
-        # Add terms.
-        qubit_operator -= QubitOperator((), coeff)
-
-    return qubit_operator
-
-
-
-def jordan_wigner_fermion_operator_0(operator):
-    transformed_operator = QubitOperator()
-    for term in operator.terms:
-        # Initialize identity matrix.
-        transformed_term = QubitOperator((), operator.terms[term])
-        # Loop through operators, transform and multiply.
-        for ladder_operator in term:
-            #print(ladder_operator[0])
-            z_factors = tuple((index, 'Z') for
-                              index in range(ladder_operator[0]))
-            print(z_factors)
-            pauli_x_component = QubitOperator(
-                z_factors + ((ladder_operator[0], 'X'),), 0.5)
-#                z_factors , 0.5)
-            if ladder_operator[1]:
-                pauli_y_component = QubitOperator(
-                    z_factors + ((ladder_operator[0], 'Y'),), -0.5j)
-                    #z_factors , -0.5j)
-            else:
-                pauli_y_component = QubitOperator(
-                    z_factors + ((ladder_operator[0], 'Y'),), 0.5j)
-                    #z_factors , 0.5j)
-            transformed_term *= pauli_x_component + pauli_y_component
-            print(transformed_term,'\n')
-        transformed_operator += transformed_term
-    return transformed_operator

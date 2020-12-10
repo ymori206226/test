@@ -18,7 +18,6 @@ from scipy.optimize import minimize
 import sys
 import time
 import csv
-from pprint import pprint
 from openfermion.transforms import get_fermion_operator,jordan_wigner
 from openfermion.hamiltonians import MolecularData
 from openfermion.utils import number_operator, s_squared_operator
@@ -29,46 +28,96 @@ from openfermion.ops import QubitOperator
 
 
 from .hflib     import cost_uhf, mix_orbitals, bs_orbitals
-from .utils     import LoadTheta, SaveTheta,  error, T1mult, cost_mpi, jac_mpi
+from .utils     import T1mult, cost_mpi, jac_mpi
+from .fileio    import LoadTheta, SaveTheta,  error, prints, printmat
 from .mod       import run_pyscf_mod, generate_molecular_hamiltonian_mod
 from .phflib    import cost_proj
 from .ucclib    import cost_uccsd, cost_uccd, cost_opt_ucc, cost_opttest_uccsd, cost_upccgsd
 from .jmucc     import cost_jmucc
+from .prop      import dipole, get_1RDM
+
 from . import sampling
 
-def get_hamiltonian(geometry, basis, multiplicity, charge, n_active_electrons, n_active_orbitals, guess):
-    """ Function:
-    Perform PySCF to generate molecular integrals and such,
-    then perform Jordan-Wigner transformation of Hamiltonian and S**2 with OpenFermion
+def generate_operators(
+        guess,
+        geometry,
+        basis,
+        multiplicity,
+        charge=0,
+        n_active_electrons=None,
+        n_active_orbitals=None
+        ):
+    """ Function
+    Get fermion operators in OpenFermion format, and store in config.
+
+    Author(s): Takashi Tsuchimochi
     """
-    description = "tmp"
-    molecule = MolecularData(geometry, basis, multiplicity, charge, description)
-    molecule = run_pyscf_mod(guess,n_active_orbitals,n_active_electrons,molecule,run_scf=1,run_fci=1)
     if mpi.main_rank:
-        with open(cf.log,'a') as f:
-            print("RHF Energy : ", molecule.hf_energy ,file=f)
-            print("FCI Energy : ", molecule.fci_energy ,file=f)
-    ### construct qulacs hamiltonian, S^2 for VQE ###
-    ### H ###
-    fermionic_hamiltonian = generate_molecular_hamiltonian_mod(guess,geometry, basis, multiplicity, charge, n_active_electrons, n_active_orbitals)
-    jw_hamiltonian = jordan_wigner(fermionic_hamiltonian)
-     
-    ### S^2 ###
-    fermionic_s2 = s_squared_operator(n_active_orbitals)
-    jw_s2 = jordan_wigner(fermionic_s2)
-    if(cf.constraint_lambda > 0):
-        fermionic_s4 = fermionic_s2*fermionic_s2
-        jw_s4 = jordan_wigner(fermionic_s4)
-        cf.qulacs_s4 = create_observable_from_openfermion_text(str(jw_s4))
-    return jw_hamiltonian, jw_s2
+        # Run electronic structure calculations
+        molecule = run_pyscf_mod(
+                guess,
+                n_active_orbitals,n_active_electrons,
+                MolecularData(geometry, basis, multiplicity, charge)
+        )
+        # Freeze core orbitals and truncate to active space
+        if n_active_electrons is None:
+            n_core_orbitals = 0
+            occupied_indices = None
+        else:
+            n_core_orbitals = (molecule.n_electrons - n_active_electrons) // 2
+            occupied_indices = list(range(n_core_orbitals))
+
+        if n_active_orbitals is None:
+            active_indices = None
+        else:
+            active_indices = list(range(n_core_orbitals,
+                                        n_core_orbitals + n_active_orbitals))
+
+        cf.Hamiltonian_operator = molecule.get_molecular_hamiltonian(
+                occupied_indices=occupied_indices,
+                active_indices=active_indices)
+        from openfermion.utils import number_operator, s_squared_operator
+        from openfermion.ops import QuadraticHamiltonian, DiagonalCoulombHamiltonian 
+        cf.S2_operator      = s_squared_operator(n_active_orbitals)
+        cf.Number_operator  = number_operator(n_active_orbitals)
+
+        rx_ao=cf.rint[0]
+        ry_ao=cf.rint[1]
+        rz_ao=cf.rint[2]
+        rx = cf.mo_coeff.T@rx_ao@cf.mo_coeff
+        ry = cf.mo_coeff.T@ry_ao@cf.mo_coeff
+        rz = cf.mo_coeff.T@rz_ao@cf.mo_coeff
+        zero = np.zeros((n_active_orbitals+n_core_orbitals, n_active_orbitals+n_core_orbitals))
+        cf.rint_mo = [rx, ry, rz]
+        from .utils import create_1body_operator
+        rx_operator = create_1body_operator(rx)
+        ry_operator = create_1body_operator(ry)
+        rz_operator = create_1body_operator(rz)
+        cf.Dipole_operator = [rx_operator, ry_operator, rz_operator] 
 
 
+    # Broadcasting computed objects in open-fermion and pyscf
+    cf.mo_coeff               = mpi.comm.bcast(cf.mo_coeff,              root=0) 
+    cf.natom                  = mpi.comm.bcast(cf.natom,                 root=0)
+    cf.atom_charges           = mpi.comm.bcast(cf.atom_charges,          root=0)
+    cf.atom_coords            = mpi.comm.bcast(cf.atom_coords,           root=0)
+    cf.rint                   = mpi.comm.bcast(cf.rint,                  root=0) 
+
+    cf.Hamiltonian_operator   = mpi.comm.bcast(cf.Hamiltonian_operator,  root=0)
+    cf.S2_operator            = mpi.comm.bcast(cf.S2_operator,           root=0)
+    cf.Number_operator        = mpi.comm.bcast(cf.Number_operator,       root=0)
+    cf.Dipole_operator        = mpi.comm.bcast(cf.Dipole_operator,       root=0)
+
+
+        
 
 def get_hubbard(hubbard_u,hubbard_nx,hubbard_ny,n_electrons,run_fci=1):
-    from openfermion.utils import QubitDavidson
     """ Function:
     Generate Hamiltonian for Hubbard.
+
+    Author(s): Takashi Tsuchimochi
     """
+    from openfermion.utils import QubitDavidson
     from openfermion.hamiltonians import fermi_hubbard
     from openfermion.transforms import get_sparse_operator, jordan_wigner
     from openfermion.utils import get_ground_state
@@ -87,27 +136,20 @@ def get_hubbard(hubbard_u,hubbard_nx,hubbard_ny,n_electrons,run_fci=1):
         guess[2**n_electrons - 1][0] = 1.0 
         n_state = 1
         results = qubit_eigen.get_lowest_n(n_state,guess)
-        print("Convergence?           : ",  results[0])
-        print("Ground State Energy    : ",  results[1][0])
-        print("Wave function          : ")
-        openfermion_print_state(results[2],n_qubit,0)
+        prints("Convergence?           : ",  results[0])
+        prints("Ground State Energy    : ",  results[1][0])
+        prints("Wave function          : ")
+        utils.openfermion_print_state(results[2],n_qubit,0)
     return jw_hamiltonian, jw_s2
-def openfermion_print_state(state,n_qubit,j_state):
-    """
-    print out jth wave function in state
-    """
-    opt='0'+str(n_qubit)+'b'
-    for i in range(2**n_qubit):
-        v = state[i][j_state]
-        if abs(v)**2>0.01:
-            print('|',format(i,opt),'> : ', '{a.real:+.4f} {a.imag:+.4f}i'.format(a=v))
 
 
-def VQE_driver(jw_hamiltonian,jw_s2,n_active_electrons, n_active_orbitals, multiplicity, method,  
+def VQE_driver(jw_hamiltonian,jw_s2, multiplicity, method,  
     kappa_guess,theta_guess,mix_level, rho, DS, opt_method, opt_options, print_level, maxiter,
     Kappa_to_T1, print_amp_thres):
     """ Function:
     Main driver for VQE
+
+    Author(s): Takashi Tsuchimochi
     """
     t1 = time.time()
     cf.t_old = t1
@@ -118,8 +160,8 @@ def VQE_driver(jw_hamiltonian,jw_s2,n_active_electrons, n_active_orbitals, multi
     #cf.constraint_lambda = 100
 
     ### set up the number of orbitals and such ###
-    n_electron = n_active_electrons
-    n_qubit_system = n_active_orbitals*2 
+    n_electron = cf.n_active_electrons
+    n_qubit_system = cf.n_active_orbitals*2 
     n_qubit = n_qubit_system + 1
     anc =  n_qubit_system
     
@@ -131,10 +173,10 @@ def VQE_driver(jw_hamiltonian,jw_s2,n_active_electrons, n_active_orbitals, multi
     nob = n_electron - noa
     # Number of virtual orbitals of alpha
     # NVA
-    nva = n_active_orbitals - noa
+    nva = cf.n_active_orbitals - noa
     # Number of virtual orbitals of beta
     # NVB
-    nvb = n_active_orbitals - nob
+    nvb = cf.n_active_orbitals - nob
     
     norbs = noa+nva
     if Gen:
@@ -200,12 +242,12 @@ def VQE_driver(jw_hamiltonian,jw_s2,n_active_electrons, n_active_orbitals, multi
         ###UpCCGSD###
         k_param = method[0:method.find('-upccgsd')]
         if(not k_param.isdecimal()):
-            if mpi.main_rank:
-                with open(cf.log,'a') as f:
-                    print('Unrecognized k: ',kparam,file=f)
+            prints('Unrecognized k: ',kparam)
             error("k-UpCCGSD without specifying k.")
         k_param = int(k_param)
-        ###ndim= noa * nvb
+        norbs = noa + nva
+        ndim1 = int(norbs*(norbs-1)/2)
+        ndim2 = int(norbs*(norbs-1)/2)
         ndim = k_param*(ndim1 + ndim2)
         cost_wrap = lambda theta_list : cost_upccgsd(0,n_qubit_system,n_electron,noa,nob,nva,nvb,rho,qulacs_hamiltonian,qulacs_s2,kappa_list,theta_list,k_param)[0]
         cost_callback = lambda theta_list : cost_upccgsd(print_control,n_qubit_system,n_electron,noa,nob,nva,nvb,rho,qulacs_hamiltonian,qulacs_s2,kappa_list,theta_list,k_param)        
@@ -247,31 +289,18 @@ def VQE_driver(jw_hamiltonian,jw_s2,n_active_electrons, n_active_orbitals, multi
         cost_callback = lambda theta_lists : \
         cost_jmucc(print_control,n_qubit_system,n_electron,noa,nob,nva,nvb,rho,DS,\
         qulacs_hamiltonian,qulacs_s2,theta_lists,print_amp_thres)
-    '''
-    elif method == "sauccsd_eigen":
-        ndim = 2 * (ndim1 + ndim2)
-        from .ucc_eigen import cost_sa_XX
-        cost_wrap = lambda theta_lists : cost_sa_XX(0,n_qubit_system,n_electron,noa,nob,nva,nvb,rho,DS,qulacs_hamiltonian,qulacs_s2,theta_lists,print_amp_thres)
-        cost_callback = lambda theta_lists : cost_sa_XX(print_control,n_qubit_system,n_electron,noa,nob,nva,nvb,rho,DS,qulacs_hamiltonian,qulacs_s2,theta_lists,print_amp_thres)
-    '''
 
-    if mpi.main_rank:
-        with open(cf.log,'a') as f:
-            print('Number of VQE parameters:',ndim,file=f)
+    prints('Number of VQE parameters: {}'.format(ndim))
     ############################# 
     ### set up initial kappa  ###
     ############################# 
-    if mpi.main_rank:
-        with open(cf.log,'a') as f:
-            print('Kappa values for orbital rotation:',file=f)
+    prints('Kappa values for orbital rotation:')
     kappa_list = np.zeros(ndim1)
     if  kappa_guess=="mix":
         if(mix_level >0):
             mix = mix_orbitals(noa,nob,nva,nvb,mix_level,False,np.pi/4)
             kappa_list[0:ndim1] = mix[0:ndim1]
-            if mpi.main_rank:
-                with open(cf.log,'a') as f:
-                    pprint(kappa_list,stream=f)
+            printmat(kappa_list)
         elif(mix_level ==0 ):
             error('kappa_guess = mix  but  mix_level = 0 !')
     elif  kappa_guess=="random":
@@ -284,9 +313,7 @@ def VQE_driver(jw_hamiltonian,jw_s2,n_active_electrons, n_active_orbitals, multi
             mix = mix_orbitals(noa,nob,nva,nvb,mix_level,False,np.pi/4)
             temp = T1mult(noa,nob,nva,nvb,mix,temp)
             kappa_list = temp[:ndim1]
-        if mpi.main_rank:
-            with open(cf.log,'a') as f:
-                pprint(kappa_list,stream=f)
+        printmat(kappa_list)
 
     ############################# 
     ### set up initial theta  ###
@@ -305,9 +332,7 @@ def VQE_driver(jw_hamiltonian,jw_s2,n_active_electrons, n_active_orbitals, multi
         theta_list[:ndim1] = kappa_list[:ndim1]
         for i in range(ndim1):
             kappa_list[i] = 0 
-        if mpi.main_rank:
-            with open(cf.log,'a') as f:
-                print('Initial T1 amplitudes will be read from kappa.',file=f)
+        prints('Initial T1 amplitudes will be read from kappa.')
         
     kappa_list = np.array(kappa_list)
     theta_list = np.array(theta_list)
@@ -353,17 +378,12 @@ def VQE_driver(jw_hamiltonian,jw_s2,n_active_electrons, n_active_orbitals, multi
     if (method == "phf" or method == "uhf"):
         cost_callback(kappa_list)
     else:
-        if mpi.main_rank:
-            with open(cf.log,'a') as f:
-                if DS:
-                    print(' Following order: Exp[T2] Exp[T1] |0>',file=f)
-                else:
-                    print(' Following order: Exp[T1] Exp[T2] |0>',file=f)
-            with open(cf.log,'a') as f:
-                print('Initial T1 amplitudes:',file=f)
-                pprint(theta_list[:ndim1],stream=f)
-                print('Intial T2 amplitudes:',file=f)
-                pprint(theta_list[ndim1:ndim1+ndim2],stream=f)
+        if DS:
+            prints(' Following order: Exp[T2] Exp[T1] |0>')
+        else:
+            prints(' Following order: Exp[T1] Exp[T2] |0>')
+        #prints('Initial T1 amplitudes:')
+        #prints('Intial T2 amplitudes:')
         cost_callback(theta_list)
     print_control = 1
 
@@ -372,9 +392,7 @@ def VQE_driver(jw_hamiltonian,jw_s2,n_active_electrons, n_active_orbitals, multi
     ###################    
     ### perform VQE ###
     ###################    
-    if mpi.main_rank:
-        with open(cf.log,'a') as f:
-            print("Performing VQE for ",method, file=f)
+    prints("Performing VQE for ",method)
 
     # Use MPI for evaluating Gradients        
     cost_wrap_mpi = lambda theta_list : cost_mpi(cost_wrap,theta_list)
@@ -405,6 +423,10 @@ def VQE_driver(jw_hamiltonian,jw_s2,n_active_electrons, n_active_orbitals, multi
     elif (method == "uccsd" or method =="sauccsd"):
         cost_uccsd(print_control+1,n_qubit_system,n_electron,noa,nob,nva,nvb,rho,DS,qulacs_hamiltonian,qulacs_s2,method,kappa_list,opt.x,print_amp_thres)
         SaveTheta(ndim,theta_or_kappa_list,cf.theta_list_file)
+     
+    elif("upccgsd" in method):
+        cost_upccgsd(print_control+1,n_qubit_system,n_electron,noa,nob,nva,nvb,rho,qulacs_hamiltonian,qulacs_s2,kappa_list,opt.x,k_param)
+        SaveTheta(ndim,theta_or_kappa_list,cf.theta_list_file)
 
     elif (method == "uccd"):
         cost_uccd(print_control+1,n_qubit_system,n_electron,noa,nob,nva,nvb,rho,qulacs_hamiltonian,qulacs_s2,kappa_list,opt.x,print_amp_thres)
@@ -420,12 +442,22 @@ def VQE_driver(jw_hamiltonian,jw_s2,n_active_electrons, n_active_orbitals, multi
     elif (method == "puccsd" or method=="puccd" or method =="opt_puccd" or method == "opt_psauccd"):
         cost_proj(print_control+1,n_qubit,n_electron,noa,nob,nva,nvb,rho,DS,anc,qulacs_hamiltonianZ,qulacs_s2Z,coef0_H,coef0_S2,method,kappa_list,opt.x,print_amp_thres)
         SaveTheta(ndim,theta_or_kappa_list,cf.theta_list_file)
-     
+    
+    if cf.States is not None:
+        dipole(cf.States)
+        if cf.Do1RDM:
+            Daa,Dbb = get_1RDM(cf.States,print_level=1)
+        ### Test
+        from .utils import single_operator_gradient
+        g=np.zeros((n_qubit_system,n_qubit_system))
+        for q in range(n_qubit_system):
+            for p in range(q):
+                g[p][q] = single_operator_gradient(p,q,jw_hamiltonian,cf.States,n_qubit_system)
+        printmat(g,filepath=None,name="Grad")
+
     t2 = time.time()
     cput = t2 - t1
-    if mpi.main_rank:
-        with open(cf.log,'a') as f:
-            print("\n Done: CPU Time =  ",'%15.4f' % cput, file=f)
+    prints("\n Done: CPU Time =  ",'%15.4f' % cput)
     
     
     ##################### 
@@ -463,3 +495,5 @@ def VQE_driver(jw_hamiltonian,jw_s2,n_active_electrons, n_active_orbitals, multi
         opt = minimize(cost_wrap, kappa_list,    
                method=opt_method,options=opt_options)
     '''
+
+

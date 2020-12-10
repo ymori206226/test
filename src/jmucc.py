@@ -16,9 +16,14 @@ from qulacs import QuantumState, QuantumCircuit
 from qulacs.state import inner_product
 from . import config as cf
 from . import mpilib as mpi
-from .utils import SaveTheta, print_amplitudes, print_state
+from .fileio import SaveTheta, print_amplitudes, print_state, prints
 
 def create_kappalist(ndim1,occ_list,noa,nob,nva,nvb):
+    """ Function
+    Create kappalist from occ_list, which stores the occupied qubits.
+
+    Author(s):  Yuto Mori
+    """
     kappa = np.zeros(ndim1)
     occ_hf = set(range(len(occ_list)))
     dup = occ_hf & set(occ_list)
@@ -41,6 +46,11 @@ def create_kappalist(ndim1,occ_list,noa,nob,nva,nvb):
     return kappa
 
 def create_state(n_qubit_system,n_electron,noa,nob,nva,nvb,rho,DS,kappa_list,theta_list,occ_list,vir_list):
+    """ Function
+    Prepare a Jeziorski-Monkhorst UCC state based on theta_list.
+
+    Author(s):  Yuto Mori
+    """
     state = QuantumState(n_qubit_system)
     from .hflib import set_circuit_rhf,set_circuit_rohf,set_circuit_uhf
     if(noa == nob):
@@ -72,6 +82,11 @@ def create_state(n_qubit_system,n_electron,noa,nob,nva,nvb,rho,DS,kappa_list,the
     return state
 
 def set_circuit_uccsdX(n_qubit_system,noa,nob,nva,nvb,DS,theta_list,occ_list,vir_list):
+    """ Function
+    Prepare a Quantum Circuit for a Jeziorski-Monkhorst UCC state based on theta_list.
+
+    Author(s):  Yuto Mori
+    """
     ndim1 = noa*nva + nob*nvb
     circuit = QuantumCircuit(n_qubit_system)
     if DS:
@@ -83,6 +98,11 @@ def set_circuit_uccsdX(n_qubit_system,noa,nob,nva,nvb,DS,theta_list,occ_list,vir
     return circuit
 
 def ucc_singlesX(circuit,theta_list,occ_list,vir_list,ndim2=0):
+    """ Function
+    Prepare a Quantum Circuit for the single exictation part of a Jeziorski-Monkhorst UCC state based on theta_list.
+
+    Author(s):  Yuto Mori
+    """
     from .ucclib import single_ope_Pauli
     ia = ndim2
     global ncnot
@@ -103,6 +123,11 @@ def ucc_singlesX(circuit,theta_list,occ_list,vir_list,ndim2=0):
             ia = ia + 1
 
 def ucc_doublesX(circuit,theta_list,occ_list,vir_list,ndim1=0):
+    """ Function
+    Prepare a Quantum Circuit for the double exictation part of a Jeziorski-Monkhorst UCC state based on theta_list.
+
+    Author(s):  Yuto Mori
+    """
     from .ucclib import double_ope_Pauli
     ijab = ndim1
     global ncnot
@@ -148,6 +173,11 @@ def create_HS2S(qulacs_hamiltonian,qulacs_s2,states):
 
 ## Spin Adapted ##
 def create_sa_state(n_qubit_system,n_electron,noa,nob,nva,nvb,rho,DS,kappa_list,theta_list,occ_list,vir_list):
+    """ Function
+    Create a spin-free Jeziorski-Monkhorst UCC state based on theta_list.
+
+    Author(s):  Yuto Mori
+    """
     state = QuantumState(n_qubit_system)
     from .hflib import set_circuit_rhf,set_circuit_rohf,set_circuit_uhf
     if(noa == nob):
@@ -165,6 +195,11 @@ def create_sa_state(n_qubit_system,n_electron,noa,nob,nva,nvb,rho,DS,kappa_list,
     return state
 
 def set_circuit_sauccsdX(n_qubit_system,noa,nob,nva,nvb,DS,theta_list,occ_list,vir_list):
+    """ Function
+    Prepare a Quantum Circuit for a spin-free Jeziorski-Monkhorst UCC state based on theta_list.
+
+    Author(s):  Yuto Mori
+    """
     ndim1 = noa*nva
     circuit = QuantumCircuit(n_qubit_system)
     if DS:
@@ -176,6 +211,11 @@ def set_circuit_sauccsdX(n_qubit_system,noa,nob,nva,nvb,DS,theta_list,occ_list,v
     return circuit
 
 def ucc_sa_singlesX(circuit,theta_list,occ_list,vir_list,ndim2=0):
+    """ Function
+    Prepare a Quantum Circuit for the single exictation part of a spin-free Jeziorski-Monkhorst UCC state based on theta_list.
+
+    Author(s):  Yuto Mori
+    """
     from .ucclib import single_ope_Pauli
     ia = ndim2
     global ncnot
@@ -192,6 +232,11 @@ def ucc_sa_singlesX(circuit,theta_list,occ_list,vir_list,ndim2=0):
             ia = ia + 1
 
 def ucc_sa_doublesX(circuit,theta_list,occ_list,vir_list,ndim1=0):
+    """ Function
+    Prepare a Quantum Circuit for the double exictation part of a spin-free Jeziorski-Monkhorst UCC state based on theta_list.
+
+    Author(s):  Yuto Mori
+    """
     from .ucclib import double_ope_Pauli
     ijab = ndim1
     global ncnot
@@ -221,15 +266,24 @@ def ucc_sa_doublesX(circuit,theta_list,occ_list,vir_list,ndim1=0):
                     double_ope_Pauli(max(b,a),min(b,a),max(j,i),min(j,i),circuit,theta_list[ijab+baji])
     
 def get_baji(b,a,j,i,no,nv):
+    """ Function
+    Get index for b,a,j,i 
+
+    Author(s):  Yuto Mori
+    """
     nov = no*nv
     aa = i*nv + a
     bb = j*nv + b
     baji = int(nov*(nov-1)/2 - (nov-1-aa)*(nov-aa)/2 + bb)
-    # print(aa,bb,nov,baji)
     return baji
 
 
 def cost_jmucc(print_level,n_qubit_system,n_electron,noa,nob,nva,nvb,rho,DS,qulacs_hamiltonian,qulacs_s2,theta_lists,threshold):
+    """ Function
+    Cost function of Jeziorski-Monkhorst UCCSD.
+
+    Author(s):  Yuto Mori, Takashi Tsuchimochi
+    """
     import copy
     t1 = time.time()
     nstates = len(cf.multi_weights)
@@ -284,37 +338,33 @@ def cost_jmucc(print_level,n_qubit_system,n_electron,noa,nob,nva,nvb,rho,DS,qula
     # compute <S**2> for each state
     t2 = time.time()
     cpu1 = t2-t1
-    if print_level == 1 and mpi.main_rank:
+    if print_level == 1:
         cput = t2 - cf.t_old
         cf.t_old = t2
-        with open(cf.log,'a') as f:
-            for istate in range(nstates):
-                print("E[{i:01}] = {en:.8f} (<S**2> = {s2:.5f})  ".format(i=istate,en=en[istate],s2=s2[istate]), end="", file=f)
-            print("  CPU Time = ", '%2.5f' % cput, " (%2.5f / step)" % cpu1, file=f)
+        cf.icyc += 1
+        prints("{cyc:5}:".format(cyc=cf.icyc),end="") 
+        for istate in range(nstates):
+            prints("  E[{i:01}] = {en:.8f} (<S**2> = {s2: 7.5f})  ".format(i=istate,en=en[istate],s2=s2[istate]), end="")
+        prints("  CPU Time = ", '%5.2f' % cput, " (%2.2f / step)" % cpu1)
         SaveTheta((ndim1+ndim2)*nstates,theta_lists,cf.tmp)
         # cf.iter_threshold = 0
-    if print_level > 1 and mpi.main_rank:
-        with open(cf.log,'a') as f:
-            print("\n------------------------------------",file=f)
+    if print_level > 1:
+        prints("\n------------------------------------")
         for istate in range(nstates):
-            with open(cf.log,'a') as f:
-                print("JM Basis   {:01}".format(istate),file=f)
+            prints("JM Basis   {:01}".format(istate))
             print_state(states[istate])
-            with open(cf.log,'a') as f:
-                print("",file=f)
-        with open(cf.log,'a') as f:
-            print("Coefficients: ", cvec,file=f)
-            print("------------------------------------\n\n",file=f)
-            print("###############################################",file=f)
-            print("#                  JM states                  #",file=f)
-            print("###############################################",file=f)
+            prints("")
+        prints("Coefficients: ", cvec)
+        prints("------------------------------------\n\n")
+        prints("###############################################")
+        prints("#                  JM states                  #")
+        prints("###############################################")
 
         for istate in range(nstates):
-            with open(cf.log,'a') as f:
-                print("State        :  {:01} ".format(istate),file=f)
-                print("E            : {:.8f} ".format(en[istate]),file=f)
-                print("<S**2>       : {:.5f} ".format(s2[istate]),file=f)
-                print("Superposition: ",file=f)
+            prints("State        :  {:01} ".format(istate))
+            prints("E            : {:.8f} ".format(en[istate]))
+            prints("<S**2>       : {:.5f} ".format(s2[istate]))
+            prints("Superposition: ")
             spstate = QuantumState(n_qubit_system)
             spstate.multiply_coef(0)
             for jstate in range(nstates):
@@ -325,17 +375,18 @@ def cost_jmucc(print_level,n_qubit_system,n_electron,noa,nob,nva,nvb,rho,DS,qula
 
             print_state(spstate)
 
-        with open(cf.log,'a') as f:
-            print("###############################################",file=f)
+        prints("###############################################")
     cost = 0        
     for istate in range(nstates):
         cost += cf.multi_weights[istate] * en[istate]
     return cost
 
 def int2occ(state_int):
-    '''
-        Given an integer, find the index for 1 in base-2 (occ_list)
-    '''
+    """ Function
+    Given an (base-10) integer, find the index for 1 in base-2 (occ_list)
+
+    Author(s): Takashi Tsuchimochi
+    """
     occ_list=[]
     k = 0
     while k < state_int:

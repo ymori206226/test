@@ -20,12 +20,14 @@ from qulacs import QuantumCircuit
 from . import config as cf
 from . import mpilib as mpi
 from .ucclib import ucc_singles, set_circuit_uccsd, set_circuit_uccd, set_circuit_sauccd
-from .utils     import SaveTheta, print_state, print_amplitudes
+from .fileio import SaveTheta, print_state, print_amplitudes, prints
 
 
 def set_circuit_rhfZ(n_qubit,n_electron):
     """ Function:
     Construct circuit for RHF |0000...1111> with one ancilla
+
+    Author(s): Takashi Tsuchimochi
     """
     circuit = QuantumCircuit(n_qubit)
     for i in range(n_electron):
@@ -35,6 +37,8 @@ def set_circuit_rhfZ(n_qubit,n_electron):
 def set_circuit_rohfZ(n_qubit,noa,nob):
     """ Function:
     Construct circuit for ROHF |0000...10101111> with one ancilla
+
+    Author(s): Takashi Tsuchimochi
     """
 # generate circuit for rhf
     circuit = QuantumCircuit(n_qubit)
@@ -47,6 +51,8 @@ def set_circuit_rohfZ(n_qubit,noa,nob):
 def set_circuit_uhfZ(n_qubit,noa,nob,nva,nvb,theta_list):
     """ Function:
     Construct circuit for UHF with one ancilla
+
+    Author(s): Takashi Tsuchimochi
     """
     circuit = QuantumCircuit(n_qubit)
     ucc_singles(circuit,noa,nob,nva,nvb,theta_list)
@@ -55,6 +61,8 @@ def set_circuit_uhfZ(n_qubit,noa,nob,nva,nvb,theta_list):
 def set_circuit_Ug(circuit,n_qubit_system,beta):
     """ Function:
     Construct circuit for Ug in spin-projection 
+
+    Author(s): Takashi Tsuchimochi
     """
     ### Ug
     for i in range(n_qubit_system):
@@ -80,6 +88,8 @@ def set_circuit_Ug(circuit,n_qubit_system,beta):
 def controlled_Ug(circuit,n_qubit,anc,beta):
     """ Function:
     Construct circuit for controlled-Ug in spin-projection 
+
+    Author(s): Takashi Tsuchimochi
     """
     ### Controlled Ug
     for i in range(n_qubit - 1):
@@ -111,6 +121,8 @@ def controlled_Ug(circuit,n_qubit,anc,beta):
 def cost_proj(print_level,n_qubit,n_electron,noa,nob,nva,nvb,rho,DS,anc,qulacs_hamiltonianZ,qulacs_s2Z,coef0_H,coef0_S2,ref,kappa_list,theta_list=0,threshold=0.01):
     """ Function:
     Energy functional for projected methods (phf, puccsd, puccd, opt_puccd)
+
+    Author(s): Takashi Tsuchimochi
     """
     t1 = time.time()
     ndim1 = noa*nva + nob*nvb
@@ -182,10 +194,8 @@ def cost_proj(print_level,n_qubit,n_electron,noa,nob,nva,nvb,rho,DS,anc,qulacs_h
         circuit_uhf = set_circuit_uhfZ(n_qubit,noa,nob,nva,nvb,theta_list)
         circuit_uhf.update_quantum_state(state)
     if(print_level > 1):
-        if mpi.mpi.main_rank:
-            with open(cf.log,'a') as f:
-                print('State before projection',file=f)
-            print_state(state,n_qubit_system)
+        prints('State before projection')
+        print_state(state,n_qubit_system)
         if(ref == "puccsd" or ref == "opt_puccd"):
             print_amplitudes(theta_list,noa,nob,nva,nvb,threshold)
 
@@ -256,29 +266,26 @@ def cost_proj(print_level,n_qubit,n_electron,noa,nob,nva,nvb,rho,DS,anc,qulacs_h
     cpu1 = t2 - t1
     Ep += coef0_H
     S2 += coef0_S2
-    if print_level == -1 and mpi.main_rank:
-        with open(cf.log,'a') as f:
-            print(" Initial E[%s] = " % ref, '{:.12f}'.format(Ep),  "  <S**2> =", '%2.15f' % S2, "rho = %d" % rho, file=f)
-    if print_level == 1 and mpi.main_rank:
+    if print_level == -1:
+        prints(" Initial E[%s] = " % ref, '{:.12f}'.format(Ep),  "  <S**2> =", '% 17.15f' % S2, "rho = %d" % rho)
+    if print_level == 1:
         cput = t2 - cf.t_old 
         cf.t_old = t2
-        with open(cf.log,'a') as f:
-            print(" E[%s] = " % ref, '{:.12f}'.format(Ep),  "  <S**2> =", '%2.15f' % S2, "  CPU Time = ", '%2.5f' % cput, " (%2.5f / step)" % cpu1, file=f)
-    if print_level > 1 and mpi.main_rank:
-        with open(cf.log,'a') as f:
-            print(" Final E[%s] = " % ref, '{:.12f}'.format(Ep),  "  <S**2> =", '%2.15f' % S2, "rho = %d" % rho, file=f)
+        cf.icyc += 1
+        prints("{cyc:5}:".format(cyc=cf.icyc),"  E[%s] = " % ref, '{:.12f}'.format(Ep),  "  <S**2> =", '% 17.15f' % S2, "  CPU Time = ", '%5.2f' % cput, " (%2.2f / step)" % cpu1)
+    if print_level > 1:
+        prints(" Final E[%s] = " % ref, '{:.12f}'.format(Ep),  "  <S**2> =", '% 17.15f' % S2, "rho = %d" % rho)
         print_state(state,n_qubit-1)
         if(ref == "puccsd" or ref == "opt_puccd"):
             print_amplitudes(theta_list,noa,nob,nva,nvb)
-        with open(cf.log,'a') as f:
-            print("HUg", HUg,file=f)
-            print("Ug",Ug,file=f)
+        prints("HUg", HUg)
+        prints("Ug",Ug)
 
     return Ep, S2
 
 
 def S2Proj(Q,spin=1,Ms=0,ng=4):
-    '''
+    """ Function
        Perform spin-projection to QuantumState |Q> 
 
           |Q'>  =  Ps |Q>   
@@ -290,7 +297,9 @@ def S2Proj(Q,spin=1,Ms=0,ng=4):
        This function provides a shortcut to |Q'>, which is unreal.
        One actually needs to develop a quantum circuit for this (See PRR 2, 043142 (2020)).
 
-    '''
+
+    Author(s): Takashi Tsuchimochi
+    """
     ### Set grid points ###
     if ng == 4 :
         beta = ([0.861136311594053,0.339981043584856,-0.339981043584856,-0.861136311594053])

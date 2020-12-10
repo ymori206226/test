@@ -41,6 +41,8 @@ if len_argv == 3:
 else:
     log_name = input_name
     log = './' + log_name + '.log'
+
+rdm1 = './' + input_name + '.1rdm'
 ################################################################
 
 # PeriodicTable to check the input atoms are supported. 
@@ -51,11 +53,27 @@ PeriodicTable = ["H","He","Li","Be","B","C","N","O","F","Ne"]
 multi_states  = []
 multi_weights = []
 
-# Jordan-Wigner Operator for S**4 
+# molecular data  and operators
+mo_coeff = 0
+natom = 0
+atom_charges = [] 
+atom_coords = []
+n_active_orbitals = 0
+n_active_electrons = 0
+
+rint = 0
+rint_mo = 0
+Hamiltonian_operator = 0
+Number_operator = 0
+S2_operator = 0
+Dipole_operator = []
 jw_s4 = 0
 
 # Lagrange multiplier for Spin-Constrained Calculation
 constraint_lambda = 0
+
+# cycle
+icyc = 0
 
 # Time
 t_old = 0
@@ -63,8 +81,9 @@ t_old = 0
 # OMP_NUM_THREADS
 nthreads="1"
 
-# Options to compute PDMs
-Do1PDM = 0
-Do2PDM = 0
+# Options to compute RDMs
+Do1RDM = 0
+Do2RDM = 0
 
-#
+# VQE Quantum State(s)
+States = None
