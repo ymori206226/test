@@ -349,6 +349,12 @@ def cost_jmucc(print_level,n_qubit_system,n_electron,noa,nob,nva,nvb,rho,DS,qula
         SaveTheta((ndim1+ndim2)*nstates,theta_lists,cf.tmp)
         # cf.iter_threshold = 0
     if print_level > 1:
+        cput = t2 - cf.t_old
+        cf.t_old = t2
+        prints(" Final results: ")
+        for istate in range(nstates):
+            prints("  E[{i:01}] = {en:.8f} (<S**2> = {s2: 7.5f})  ".format(i=istate,en=en[istate],s2=s2[istate]), end="")
+        prints("  CPU Time = ", '%5.2f' % cput, " (%2.2f / step)" % cpu1)
         prints("\n------------------------------------")
         for istate in range(nstates):
             prints("JM Basis   {:01}".format(istate))
@@ -358,13 +364,13 @@ def cost_jmucc(print_level,n_qubit_system,n_electron,noa,nob,nva,nvb,rho,DS,qula
         prints("------------------------------------\n\n")
         prints("###############################################")
         prints("#                  JM states                  #")
-        prints("###############################################")
+        prints("###############################################",end="")
 
         for istate in range(nstates):
-            prints("State        :  {:01} ".format(istate))
-            prints("E            : {:.8f} ".format(en[istate]))
-            prints("<S**2>       : {:.5f} ".format(s2[istate]))
-            prints("Superposition: ")
+            prints("\n State        :  {:01} ".format(istate))
+            prints(" E            : {:.8f} ".format(en[istate]))
+            prints(" <S**2>       : {:.5f} ".format(s2[istate]))
+            prints(" Superposition: ")
             spstate = QuantumState(n_qubit_system)
             spstate.multiply_coef(0)
             for jstate in range(nstates):

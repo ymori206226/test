@@ -215,7 +215,7 @@ def VQE_driver(jw_hamiltonian,jw_s2, multiplicity, method,
     qulacs_hamiltonianZ = create_observable_from_openfermion_text(str(jw_hamiltonianZ))
     qulacs_s2Z = create_observable_from_openfermion_text(str(jw_s2Z))
     qulacs_ancZ = create_observable_from_openfermion_text(str(jw_ancZ))
-    
+    print('OOOOOOO') 
     
     ############################# 
     ### set up cost functions ###
@@ -223,8 +223,10 @@ def VQE_driver(jw_hamiltonian,jw_s2, multiplicity, method,
     if (method == "phf"):
         ### PHF ###
         ndim = ndim1
-        cost_wrap = lambda kappa_list : cost_proj(0,n_qubit,n_electron,noa,nob,nva,nvb,rho,DS,anc,qulacs_hamiltonianZ,qulacs_s2Z,coef0_H,coef0_S2,method,kappa_list)[0]
-        cost_callback = lambda kappa_list : cost_proj(print_control,n_qubit,n_electron,noa,nob,nva,nvb,rho,DS,anc,qulacs_hamiltonianZ,qulacs_s2Z,coef0_H,coef0_S2,method,kappa_list)
+        cost_wrap     = lambda kappa_list : cost_proj(0,n_qubit,n_electron,noa,nob,nva,nvb,rho,DS,\
+                                                      anc,qulacs_hamiltonianZ,qulacs_s2Z,coef0_H,coef0_S2,method,kappa_list)[0]
+        cost_callback = lambda kappa_list : cost_proj(print_control,n_qubit,n_electron,noa,nob,nva,nvb,rho,DS,\
+        anc,qulacs_hamiltonianZ,qulacs_s2Z,coef0_H,coef0_S2,method,kappa_list)
     
     elif (method == "uhf"):
         ### UHF ###
@@ -235,7 +237,8 @@ def VQE_driver(jw_hamiltonian,jw_s2, multiplicity, method,
     elif (method == "uccsd" or method == "sauccsd"):
         ### UCCSD ###
         ndim = ndim1 + ndim2
-        cost_wrap = lambda theta_list : cost_uccsd(0,n_qubit_system,n_electron,noa,nob,nva,nvb,rho,DS,qulacs_hamiltonian,qulacs_s2,method,kappa_list,theta_list)[0]
+        cost_wrap = lambda theta_list : cost_uccsd(0,n_qubit_system,n_electron,noa,nob,nva,nvb,rho,\
+        DS,qulacs_hamiltonian,qulacs_s2,method,kappa_list,theta_list)[0]
         cost_callback = lambda theta_list : cost_uccsd(print_control,n_qubit_system,n_electron,noa,nob,nva,nvb,rho,DS,qulacs_hamiltonian,qulacs_s2,method,kappa_list,theta_list)
 
     elif("upccgsd" in method):
@@ -284,11 +287,11 @@ def VQE_driver(jw_hamiltonian,jw_s2, multiplicity, method,
             error("JM-UCC specified without state specification!")
         ndim = nstates * (ndim1 + ndim2)
         cost_wrap = lambda theta_lists : \
-        cost_jmucc(0,n_qubit_system,n_electron,noa,nob,nva,nvb,rho,DS,\
-        qulacs_hamiltonian,qulacs_s2,theta_lists,print_amp_thres)
+                    cost_jmucc(0,n_qubit_system,n_electron,noa,nob,nva,nvb,rho,DS,\
+                               qulacs_hamiltonian,qulacs_s2,theta_lists,print_amp_thres)
         cost_callback = lambda theta_lists : \
-        cost_jmucc(print_control,n_qubit_system,n_electron,noa,nob,nva,nvb,rho,DS,\
-        qulacs_hamiltonian,qulacs_s2,theta_lists,print_amp_thres)
+                    cost_jmucc(print_control,n_qubit_system,n_electron,noa,nob,nva,nvb,rho,DS,\
+                               qulacs_hamiltonian,qulacs_s2,theta_lists,print_amp_thres)
 
     prints('Number of VQE parameters: {}'.format(ndim))
     ############################# 
@@ -387,61 +390,78 @@ def VQE_driver(jw_hamiltonian,jw_s2, multiplicity, method,
         cost_callback(theta_list)
     print_control = 1
 
-    if(maxiter == 0):
-        return
-    ###################    
-    ### perform VQE ###
-    ###################    
-    prints("Performing VQE for ",method)
+    if(maxiter > 0):
+        ###################    
+        ### perform VQE ###
+        ###################    
+        prints("Performing VQE for ",method)
 
-    # Use MPI for evaluating Gradients        
-    cost_wrap_mpi = lambda theta_list : cost_mpi(cost_wrap,theta_list)
-    jac_wrap_mpi  = lambda theta_list : jac_mpi(cost_wrap,theta_list)
+        # Use MPI for evaluating Gradients        
+        cost_wrap_mpi = lambda theta_list : cost_mpi(cost_wrap,theta_list)
+        jac_wrap_mpi  = lambda theta_list : jac_mpi(cost_wrap,theta_list)
 
-    if(method in ['uhf','phf']):
-        opt = minimize(cost_wrap_mpi, kappa_list, jac=jac_wrap_mpi,
-                   method=opt_method,options=opt_options,
-                   callback=lambda x: cost_callback(x))
-    else:  ### correlated methods
-        #opt = minimize(cost_wrap, theta_list,    
-        #           method=opt_method,options=opt_options,
-        #           callback=lambda x: cost_callback(x))
-        opt = minimize(cost_wrap_mpi, theta_list,jac=jac_wrap_mpi, 
-                   method=opt_method,options=opt_options,
-                   callback=lambda x: cost_callback(x))
-    
-    ### print out final results ###
-    theta_or_kappa_list = opt.x
+        if(method in ['uhf','phf']):
+            opt = minimize(cost_wrap_mpi, kappa_list, jac=jac_wrap_mpi,
+                       method=opt_method,options=opt_options,
+                       callback=lambda x: cost_callback(x))
+        else:  ### correlated methods
+            #opt = minimize(cost_wrap, theta_list,    
+            #           method=opt_method,options=opt_options,
+            #           callback=lambda x: cost_callback(x))
+            opt = minimize(cost_wrap_mpi, theta_list,jac=jac_wrap_mpi, 
+                       method=opt_method,options=opt_options,
+                       callback=lambda x: cost_callback(x))
+        
+        ### print out final results ###
+        final_param_list = opt.x
+    elif maxiter == -1:
+        # Skip VQE, and perform one-shot calculation
+        prints("One-shot evaluation without parameter optimization")
+        if(method in ['uhf','phf']):
+            final_param_list = kappa_list
+        else:
+            final_param_list = theta_list
+
     if (method == "phf"):
-        cost_proj(print_control+1,n_qubit,n_electron,noa,nob,nva,nvb,rho,DS,anc,qulacs_hamiltonianZ,qulacs_s2Z,coef0_H,coef0_S2,method,opt.x)
-        SaveTheta(ndim1,theta_or_kappa_list,cf.kappa_list_file)
+        cost_proj(print_control+1,n_qubit,n_electron,noa,nob,nva,nvb,rho,DS,\
+        anc,qulacs_hamiltonianZ,qulacs_s2Z,coef0_H,coef0_S2,method,final_param_list)
+        SaveTheta(ndim1,final_param_list,cf.kappa_list_file)
 
     elif (method == "uhf"):
-        cost_uhf(print_control+1,n_qubit_system,n_electron,noa,nob,nva,nvb,qulacs_hamiltonian,qulacs_s2,opt.x)
-        SaveTheta(ndim1,theta_or_kappa_list,cf.kappa_list_file)
+        cost_uhf(print_control+1,n_qubit_system,n_electron,noa,nob,nva,nvb,qulacs_hamiltonian,qulacs_s2,final_param_list)
+        SaveTheta(ndim1,final_param_list,cf.kappa_list_file)
 
     elif (method == "uccsd" or method =="sauccsd"):
-        cost_uccsd(print_control+1,n_qubit_system,n_electron,noa,nob,nva,nvb,rho,DS,qulacs_hamiltonian,qulacs_s2,method,kappa_list,opt.x,print_amp_thres)
-        SaveTheta(ndim,theta_or_kappa_list,cf.theta_list_file)
+        cost_uccsd(print_control+1,n_qubit_system,n_electron,noa,nob,nva,nvb,rho,DS,\
+        qulacs_hamiltonian,qulacs_s2,method,kappa_list,final_param_list,print_amp_thres)
+        SaveTheta(ndim,final_param_list,cf.theta_list_file)
      
     elif("upccgsd" in method):
-        cost_upccgsd(print_control+1,n_qubit_system,n_electron,noa,nob,nva,nvb,rho,qulacs_hamiltonian,qulacs_s2,kappa_list,opt.x,k_param)
-        SaveTheta(ndim,theta_or_kappa_list,cf.theta_list_file)
+        cost_upccgsd(print_control+1,n_qubit_system,n_electron,noa,nob,nva,nvb,rho,\
+        qulacs_hamiltonian,qulacs_s2,kappa_list,final_param_list,k_param)
+        SaveTheta(ndim,final_param_list,cf.theta_list_file)
 
     elif (method == "uccd"):
-        cost_uccd(print_control+1,n_qubit_system,n_electron,noa,nob,nva,nvb,rho,qulacs_hamiltonian,qulacs_s2,kappa_list,opt.x,print_amp_thres)
-        SaveTheta(ndim,theta_or_kappa_list,cf.theta_list_file)
+        cost_uccd(print_control+1,n_qubit_system,n_electron,noa,nob,nva,nvb,rho,\
+        qulacs_hamiltonian,qulacs_s2,kappa_list,final_param_list,print_amp_thres)
+        SaveTheta(ndim,final_param_list,cf.theta_list_file)
 
     elif method == "opt_uccd" or method == "opt_uccsd":
-        cost_opt_ucc(print_level,n_qubit_system,n_electron,noa,nob,nva,nvb,rho,Gen,optk,qulacs_hamiltonian,qulacs_s2,method,theta_list_fix,opt.x)
+        cost_opt_ucc(print_level,n_qubit_system,n_electron,noa,nob,nva,nvb,rho,\
+        Gen,optk,qulacs_hamiltonian,qulacs_s2,method,theta_list_fix,final_param_list)
         if optk:
-            SaveTheta(ndim1,theta_or_kappa_list,cf.theta_list_file)
+            SaveTheta(ndim1,final_param_list,cf.theta_list_file)
         else:
-            SaveTheta(ndim,theta_or_kappa_list,cf.theta_list_file)
+            SaveTheta(ndim,final_param_list,cf.theta_list_file)
 
     elif (method == "puccsd" or method=="puccd" or method =="opt_puccd" or method == "opt_psauccd"):
-        cost_proj(print_control+1,n_qubit,n_electron,noa,nob,nva,nvb,rho,DS,anc,qulacs_hamiltonianZ,qulacs_s2Z,coef0_H,coef0_S2,method,kappa_list,opt.x,print_amp_thres)
-        SaveTheta(ndim,theta_or_kappa_list,cf.theta_list_file)
+        cost_proj(print_control+1,n_qubit,n_electron,noa,nob,nva,nvb,rho,DS,\
+        anc,qulacs_hamiltonianZ,qulacs_s2Z,coef0_H,coef0_S2,method,kappa_list,final_param_list,print_amp_thres)
+        SaveTheta(ndim,final_param_list,cf.theta_list_file)
+     
+    elif (method == "jmucc"):
+        cost_jmucc(print_control+1,n_qubit_system,n_electron,noa,nob,nva,nvb,rho,DS,\
+                   qulacs_hamiltonian,qulacs_s2,final_param_list,print_amp_thres)
     
     if cf.States is not None:
         dipole(cf.States)
