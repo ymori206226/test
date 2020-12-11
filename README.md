@@ -4,10 +4,6 @@
      Copyright 2019-2020 Takashi Tsuchimochi, Yuto Mori, Takahiro Yoshikura. All rights Reserved.
 
  This suite of programs simulates quantum computing for electronic Hamiltonian.
- It currently supports the following methods:
-   
-   - Ground state VQE
-
 ```
 # 必要なライブラリ
 
@@ -16,6 +12,7 @@
  - Qulacs             0.1.9   
  - numpy
  - scipy 
+ - mpi4py
 
 Ravel (ravel01) ではPython3.8が全ユーザー入っている。
 
@@ -26,18 +23,20 @@ Titan (titan2~titan7) では/home/calc/tsuchimochi/binをPATHに入れるよう�
 
 (1) インプットファイル `***.inp` を用意する (具体例は下か`main.py`を見る)
 
-(2) 以下のコマンドで流す
+(2) 付属スクリプト`quket`を用いる。メインプログラム`main.py`があるディレクトリ$QDIRを`quket`内で指定し、
+
+```
+     ./quket -np $NPROCS *** 
+```
+NPROCSはMPI並列のプロセス数 (下記参照) で、`-np`オプションで指定する。毎回入力が面倒なら`quket`内で変数`nprocs`を書き換えれば省略できる。
+ログアウトしても計算を続けるようにするには最後に`&`をつける。
+`***.log`の中にシミュレーション結果が出力され、標準出力(stdout)は`***.out`に出力される。
+
+スクリプトを用いない旧来の流し方は
 
 ```
      python3.8 main.py *** 
 ```
-`***.log`の中に結果が出力される。
-
-Titanで行う場合は、
-```
-     python3.8 main.py *** &
-```
-と`&`をつけるとログアウトしても実行し続ける。Ravelで行う場合は頭に`nohup`をつけると実行し続ける。
 
 インプット内のnparによってOpenMPのスレッド並列計算が可能になるが、性能はCPUコア数に依存する。
 無理なスレッド並列は逆に遅くなる要因となる。
@@ -55,6 +54,7 @@ VQEにおいてパラメータ数が多い場合、コスト関数の数値微�
 
 - `***.inp` ：　入力ファイル
 - `***.log` ：　出力ファイル
+- `***.out` ：　標準出力ファイル (主に外部ライブラリが吐き出すコメント/警告/エラーなど)
 - `***.chk` ：　PySCFの積分やエネルギーなどの情報が入ってる
 また、手法によっては以下のようなファイルが生成される
 - `***.theta` ：　UCC法のt-amplitudes （VQEパラメータ）. 

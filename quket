@@ -1,12 +1,22 @@
 #! /bin/bash
+
+### Default setting ###
 flag_np=false 
 flag_dir=false
 flag_inp=false
 opterr=false
 nprocs=1
-#QDIR=/home/tsuchimochi/quket
-QDIR=`pwd`
 
+# Directory
+QDIR=/home/tsuchimochi/quket
+python=`which python3.8`
+#python=/usr/local/bin/python3.8
+# For Ravel
+MPI_tcp='-genv I_MPI_FABRICS tcp' 
+# For Titan
+MPI_tcp='' 
+
+### Check options
 while [ $# -gt 0 ]
 do
   case $1 in
@@ -20,4 +30,10 @@ do
   shift
 done
 
-nohup mpirun -np $nprocs -genv I_MPI_FABRICS tcp python3.8 ${QDIR}/main.py $input > ${input}.out  && exit 
+if [ ! -e ${input}.inp ]; then
+    echo "No input file '${input}.inp' exits!" 
+    exit
+fi
+
+nohup mpirun -np $nprocs $MPI_tcp $python ${QDIR}/main.py $input > ${input}.out  && exit 
+
