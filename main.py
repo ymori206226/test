@@ -253,7 +253,7 @@ while Finish == False:
                     excited = lines[iline].replace('=',' ')
                     excited = [x.strip() for x in excited.split() if not excited.strip() == '']
                     if len(excited) > 0:
-                        if excited[0].isdecimal() >= 0:
+                        if excited[0].isdecimal():
                             # Transform string to integer ...
                             base2  = str("0b"+excited[0])
                             base10 = int(base2,2)
