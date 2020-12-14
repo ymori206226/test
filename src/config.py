@@ -45,29 +45,53 @@ else:
 rdm1 = './' + input_name + '.1rdm'
 ################################################################
 
+# Method_list
+vqe_method_list = [\
+"uhf","phf","uccd","uccsd","sauccsd","jmucc","opt_puccd","opt_puccsd",\
+"puccsd","opt_psauccd","opt_uccd","opt_uccsd"\
+]
 # PeriodicTable to check the input atoms are supported. 
 PeriodicTable = ["H","He","Li","Be","B","C","N","O","F","Ne"]
 
+# VQE related
+ndim = 0 # parameters
 
-# Multi-refernce (State-Average) strings and weights
+# Determinant and Multi-refernce (State-Average) strings and weights
+det = -1
+current_det = -1
 multi_states  = []
 multi_weights = []
+lower_states = []
+excited_states = []
 
 # molecular data  and operators
+basis = 'sto-3g'
+charge = 0
+multiplicity = 1
 mo_coeff = 0
 natom = 0
 atom_charges = [] 
 atom_coords = []
 n_active_orbitals = 0
 n_active_electrons = 0
+Ms = 0
+spin = 1
+hf_energy = 0
+fci_energy = 0
 
 rint = 0
-rint_mo = 0
 Hamiltonian_operator = 0
 Number_operator = 0
 S2_operator = 0
 Dipole_operator = []
-jw_s4 = 0
+
+# Spin-Projection 
+SpinProj = False
+euler_ngrids = [0,-1,0]
+dmm = 0 
+sp_angle = []
+sp_weight = [] 
+
 
 # Lagrange multiplier for Spin-Constrained Calculation
 constraint_lambda = 0
@@ -87,3 +111,4 @@ Do2RDM = 0
 
 # VQE Quantum State(s)
 States = None
+

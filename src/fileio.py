@@ -8,6 +8,7 @@ fileio.py
 File reading/writing utilities.
 
 """
+import os
 import sys
 import time
 import numpy as np
@@ -33,6 +34,17 @@ def prints(*args,filepath=cf.log, opentype='a', end=None):
         else:
             with open(filepath,opentype) as f:
                 print("".join(map(str,args)),file=f,end=end)
+
+def print_geom(geometry):
+    """ Function:
+        Print geometry in the cartesian coordinates.
+      
+    Author(s): Takashi Tsuchimochi 
+    """
+    prints("\n *** Geometry **************************")
+    for iatom in range(cf.natom):
+        prints('  {:2s}    {:8.4f}   {:8.4f}   {:8.4f}'.format(geometry[iatom][0], geometry[iatom][1][0], geometry[iatom][1][1], geometry[iatom][1][2]))
+    prints(" ***************************************\n")
 
 def openfermion_print_state(state,n_qubit,j_state):
     """ Function
@@ -63,38 +75,46 @@ def LoadTheta(ndim,filepath):
 
     Author(s): Takashi Tsuchimochi
     """
-    if mpi.main_rank:
+    if os.path.isfile(filepath):
         f=open(filepath)
         line=f.readlines()
         f.close
-        theta=[] 
-        for i in range(ndim):
-            theta.append(float(line[i]))
+        if len(line) != ndim:
+            error("File length incorrect: {}".format(filepath))
+        if mpi.main_rank:
+            theta=[] 
+            for i in range(ndim):
+                theta.append(float(line[i]))
+        else:
+            theta=None
     else:
-        theta=None
+        error("No theta file! ")
 
     theta = mpi.comm.bcast(theta,root=0) 
     return theta
 
-def error(message): 
-    if mpi.main_rank:
-        with open(cf.log,'a') as f:
-            print(message,file=f)
+def error(*message): 
+    import datetime
+    prints("\n",*message,"\n")
+    prints("Error termination of quket.")
+    prints(datetime.datetime.now()) 
     exit()
 
-def print_state(state,n_qubit=None,filepath=cf.log):
+def print_state(state,n_qubit=None,filepath=cf.log,threshold=1e-2,name=None):
     """ Function
     print out quantum state as qubits
 
     Author(s): Takashi Tsuchimochi
     """
+    if type(name) == str:
+        prints(name)
     if n_qubit==None:
         n_qubit = state.get_qubit_count()
     opt='0'+str(n_qubit)+'b'
     prints(" Basis       Coef", filepath=filepath)
     for i in range(2**n_qubit):
         v = state.get_vector()[i]
-        if abs(v)**2>0.01:
+        if abs(v)**2>threshold:
             prints('|',format(i,opt),'> : ', '{a.real:+.4f} {a.imag:+.4f}j'.format(a=v),filepath=filepath) 
 
 def print_amplitudes(theta_list,noa,nob,nva,nvb,threshold=0.01,filepath=cf.log):
@@ -272,7 +292,10 @@ def printmat(A,mmax=10,filepath=cf.log,name=None,n=None,m=None):
 
     Author(s): Takashi Tsuchimochi
     """
-    dimension = A.ndim
+    if(type(A) is list):
+        dimension = 1
+    elif(type(A) is np.ndarray):
+        dimension = A.ndim
     if dimension == 0 or dimension > 2:  
         error("Neither scalar nor tensor is printable with printmat.")
 
@@ -300,8 +323,12 @@ def printmat(A,mmax=10,filepath=cf.log,name=None,n=None,m=None):
                 prints("",filepath=filepath)
     elif dimension == 1:
         if(n==None or m==None):
-            n = A.size
-            m = 1
+            if(type(A) is list):
+                n = len(A)
+                m = 1
+            elif(type(A) is np.ndarray):
+                n = A.size
+                m = 1
         imax = 0
         while imax < m:
             imin = imax+1

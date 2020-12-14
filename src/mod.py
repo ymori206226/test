@@ -205,8 +205,8 @@ def run_pyscf_mod(
     molecule.two_body_integrals = two_body_integrals
     molecule.overlap_integrals = pyscf_scf.get_ovlp()
     # CASCI (FCI)
-    if run_fci:
-        molecule.fci_energy  = pyscf_scf.CASCI(n_active_orbitals,n_active_electrons).kernel()[0]
+    #if run_fci:
+    molecule.fci_energy  = pyscf_scf.CASCI(n_active_orbitals,n_active_electrons).kernel()[0]
     # Return updated molecule instance.
     pyscf_molecular_data = PyscfMolecularData.__new__(PyscfMolecularData)
     pyscf_molecular_data.__dict__.update(molecule.__dict__)
@@ -215,8 +215,12 @@ def run_pyscf_mod(
 
 
 #   Keep molecular data in config.py
+    cf.hf_energy = molecule.hf_energy
+    cf.fci_energy = molecule.fci_energy
     cf.mo_coeff = pyscf_scf.mo_coeff.astype(float)
     cf.natom    = pyscf_molecule.natm
+    cf.atom_charges = []
+    cf.atom_coords = []
     for i in range(cf.natom):
         cf.atom_charges.append(pyscf_molecule.atom_charges()[i])
         cf.atom_coords.append(pyscf_molecule.atom_coords()[i])

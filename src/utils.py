@@ -13,6 +13,7 @@ Utilities.
 import sys
 import time
 import numpy as np
+import scipy as sp
 from . import config as cf
 from . import mpilib as mpi
 import math
@@ -23,6 +24,7 @@ from openfermion.ops import QubitOperator, FermionOperator
 from openfermion.utils import commutator, count_qubits, hermitian_conjugated,  normal_ordered, eigenspectrum, QubitDavidson 
 from qulacs.observable import create_observable_from_openfermion_text 
 from qulacs.quantum_operator import create_quantum_operator_from_openfermion_text
+from qulacs.state import inner_product
 from qulacs import QuantumState
 
 import copy
@@ -80,6 +82,37 @@ def chkbool(string):
         prints("Unrecognized argument `{}`".format(string))
         error("")
 
+def chkmethod(method):        
+    """ Function:
+    Check method is available in method_list
+
+    Author(s): Takashi Tsuchimochi
+    """
+    if method in cf.vqe_method_list:
+        return True
+    elif "upccgsd" in method:
+        return True
+    else:
+        return False
+
+def root_inv(A,eps=1e-8):  
+    """ Function:
+    Get A^-1/2 based on SVD. Dimensions may be reduced.
+
+    Author(s): Takashi Tsuchimochi
+    """
+    u, s, vh = np.linalg.svd(A,hermitian=True)
+    mask = (s >= eps)
+    red_u = sp.compress(mask, u, axis=1)
+    # Diagonal matrix of s**-1/2
+    sinv2 = np.diag([1/np.sqrt(i) for i in s if i > eps])
+    Sinv2 = red_u@sinv2
+    return Sinv2 
+
+
+
+    
+    
 
 def T1vec2mat(noa,nob,nva,nvb,kappa_list):
     """ Function:
@@ -150,77 +183,15 @@ def T1mult(noa,nob,nva,nvb,kappa1,kappa2):
     return kappa12
 
 
-def create_1body_operator(XA,XB=None):
+def orthogonal_constraint(qulacs_hamiltonian,state):
     """ Function
-    Given XA (=XB) as a (n_orbitals x n_orbitals) matrix, 
-    return FermionOperator in OpenFermion Format.
-
-    Author(s): Takashi Tsuchimochi
+    Compute the penalty term for excited states based on 'orthogonally-constrained VQE' scheme.
     """
-    n_orbitals = XA.shape[0]
-    Operator = FermionOperator('',0)
-    for i in range(2*n_orbitals):
-        for j in range(2*n_orbitals):
-            string = str(j)+'^ '+str(i)
-            ii = int(i/2)
-            jj = int(j/2)
-            if(i%2==0 and j%2==0): # Alpha-Alpha
-                Operator += FermionOperator(string,XA[jj][ii]) 
-            elif (i%2== 1 and j%2==1): #Beta-Beta
-                if XB==None:
-                    Operator += FermionOperator(string,XA[jj][ii]) 
-                else:
-                    Operator += FermionOperator(string,XB[jj][ii]) 
-    return Operator
-                    
+    nstates = len(cf.lower_states)
+    extra_cost = 0
+    for i in range(nstates):
+        Ei = qulacs_hamiltonian.get_expectation_value(cf.lower_states[i])
+        overlap = inner_product(cf.lower_states[i],state)
+        extra_cost += -Ei * abs(overlap)**2
+    return extra_cost
 
-def single_operator_gradient(p,q,jordan_wigner_hamiltonian,state,n_qubit):
-    """ Function
-    Compute gradient d<H>/dXpq
-
-    Author(s): Masaki Taii, Takashi Tsuchimochi
-    """
-    #与えられたpqからフェルミ演算子a_p!q-a_q!pを生成する
-    #ダミーを作って後で引く
-    dummy=FermionOperator(str(n_qubit-1)+'^ '+str(n_qubit-1),1.0)
-    fermi=FermionOperator(str(p)+'^ '+str(q),1.0)+FermionOperator(str(q)+'^ '+str(p),-1.0)
-    #フェルミ演算子をjordan_wigner変換する
-    jordan_wigner_fermi=jordan_wigner(fermi)
-    jordan_wigner_dummy=jordan_wigner(dummy)
-    #交換子を用いてエネルギーの傾きを求める準備を行う
-    jordan_wigner_gradient=commutator(jordan_wigner_fermi,jordan_wigner_hamiltonian)+jordan_wigner_dummy
-    #オブザーバブルクラスに変換
-    observable_gradient=create_observable_from_openfermion_text(str(jordan_wigner_gradient))
-    observable_dummy=create_observable_from_openfermion_text(str(jordan_wigner_dummy))
-    #オブザーバブルを用いてエネルギーの傾きを求める
-    gradient=observable_gradient.get_expectation_value(state)-observable_dummy.get_expectation_value(state)
-    
-    return gradient                    
-
-def FermionOperator_to_Observable(operator):
-    """ Function
-    Create qulacs observable from OpenFermion FermionOperator `operator`.
-
-    Author(s): Masaki Taii, Takashi Tsuchimochi
-    """
-    str_jw = str(jordan_wigner(operator))
-    string = '(0.0000000000000000+0j) [Z'+str(2*cf.n_active_orbitals-1)+']'
-    if str_jw == '0' :
-        str_jw = string
-    else:    
-        str_jw += ' + \n' + string
-    return create_observable_from_openfermion_text(str_jw)
-
-def FermionOperator_to_Operator(operator):
-    """ Function
-    Create qulacs general operator from OpenFermion FermionOperator `operator`.
-
-    Author(s): Masaki Taii, Takashi Tsuchimochi
-    """
-    str_jw = str(jordan_wigner(operator))
-    string = '(0.0000000000000000+0j) [Z'+str(2*cf.n_active_orbitals-1)+']'
-    if str_jw == '0' :
-        str_jw = string
-    else:    
-        str_jw += ' + \n' + string
-    return create_quantum_operator_from_openfermion_text(str_jw)

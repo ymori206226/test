@@ -16,10 +16,10 @@ from qulacs.observable import create_observable_from_openfermion_text
 from openfermion.ops import QubitOperator
 from qulacs import QuantumState
 from qulacs import QuantumCircuit
-from .ucclib import ucc_singles
+from .ucclib import ucc_singles, single_ope_Pauli
 from . import config as cf
 from . import utils
-from .fileio    import prints
+from .fileio    import prints, SaveTheta, print_state
 
 
 def set_circuit_rhf(n_qubit_system,n_electron):
@@ -57,6 +57,23 @@ def set_circuit_uhf(n_qubit_system,noa,nob,nva,nvb,kappa_list):
     return circuit
 
 
+def set_circuit_ghf(n_qubit_system,kappa_list):
+    """ Function:
+    Construct circuit for GHF by general spin orbital rotation 
+
+    Author(s):  Takashi Tsuchimochi 
+    """
+    circuit = QuantumCircuit(n_qubit_system)
+    pq = 0
+    for p in range(n_qubit_system):  
+        for q in range(p):
+            single_ope_Pauli(p,q,circuit,kappa_list[pq])
+            pq += 1
+    return circuit
+            
+
+
+
 def cost_uhf(print_level,n_qubit_system,n_electron,noa,nob,nva,nvb,qulacs_hamiltonian,qulacs_s2,kappa_list):
     """ Function:
     Energy functional of UHF
@@ -81,10 +98,10 @@ def cost_uhf(print_level,n_qubit_system,n_electron,noa,nob,nva,nvb,qulacs_hamilt
         cf.t_old = t2
         cf.icyc += 1
         prints("{cyc:5}:".format(cyc=cf.icyc),"  E[UHF] = ", '{:.12f}'.format(Euhf),  "  <S**2> =", '% 17.15f' % S2, "  CPU Time = ", '%2.5f' % cput, " (%2.5f / step)" % cpu1)
-        utils.SaveTheta(noa*nva+nob*nvb,kappa_list,cf.tmp)
+        SaveTheta(noa*nva+nob*nvb,kappa_list,cf.tmp)
     if print_level > 1:
         prints('(UHF state)')
-        utils.print_state(state,n_qubit_system)
+        print_state(state,n_qubit_system)
     # Store HF wave function
     cf.States = state
     return Euhf, S2

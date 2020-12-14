@@ -15,7 +15,7 @@ import numpy as np
 from . import config as cf
 from . import mpilib as mpi
 from .fileio import prints, printmat, SaveTheta
-from .utils  import FermionOperator_to_Observable, FermionOperator_to_Operator
+from .opelib  import FermionOperator_to_Observable, FermionOperator_to_Operator
 import math
 import pprint
 import itertools

@@ -20,7 +20,7 @@ from qulacs import QuantumCircuit
 from qulacs.gate import P0,P1,add, merge, Identity, X, Y, Z
 from .ucclib import ucc_singles
 from . import config
-from .fileio import prints
+from .fileio import prints, print_state
 
 
 
@@ -252,10 +252,9 @@ def test_transition_observable(state, obs, poststate0, poststate1, n_sample):
     p1 = 1-p0
     opt='0'+str(n_qubit)+'b'
     prints('p0:',p0, '  p1:' ,p1)
-    prints("post(0)")
-    utils.print_state(poststate0,n_qubit)
+    print_state(poststate0,name='post(0)')
     prints("post(1)")
-    utils.print_state(poststate1,n_qubit)
+    print_state(poststate1,name='post(1)')
 
     expH =0
     exp = []
