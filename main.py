@@ -372,7 +372,7 @@ while Finish == False:
     cf.lower_states = []
     for istate in range (nexcited):
         cf.lower_states.append(cf.States)
-        print("Performing VQE for excited states: {}/{} states".format(istate+1, nexcited))
+        prints("Performing VQE for excited states: {}/{} states".format(istate+1, nexcited))
         cf.current_det = cf.excited_states[istate]
         VQE_driver(jw_hamiltonian,jw_s2, method,  
         'zero', 'zero', mix_level, rho, DS, opt_method, opt_options, print_level, maxiter,
