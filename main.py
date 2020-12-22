@@ -114,9 +114,9 @@ while Finish == False:
                     for i in  range(0, int(len_words/2)):
                         atoms.append(words[2*i+1])
                         atom_basis.append(words[2*i+2])
-                    basis = dict(zip(atoms,atom_basis))
+                    cf.basis = dict(zip(atoms,atom_basis))
                 else:
-                    basis = words[1].lower()
+                    cf.basis = words[1].lower()
             elif words[0].lower() == "method":
                 method = words[1]
                 if not chkmethod(method):
@@ -289,7 +289,7 @@ while Finish == False:
 
     if cf.n_active_electrons == 0 :
         error('# electrons = 0 !')
-    if basis != 'hubbard':
+    if cf.basis != 'hubbard':
         if cf.n_active_orbitals == 0 :
             error('# orbitals = 0 !')
     else:
