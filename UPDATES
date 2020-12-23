@@ -1,3 +1,24 @@
+(2020/12/14) Tsuchimochi
+1. Function for Spin-Projection 'S2Proj'. Args [SpinProj, euler, spin] are introduced.
+2. Modified create_state and renamed to create_uccsd_state.
+3. Added UCCSD excited states by penalizing the uccsd energy (orthogonally-constrained VQE). Introduced 'Excited' section to specify the initial determinants for excited states
+4. Bug fix for LoadTheta, geometry section, multi section.
+
+(2020/12/10) Tsuchimochi
+1. Created quket script for running quket with MPI.
+2. Added prop.py, which includes dipole and get_1RDM functions.
+3. Replaced `generate_molecular_hamiltonian` (now removed) by `generate_operators`.
+4. Corrected MPI broadcasting for operators in config.py (bcasted in `generate_operators`).
+5. Defined printing wrapper `prints` in the newly introduced fileio.py.
+6  Adjusted print appearances. 
+7. Defined matrix printing function `printmat` in fileio.py.
+8. Modified k-UpCCGSD so that singles are spin-free. Parameter # been changed.
+9. Other cosmetic changes...
+
+TODO
+----
+Need to reconcile the number of orbitals and active orbitals for property calculations.
+
 (2020/12/04) Tsuchimochi
 Added k-UpCCGSD (Yoshikura) and JM-UCC (Mori), with modifications. 
 Introduced mpi4py to perform hybrid parallel calculations.

@@ -16,14 +16,17 @@ from qulacs.observable import create_observable_from_openfermion_text
 from openfermion.ops import QubitOperator
 from qulacs import QuantumState
 from qulacs import QuantumCircuit
-from .ucclib import ucc_singles
-from . import config
+from .ucclib import ucc_singles, single_ope_Pauli
+from . import config as cf
 from . import utils
+from .fileio    import prints, SaveTheta, print_state
 
 
 def set_circuit_rhf(n_qubit_system,n_electron):
     """ Function:
     Construct circuit for RHF |0000...1111> 
+
+    Author(s): Yuto Mori 
     """
     circuit = QuantumCircuit(n_qubit_system)
     for i in range(n_electron):
@@ -33,6 +36,8 @@ def set_circuit_rhf(n_qubit_system,n_electron):
 def set_circuit_rohf(n_qubit_system,noa,nob):
     """ Function:
     Construct circuit for ROHF |0000...10101111> 
+
+    Author(s): Yuto Mori, Takashi Tsuchimochi 
     """
     circuit = QuantumCircuit(n_qubit_system)
     for i in range(noa):
@@ -44,15 +49,36 @@ def set_circuit_rohf(n_qubit_system,noa,nob):
 def set_circuit_uhf(n_qubit_system,noa,nob,nva,nvb,kappa_list):
     """ Function:
     Construct circuit for UHF by orbital rotation 
+
+    Author(s):  Takashi Tsuchimochi 
     """
     circuit = QuantumCircuit(n_qubit_system)
     ucc_singles(circuit,noa,nob,nva,nvb,kappa_list)
     return circuit
 
 
+def set_circuit_ghf(n_qubit_system,kappa_list):
+    """ Function:
+    Construct circuit for GHF by general spin orbital rotation 
+
+    Author(s):  Takashi Tsuchimochi 
+    """
+    circuit = QuantumCircuit(n_qubit_system)
+    pq = 0
+    for p in range(n_qubit_system):  
+        for q in range(p):
+            single_ope_Pauli(p,q,circuit,kappa_list[pq])
+            pq += 1
+    return circuit
+            
+
+
+
 def cost_uhf(print_level,n_qubit_system,n_electron,noa,nob,nva,nvb,qulacs_hamiltonian,qulacs_s2,kappa_list):
     """ Function:
     Energy functional of UHF
+
+    Author(s):  Takashi Tsuchimochi 
     """
     t1 = time.time()
     state = QuantumState(n_qubit_system)
@@ -68,15 +94,16 @@ def cost_uhf(print_level,n_qubit_system,n_electron,noa,nob,nva,nvb,qulacs_hamilt
     t2 = time.time() 
     cpu1 = t2 - t1
     if print_level > 0:
-        cput = t2 - config.t_old 
-        config.t_old = t2
-        with open(config.log,'a') as f:
-            print(" E[UHF] = ", '{:.12f}'.format(Euhf),  "  <S**2> =", '%2.15f' % S2, "  CPU Time = ", '%2.5f' % cput, " (%2.5f / step)" % cpu1, file=f)
-        utils.SaveTheta(noa*nva+nob*nvb,kappa_list,config.tmp)
+        cput = t2 - cf.t_old 
+        cf.t_old = t2
+        cf.icyc += 1
+        prints("{cyc:5}:".format(cyc=cf.icyc),"  E[UHF] = ", '{:.12f}'.format(Euhf),  "  <S**2> =", '% 17.15f' % S2, "  CPU Time = ", '%2.5f' % cput, " (%2.5f / step)" % cpu1)
+        SaveTheta(noa*nva+nob*nvb,kappa_list,cf.tmp)
     if print_level > 1:
-        with open(config.log,'a') as f:
-            print('(UHF state)',file=f)
-        utils.print_state(state,n_qubit_system)
+        prints('(UHF state)')
+        print_state(state,n_qubit_system)
+    # Store HF wave function
+    cf.States = state
     return Euhf, S2
 
 def mix_orbitals(noa,nob,nva,nvb,mix_level,random=False,angle=np.pi/4):
@@ -87,6 +114,8 @@ def mix_orbitals(noa,nob,nva,nvb,mix_level,random=False,angle=np.pi/4):
         random:     [Bool] randomly mix orbitals
         angle:      mixing angle
         kappa:      kappa amplitudes in return
+
+    Author(s):  Takashi Tsuchimochi 
     """
     kappa = np.zeros(noa*nva + nob*nvb) 
     ia = 0
@@ -111,6 +140,8 @@ def bs_orbitals(kappa,ialpha,aalpha,jbeta,bbeta,noa,nob,nva,nvb):
     #   kappa:      kappa amplitudes in return
     #   ialpha -->  aalpha
     #   jbeta -->  bbeta
+
+    Author(s):  Takashi Tsuchimochi 
     """
     kappa[ialpha + (aalpha-noa) * noa] += np.pi/6
     kappa[jbeta + (bbeta-nob) * nob + noa*nva] += -np.pi/6
