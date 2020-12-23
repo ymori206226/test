@@ -47,7 +47,7 @@ VQEにおいてパラメータ数が多い場合、コスト関数の数値微�
 そこでMPI並列によってコスト関数の数値微分を並列計算する。MPI並列計算は`$NPROCS`をプロセス数として以下のように流す。
 
 ```
-    mpirun -np $NPROCS python3.8 main.py ***
+    mpirun -np $NPROCS python3.8 -m mpi4py main.py ***
 ```
 これとOpenMPを組み合わせたOpenMP-MPIハイブリッド並列で大幅なスピードアップがのぞめる。
 
@@ -124,7 +124,7 @@ det = 00001111
 
 
 ## 多状態計算
-multiセクションを使うことでJM-UCCが実行できる。左はゼロ次空間のビット列、右はエネルギーの重み
+`multi`セクションを使うことでJM-UCCが実行できる。左はゼロ次空間のビット列、右はエネルギーの重み
 ```
 multi:
     00001111      0.5
@@ -133,7 +133,7 @@ multi:
 ``` 
 
 ## 励起状態計算
-excitedセクションを使うことでOrthogonally-Constrained VQE (OC-VQE) を使った励起状態計算が実行できる (UCCSD, k-UpCCGSDのみ対応)。
+`excited`セクションを使うことでOrthogonally-Constrained VQE (OC-VQE) を使った励起状態計算が実行できる (UCCSD, k-UpCCGSDのみ対応)。
 ビット列を指定すると、これを初期ビット列として複数の励起状態を段階的に探索する。下の例は2つの励起状態を`00001111`と`00100111`を出発点として探索する。このとき、初期ビット列は上から順に使われる。
 ```
 excited:
