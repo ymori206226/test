@@ -219,6 +219,7 @@ while Finish == False:
                     base2  = str("0b"+words[1])
                     base10 = int(base2,2)
                     cf.det = base10
+                    #cf.current_det = base10
                 else:
                     prints("Invalid determinant description '{}' ".fortmat(words[1]))
             elif words[0].lower() == "multi":
@@ -349,6 +350,7 @@ while Finish == False:
     if cf.det == -1:
         # Initial determinant is RHF or ROHF
         set_initial_det()
+    cf.current_det = cf.det
 
     if method in ('phf','opt_puccsd','opt_puccd'):
         cf.SpinProj = True
@@ -377,7 +379,6 @@ while Finish == False:
         VQE_driver(jw_hamiltonian,jw_s2, method,  
         'zero', theta_guess, mix_level, rho, DS, opt_method, opt_options, print_level, maxiter,
         False, print_amp_thres)
-
     prints('End at ',datetime.datetime.now())  # time stamp
     if mpi.main_rank and os.path.exists(cf.tmp):
         os.remove(cf.tmp)

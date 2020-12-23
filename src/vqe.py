@@ -193,6 +193,8 @@ def VQE_driver(jw_hamiltonian,jw_s2, method,
 
     prints("Performing VQE for ",method)
     prints('Number of VQE parameters: {}'.format(ndim))
+    prints('Initial configuration: ',\
+           '|',format(cf.current_det,'0'+str(n_qubit_system)+'b'),'>') 
     cf.ndim = ndim
     ############################# 
     ### set up initial kappa  ###

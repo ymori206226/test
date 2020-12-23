@@ -44,7 +44,6 @@ def set_initial_det():
         cf.det = cf.det ^ (1 << 2*i)
     for i in range(nob): 
         cf.det = cf.det ^ (1 << 2*i+1)
-    cf.current_det = cf.det
 
 
 def get_occvir_lists(n_qubit,det):
