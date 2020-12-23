@@ -848,8 +848,9 @@ def cost_upccgsd(print_level,n_qubit_system,n_electron,noa,nob,nva,nvb,rho,qulac
     ndim1 = int(norbs*(norbs-1)/2)
     ndim2 = int(ndim1)
     state = QuantumState(n_qubit_system)
-    set_circuit = set_circuit_rhf(n_qubit_system,n_electron)
-    set_circuit.update_quantum_state(state)
+    #set_circuit = set_circuit_rhf(n_qubit_system,n_electron)
+    #set_circuit.update_quantum_state(state)
+    state.set_computational_basis(cf.current_det) 
 
 #    if np.linalg.norm(kappa_list) > 0.0001:
 #        ## UUCCSD: generate UHF reference by applying exp(kappa)

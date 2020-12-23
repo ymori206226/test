@@ -7,8 +7,12 @@ flag_inp=false
 opterr=false
 nprocs=1
 
-# Directory
-QDIR=/home/tsuchimochi/quket
+# Directory (please change accordingly)
+QDIR=/home/${USER}/quket   #  directory where main.py exists
+WDIR=/work/${USER}/data    #  working directory
+if [ ! -d $WDIR ]; then
+  mkdir $WDIR
+fi  
 python=`which python3.8`
 #python=/usr/local/bin/python3.8
 # For Ravel
@@ -35,5 +39,5 @@ if [ ! -e ${input}.inp ]; then
     exit
 fi
 
-nohup mpirun -np $nprocs $MPI_tcp $python ${QDIR}/main.py $input > ${input}.out  && exit 
+nohup mpirun -np $nprocs $MPI_tcp $python -m mpi4py ${QDIR}/main.py $input > ${input}.out  && exit 
 

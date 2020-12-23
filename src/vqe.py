@@ -369,13 +369,13 @@ def VQE_driver(jw_hamiltonian,jw_s2, method,
         if cf.Do1RDM:
             Daa,Dbb = get_1RDM(cf.States,print_level=1)
         ### Test
-        #from .opelib import single_operator_gradient
-        #g=np.zeros((n_qubit_system,n_qubit_system))
-        #for q in range(n_qubit_system):
-        #    for p in range(q):
-        #        g[p][q] = single_operator_gradient(p,q,jw_hamiltonian,cf.States,n_qubit_system)
-        #printmat(g,filepath=None,name="Grad")
-
+#        from .opelib import single_operator_gradient
+#        g=np.zeros((n_qubit_system,n_qubit_system))
+#        for q in range(n_qubit_system):
+#            for p in range(q):
+#                g[p][q] = single_operator_gradient(p,q,jw_hamiltonian,cf.States,n_qubit_system)
+#        printmat(g,filepath=None,name="Grad")
+#
     t2 = time.time()
     cput = t2 - t1
     prints("\n Done: CPU Time =  ",'%15.4f' % cput)

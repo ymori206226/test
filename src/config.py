@@ -112,3 +112,5 @@ Do2RDM = 0
 # VQE Quantum State(s)
 States = None
 
+# ADAPT
+list_operators = []

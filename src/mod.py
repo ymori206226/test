@@ -23,6 +23,7 @@ from openfermion import MolecularData
 from openfermionpyscf import PyscfMolecularData
 
 from . import config as cf
+from . import mpilib as mpi
 
 
 def prepare_pyscf_molecule_mod(molecule):
@@ -192,11 +193,6 @@ def run_pyscf_mod(
     # Populate fields.
     molecule.canonical_orbitals = pyscf_scf.mo_coeff.astype(float)
     molecule.orbital_energies = pyscf_scf.mo_energy.astype(float)
-
-
-
-
-    
 
     # Get integrals.
     one_body_integrals, two_body_integrals = compute_integrals_mod(

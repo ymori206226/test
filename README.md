@@ -1,6 +1,6 @@
 # quket
 ```
- Quantum Computing Simulator Ver 0.2
+ Quantum Computing Simulator Ver 0.2.1
      Copyright 2019-2020 Takashi Tsuchimochi, Yuto Mori, Takahiro Yoshikura. All rights Reserved.
 
  This suite of programs simulates quantum computing for electronic Hamiltonian.
@@ -20,6 +20,8 @@ Titan (titan2~titan7) では/home/calc/tsuchimochi/binをPATHに入れるよう�
 
 
 # 使い方
+
+(0) まず/work/USERNAME/dataのディレクトリを作る。
 
 (1) インプットファイル `***.inp` を用意する (具体例は下か`main.py`を見る)
 
@@ -115,6 +117,7 @@ geometry
 - `maxiter`             :最大反復数: 0なら PySCFとJW-変換のみ行われて計算が終了（VQEはしない）
 
 
+## 多状態計算
 multiセクションを使うことでJM-UCCが実行できる。左はゼロ次空間のビット列、右はエネルギーの重み
 ```
 multi:
@@ -123,7 +126,14 @@ multi:
     (strings)   (weights)
 ``` 
 
-
+## 励起状態計算
+excitedセクションを使うことでOrthogonally-Constrained VQE (OC-VQE) を使った励起状態計算が実行できる (UCCSD, k-UpCCGSDのみ対応)。
+ビット列を指定すると、これを初期ビット列として複数の励起状態を段階的に探索する。下の例は2つの励起状態を`00001111`と`00100111`を出発点として探索する。このとき、初期ビット列は上から順に使われる。
+```
+excited:
+    00001111
+    00100111
+```
 
 # Requisites
 
