@@ -7,7 +7,6 @@ import datetime
 import re
 from src import config as cf
 from src import mpilib as mpi
-from openfermion.transforms import jordan_wigner
 from src.fileio import prints,error,print_geom
 from src.utils  import chkbool, chkmethod
 prints('///////////////////////////////////////////////////////////////////////////////////',opentype='w')
@@ -304,6 +303,7 @@ while Finish == False:
     if pyscf_guess == 'read':
        pyscf_guess = 'chkfile' 
 
+    from openfermion.transforms import jordan_wigner
     from src.opelib import generate_operators, get_hubbard
     from src.vqe    import VQE_driver
     from src.phflib import set_projection
