@@ -103,10 +103,8 @@ geometry
 - `kappa_guess`         :kappaのguess: 'zero', 'read', 'mix', 'random'のいずれか
 - `theta_guess`         :T1 と T2 amplitudesのguess: 'zero', 'read', 'mix', 'random'のいずれか
 - `Kappa_to_T1`         :`***.kappa`の内容を使ってT1を作るかの指定
-- `spin`                :スピン射影におけるスピン多重度の指定
-- `ng`                  :スピン射影におけるグリッド点数（通常2~4）
 - `DS`                  :T1とT2がかかる順番。 0 なら Exp[T1]Exp[T2], 1 なら Exp[T2]Exp[T1]
-- `print_amp_thres`     ：出力する T amplitudes のしきい値 
+- `print_amp_thres`     :出力する T amplitudes のしきい値 
 - `constraint_lambda`   :スピン制限のためのlambda値（大きければ正しいスピン多重度を与える）
 
 ### For scipy.optimize
@@ -114,16 +112,29 @@ geometry
 - `gtol`                :グラジエントの収束しきい値
 - `ftol`                :エネルギーの収束しきい値
 - `eps`                 :数値微分のステップサイズ     
-- `maxiter`             :最大反復数: 0なら PySCFとJW-変換のみ行われて計算が終了（VQEはしない）
+- `maxiter`             :最大反復数: 0なら PySCFとJW-変換のみ行われて計算が終了, -1ならさらにエネルギー計算されて終了（どちらもVQEはしない）
 
-## 初期行列式の決定
-`det`もしくは`determinant`オプションによって初期行列式を指定できる：デフォルトはHF配置
+### Parallel setting
+- `npar`                :スレッド並列数の指定:デフォルトはスレッド並列なし（`npar`=1） 大体2か4くらいに設定すると良い. NumPyの都合上、最初に指定したものから変更できない
+
+### Spin Symmetry Projection
+- `spin`                :スピン射影におけるスピン多重度の指定
+- `euler`               :スピン射影におけるオイラー角積分のグリッド点数. (alpha,beta,gamma)のデフォルトは(1,2,1). 通常はbetaだけの指定で十分なので、`euler`のインプットが1つならbetaの値, 2つならalphaとbetaの値, 3つなら全てが決まる.
+```
+euler =  4        ->  (1,4,1)
+euler =  2, 4     ->  (2,4,1)
+euler =  2, 4, 3  ->  (2,4,3)
+```
+
+
+### 初期行列式の決定
+`det`もしくは`determinant`オプションによって初期ビット列を指定できる：デフォルトはHF配置
 ```
 det = 00001111
 ```
 
 
-## 多状態計算
+### 多状態計算
 `multi`セクションを使うことでJM-UCCが実行できる。左はゼロ次空間のビット列、右はエネルギーの重み
 ```
 multi:
@@ -132,7 +143,7 @@ multi:
     (strings)   (weights)
 ``` 
 
-## 励起状態計算
+### 励起状態計算
 `excited`セクションを使うことでOrthogonally-Constrained VQE (OC-VQE) を使った励起状態計算が実行できる (UCCSD, k-UpCCGSDのみ対応)。
 ビット列を指定すると、これを初期ビット列として複数の励起状態を段階的に探索する。下の例は2つの励起状態を`00001111`と`00100111`を出発点として探索する。このとき、初期ビット列は上から順に使われる。
 ```
@@ -149,6 +160,7 @@ The following external modules and libraries are required.
  - Qulacs             0.1.9   
  - numpy
  - scipy 
+ - mpi4py
 
 All the necessary libtaries are installed under Python3.8 in Ravel (ravel01) and Titan (titan2~titan7). 
 Type "pip3.8 list" to check this.
