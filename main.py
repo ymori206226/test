@@ -1,19 +1,15 @@
 import os
 os.environ["OMP_NUM_THREADS"] =  "1"    ### Initial setting
+os.environ["MKL_NUM_THREADS"] =  "1"    ### Initial setting
+os.environ["NUMEXPR_NUM_THREADS"] =  "1"    ### Initial setting
 import sys
 import datetime
 import re
-import numpy as np
-from src import  utils
 from src import config as cf
 from src import mpilib as mpi
 from openfermion.transforms import jordan_wigner
-from src.opelib import generate_operators, get_hubbard
-from src.vqe    import VQE_driver
-from src.phflib import set_projection
 from src.fileio import prints,error,print_geom
 from src.utils  import chkbool, chkmethod
-from src.init   import set_initial_det
 prints('///////////////////////////////////////////////////////////////////////////////////',opentype='w')
 prints('///                                                                             ///')
 prints('///                                                                             ///')
@@ -269,6 +265,8 @@ while Finish == False:
             elif words[0].lower() == "npar":
                 cf.nthreads = words[1]
                 os.environ["OMP_NUM_THREADS"] =  words[1]
+                os.environ["MKL_NUM_THREADS"] =  words[1]
+                os.environ["NUMEXPR_NUM_THREADS"] =  words[1] 
             elif words[0].lower() == "@@@":
                 job_k += 1
                 if job_k == job_no:
@@ -305,6 +303,11 @@ while Finish == False:
 
     if pyscf_guess == 'read':
        pyscf_guess = 'chkfile' 
+
+    from src.opelib import generate_operators, get_hubbard
+    from src.vqe    import VQE_driver
+    from src.phflib import set_projection
+    from src.init   import set_initial_det
     
     prints('+-------------+')
     prints('|  Job # %3d  |' % job_no)

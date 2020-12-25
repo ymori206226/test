@@ -9,25 +9,9 @@ Utilities.
 
 """
 
-
-import sys
-import time
-import numpy as np
-import scipy as sp
 from . import config as cf
 from . import mpilib as mpi
-import math
-import itertools
 from .fileio import prints, printmat
-from openfermion.transforms import jordan_wigner
-from openfermion.ops import QubitOperator, FermionOperator
-from openfermion.utils import commutator, count_qubits, hermitian_conjugated,  normal_ordered, eigenspectrum, QubitDavidson 
-from qulacs.observable import create_observable_from_openfermion_text 
-from qulacs.quantum_operator import create_quantum_operator_from_openfermion_text
-from qulacs.state import inner_product
-from qulacs import QuantumState
-
-import copy
 
 def cost_mpi(cost,theta):
     """ Function
@@ -52,6 +36,8 @@ def jac_mpi(cost,theta,stepsize=1e-8):
 
     Author(s): Takashi Tsuchimochi
     """
+    import numpy as np
+    import copy
     ### Just in case, broadcast theta...
     mpi.comm.Bcast(theta,root=0)
     ndim =theta.size
@@ -101,6 +87,8 @@ def root_inv(A,eps=1e-8):
 
     Author(s): Takashi Tsuchimochi
     """
+    import numpy as np
+    import scipy as sp
     u, s, vh = np.linalg.svd(A,hermitian=True)
     mask = (s >= eps)
     red_u = sp.compress(mask, u, axis=1)
@@ -123,6 +111,7 @@ def T1vec2mat(noa,nob,nva,nvb,kappa_list):
 
     Author(s): Takashi Tsuchimochi
     """
+    import numpy as np
     ta = np.zeros((noa+nva,noa+nva))
     tb = np.zeros((noa+nva,noa+nva))
     ia = 0
@@ -147,6 +136,7 @@ def T1mat2vec(noa,nob,nva,nvb,ta,tb):
 
     Author(s): Takashi Tsuchimochi
     """
+    import numpy as np
     kappa_list = np.zeros(noa*nva+nob*nvb)
     ia = 0
     for a in range(nva):
@@ -165,6 +155,7 @@ def expAexpB(n,A,B):
 
     Author(s): Takashi Tsuchimochi
     """
+    import numpy as np
     from scipy.linalg import expm,logm
     C = logm(np.matmul(expm(A),expm(B)))
     return C
@@ -187,6 +178,7 @@ def orthogonal_constraint(qulacs_hamiltonian,state):
     """ Function
     Compute the penalty term for excited states based on 'orthogonally-constrained VQE' scheme.
     """
+    from qulacs.state import inner_product
     nstates = len(cf.lower_states)
     extra_cost = 0
     for i in range(nstates):
