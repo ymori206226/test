@@ -1,6 +1,6 @@
 # quket
 ```
- Quantum Computing Simulator Ver 0.2.1
+ Quantum Computing Simulator Ver 0.3
      Copyright 2019-2020 Takashi Tsuchimochi, Yuto Mori, Takahiro Yoshikura. All rights Reserved.
 
  This suite of programs simulates quantum computing for electronic Hamiltonian.
