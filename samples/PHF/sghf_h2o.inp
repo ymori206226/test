@@ -17,8 +17,8 @@ geometry
 H   1.976723791 1.359252514 0   
 O   0   -0.171290575    0   
 H   -1.976723791    1.359252514 0
-kappa_guess  = mix
-mix_level = 2
-method       = phf
-euler        = 1, 2, 1
+method       = sghf
+kappa_guess  = random
+euler        = 4, 2, 4
+spin  = 1
 

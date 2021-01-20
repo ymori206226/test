@@ -11,3 +11,4 @@ method = uccsd
 rho = 8
 npar = 4
 1RDM = true
+theta_guess =read

@@ -1,3 +1,9 @@
+(2021/01/20) Tsuchimochi
+1. method = SGHF is introduced for non-collinear spin projection of generalized HF
+2. Formatted the program codes by "black"
+3. read.py is added: the read-in code for input file is separated from main.py.
+4. Bug fixed for mpi_bcast of theta_list and kappa_list. 
+
 (2020/12/14) Tsuchimochi
 1. Function for Spin-Projection 'S2Proj'. Args [SpinProj, euler, spin] are introduced.
 2. Modified create_state and renamed to create_uccsd_state.

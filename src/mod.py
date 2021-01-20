@@ -12,22 +12,18 @@ to enable active space calculations.
 
 from __future__ import absolute_import
 from functools import reduce
-import numpy 
-import itertools
-from openfermion.transforms import jordan_wigner
-from openfermion.ops import QubitOperator
+import numpy
+from pyscf import gto, ao2mo, scf, fci, mcscf
 import pyscf
-from pyscf import gto, ao2mo, ci, cc, fci, mp, mcscf, scf
 
 from openfermion import MolecularData
 from openfermionpyscf import PyscfMolecularData
 
 from . import config as cf
-from . import mpilib as mpi
 
 
 def prepare_pyscf_molecule_mod(molecule):
-    """ Function
+    """Function
     This function creates and saves a pyscf input file.
     Args:
         molecule: An instance of the MolecularData class.
@@ -48,7 +44,7 @@ def prepare_pyscf_molecule_mod(molecule):
 
 
 def compute_scf_mod(pyscf_molecule):
-    """ Function
+    """Function
     Perform a Hartree-Fock calculation.
     Args:
         pyscf_molecule: A pyscf molecule instance.
@@ -65,7 +61,7 @@ def compute_scf_mod(pyscf_molecule):
 
 
 def compute_integrals_mod(pyscf_molecule, pyscf_scf):
-    """ Function
+    """Function
     Compute the 1-electron and 2-electron integrals.
     Args:
         pyscf_molecule: A pyscf molecule instance.
@@ -78,23 +74,24 @@ def compute_integrals_mod(pyscf_molecule, pyscf_scf):
     """
     # Get one electrons integrals.
     n_orbitals = pyscf_scf.mo_coeff.shape[1]
-    one_electron_compressed = reduce(numpy.dot, (pyscf_scf.mo_coeff.T,
-                                                 pyscf_scf.get_hcore(),
-                                                 pyscf_scf.mo_coeff))
+    one_electron_compressed = reduce(
+        numpy.dot, (pyscf_scf.mo_coeff.T, pyscf_scf.get_hcore(), pyscf_scf.mo_coeff)
+    )
     one_electron_integrals = one_electron_compressed.reshape(
-        n_orbitals, n_orbitals).astype(float)
+        n_orbitals, n_orbitals
+    ).astype(float)
 
     # Get two electron integrals in compressed format.
-    two_electron_compressed = ao2mo.kernel(pyscf_molecule,
-                                           pyscf_scf.mo_coeff)
+    two_electron_compressed = ao2mo.kernel(pyscf_molecule, pyscf_scf.mo_coeff)
 
     two_electron_integrals = ao2mo.restore(
-        1, # no permutation symmetry
-        two_electron_compressed, n_orbitals)
+        1, two_electron_compressed, n_orbitals  # no permutation symmetry
+    )
     # See PQRS convention in OpenFermion.hamiltonians._molecular_data
     # h[p,q,r,s] = (ps|qr)
     two_electron_integrals = numpy.asarray(
-        two_electron_integrals.transpose(0, 2, 3, 1), order='C')
+        two_electron_integrals.transpose(0, 2, 3, 1), order="C"
+    )
 
     # Return.
     return one_electron_integrals, two_electron_integrals
@@ -102,15 +99,15 @@ def compute_integrals_mod(pyscf_molecule, pyscf_scf):
 
 ### modify generate_molecular_hamiltonian to be able to use chkfile
 def generate_molecular_hamiltonian_mod(
-        guess,
-        geometry,
-        basis,
-        multiplicity,
-        charge=0,
-        n_active_electrons=None,
-        n_active_orbitals=None
-        ):
-    """ Function
+    guess,
+    geometry,
+    basis,
+    multiplicity,
+    charge=0,
+    n_active_electrons=None,
+    n_active_orbitals=None,
+):
+    """Function
     Old subroutine to get molecular hamiltonian by using pyscf.
 
     Author(s): Takashi Tsuchimochi
@@ -118,9 +115,10 @@ def generate_molecular_hamiltonian_mod(
 
     # Run electronic structure calculations
     molecule = run_pyscf_mod(
-            guess,
-            n_active_orbitals,n_active_electrons,
-            MolecularData(geometry, basis, multiplicity, charge)
+        guess,
+        n_active_orbitals,
+        n_active_electrons,
+        MolecularData(geometry, basis, multiplicity, charge),
     )
     # Freeze core orbitals and truncate to active space
     if n_active_electrons is None:
@@ -133,27 +131,28 @@ def generate_molecular_hamiltonian_mod(
     if n_active_orbitals is None:
         active_indices = None
     else:
-        active_indices = list(range(n_core_orbitals,
-                                    n_core_orbitals + n_active_orbitals))
+        active_indices = list(
+            range(n_core_orbitals, n_core_orbitals + n_active_orbitals)
+        )
 
     return molecule.get_molecular_hamiltonian(
-            occupied_indices=occupied_indices,
-            active_indices=active_indices)
+        occupied_indices=occupied_indices, active_indices=active_indices
+    )
 
 
 def run_pyscf_mod(
-              guess,
-              n_active_orbitals,
-              n_active_electrons,
-              molecule,
-              run_scf=True,
-              run_mp2=False,
-              run_cisd=False,
-              run_ccsd=False,
-              run_fci=False,
-              verbose=False
-              ):
-    """ Function
+    guess,
+    n_active_orbitals,
+    n_active_electrons,
+    molecule,
+    run_scf=True,
+    run_mp2=False,
+    run_cisd=False,
+    run_ccsd=False,
+    run_fci=False,
+    verbose=False,
+):
+    """Function
     This function runs a pyscf calculation.
     Args:
         molecule: An instance of the MolecularData or PyscfMolecularData class.
@@ -178,17 +177,20 @@ def run_pyscf_mod(
     # Run SCF.
     pyscf_scf = compute_scf_mod(pyscf_molecule)
     pyscf_scf.verbose = 0
-    pyscf_scf.run(chkfile=cf.chk,init_guess=guess, conv_tol=1e-12,conv_tol_grad=1e-12)
+    pyscf_scf.run(chkfile=cf.chk, init_guess=guess, conv_tol=1e-12, conv_tol_grad=1e-12)
     molecule.hf_energy = float(pyscf_scf.e_tot)
     if verbose:
-        print('Hartree-Fock energy for {} ({} electrons) is {}.'.format(
-            molecule.name, molecule.n_electrons, molecule.hf_energy))
+        print(
+            "Hartree-Fock energy for {} ({} electrons) is {}.".format(
+                molecule.name, molecule.n_electrons, molecule.hf_energy
+            )
+        )
 
     # Hold pyscf data in molecule. They are required to compute density
     # matrices and other quantities.
     molecule._pyscf_data = pyscf_data = {}
-    pyscf_data['mol'] = pyscf_molecule
-    pyscf_data['scf'] = pyscf_scf
+    pyscf_data["mol"] = pyscf_molecule
+    pyscf_data["scf"] = pyscf_scf
 
     # Populate fields.
     molecule.canonical_orbitals = pyscf_scf.mo_coeff.astype(float)
@@ -196,32 +198,32 @@ def run_pyscf_mod(
 
     # Get integrals.
     one_body_integrals, two_body_integrals = compute_integrals_mod(
-        pyscf_molecule, pyscf_scf)
+        pyscf_molecule, pyscf_scf
+    )
     molecule.one_body_integrals = one_body_integrals
     molecule.two_body_integrals = two_body_integrals
     molecule.overlap_integrals = pyscf_scf.get_ovlp()
     # CASCI (FCI)
-    #if run_fci:
-    molecule.fci_energy  = pyscf_scf.CASCI(n_active_orbitals,n_active_electrons).kernel()[0]
+    # if run_fci:
+    molecule.fci_energy = pyscf_scf.CASCI(
+        n_active_orbitals, n_active_electrons
+    ).kernel()[0]
     # Return updated molecule instance.
     pyscf_molecular_data = PyscfMolecularData.__new__(PyscfMolecularData)
     pyscf_molecular_data.__dict__.update(molecule.__dict__)
     pyscf_molecular_data.save()
 
-
-
-#   Keep molecular data in config.py
+    #   Keep molecular data in config.py
     cf.hf_energy = molecule.hf_energy
     cf.fci_energy = molecule.fci_energy
     cf.mo_coeff = pyscf_scf.mo_coeff.astype(float)
-    cf.natom    = pyscf_molecule.natm
+    cf.natom = pyscf_molecule.natm
     cf.atom_charges = []
     cf.atom_coords = []
     for i in range(cf.natom):
         cf.atom_charges.append(pyscf_molecule.atom_charges()[i])
         cf.atom_coords.append(pyscf_molecule.atom_coords()[i])
 
-    cf.rint     = pyscf_molecule.intor('int1e_r')
+    cf.rint = pyscf_molecule.intor("int1e_r")
 
     return pyscf_molecular_data
-
