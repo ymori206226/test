@@ -123,7 +123,7 @@ def print_state(state, n_qubit=None, filepath=cf.log, threshold=1e-2, name=None)
     """
     if type(name) == str:
         prints(name)
-    if n_qubit:
+    if n_qubit == None:
         n_qubit = state.get_qubit_count()
     opt = "0" + str(n_qubit) + "b"
     prints(" Basis       Coef", filepath=filepath)
