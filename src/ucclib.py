@@ -537,14 +537,14 @@ def ucc_Gsingles(circuit, noa, nob, nva, nvb, theta_list, ndim2=0):
         a2 = 2 * a
         for i in range(a):
             i2 = 2 * i
-            single_ope(a2, i2, circuit, theta_list[ia])
+            single_ope_Pauli(a2, i2, circuit, theta_list[ia])
             ia = ia + 1
     ### beta ###
     for a in range(norbs):
         a2 = 2 * a + 1
         for i in range(a):
             i2 = 2 * i + 1
-            single_ope(a2, i2, circuit, theta_list[ia])
+            single_ope_Pauli(a2, i2, circuit, theta_list[ia])
             ia = ia + 1
 
 
