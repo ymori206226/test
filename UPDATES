@@ -1,3 +1,9 @@
+(2021/02/02) Tsuchimochi
+1. Bug fixed for print_state (in fileio.py) and single_ope (ncnot undefined).
+2. Introduced Gdouble_ope in expope.py for general double excitations.
+3. Introduced spin-projection in k-UpCCGSD (breaks spin-symmetry by using the different signs between alpha and beta singles)
+4. Added some useful documents in docs directory.
+
 (2021/01/20) Tsuchimochi
 1. method = SGHF is introduced for non-collinear spin projection of generalized HF
 2. Formatted the program codes by "black"

@@ -676,10 +676,12 @@ def upcc_Gsingles(circuit, norbs, theta_list, ndim1, ndim2, i):
             ### alpha ###
             single_ope_Pauli(a2, i2, circuit, theta_list[ia])
             ### beta ###
-            if cf.spin == 1:
+            if cf.SpinProj:
+                ### For spin-projection, deliberately break spin-symmetry
                 single_ope_Pauli(a2 + 1, i2 + 1, circuit, -theta_list[ia])
             else:    
-                single_ope_Pauli(a2 + 1, i2 + 1, circuit, -theta_list[ia])
+                ### Standard spin-free singles
+                single_ope_Pauli(a2 + 1, i2 + 1, circuit,  theta_list[ia])
             ia = ia + 1
 
 

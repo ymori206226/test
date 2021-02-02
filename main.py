@@ -42,7 +42,7 @@ prints(
     "///                                                                             ///"
 )
 prints(
-    "///                      Quantum Computing Simulator Ver Beta                   ///"
+    "///                      Quantum Computing Simulator Ver 0.3.1                  ///"
 )
 prints(
     "///                                                                             ///"

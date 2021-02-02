@@ -1,0 +1,588 @@
+% !TEX encoding = MacOSRoman
+\documentclass[prb,amsmath,amsfonts,amssymb]{revtex4}
+
+\usepackage{graphicx}
+\usepackage{color}
+\usepackage{bm}
+\definecolor{grey}{rgb}{0.7,0.7,0.7}
+\newcommand{\blue}{\color{blue}{}}
+\newcommand{\red}{\color{red}{}}
+\newcommand{\black}{\color{black}{}}
+\newcommand{\cyan}{\color{cyan}{}}
+\newcommand{\magenta}{\color{magenta}{}}
+\newcommand{\grey}{\color{grey}{}}
+\pagestyle{empty}
+\usepackage{fancyvrb}
+\newcommand{\bra}{\langle}
+\newcommand{\ket}{\rangle}
+
+\begin{document}
+\title{Double excitation unitary circuit}
+\author{Takashi Tsuchimochi}
+\date{\today}
+\maketitle
+Here, we consider a quantum circuit that performs the following unitary:
+\begin{align*}
+\hat U_{rs}^{pq} &= e^{t_{rs}^{pq}\hat \tau_{rs}^{pq}}\\
+\hat \tau_{rs}^{pq} &=  \left(a_p^\dag a_q^\dag a_r a_s - a_s^\dag a_r^\dag a_q a_p\right)
+\end{align*}
+For the ordering, we adopt our discussion to the convention of quantum computing ($a_p^\dag a_q^\dag a_r a_s$), rather than quantum chemistry ($a_p^\dag a_q^\dag a_s a_r$).
+
+Using the Jordan-Wigner (JW) transform, we have
+\begin{align}
+	&p^\dag =  \frac{1}{2}\left(X_p - i Y_p\right) \bigotimes_{t=p+1}^{n} Z_t \\
+	&p =  \frac{1}{2}\left(X_p + i Y_p\right) \bigotimes_{t=p+1}^{n} Z_t 
+\end{align}
+and therefore
+\begin{align}
+	\hat \tau_{rs}^{pq} = \frac{1}{16}\left(X_p - i Y_p\right)\left(\bigotimes_{t=p+1}^{n}Z_t \right) \otimes 
+	 \left(X_q - i Y_q\right)
+	 \left(\bigotimes_{u=q+1}^{n}Z_u \right)
+	\otimes
+	\left(X_r + i Y_r\right)\left(\bigotimes_{v=r+1}^{n}Z_v \right)
+	\otimes
+\left(X_s + i Y_s\right)\left(\bigotimes_{w=s+1}^{n}Z_w \right)
+- h.c.
+\end{align}
+
+In the standard UCCSD, we always assume the ordering of qubits as $p>q>r>s$. Then, the above equation can be decomposed as
+\begin{align}
+	\hat \tau_{rs}^{pq} = & \frac{1}{16}\left(X_p - i Y_p\right)\blue\left(\bigotimes_{t=p+1}^{n}Z_t \right)	\nonumber\\
+	& \otimes 
+	 \left(X_q - i Y_q\right)
+\red	 \left(\bigotimes_{u=q+1}^{p-1}Z_u \right)
+\black	  Z_p
+	   \blue\left(\bigotimes_{u'=p+1}^{n}Z_{u'} \right)\nonumber\\
+	&\otimes
+\left(X_r + i Y_r\right)
+\cyan\left(\bigotimes_{v=r+1}^{q-1}Z_v \right)
+\black Z_q
+\red \left(\bigotimes_{v'=q+1}^{p-1}Z_{v'} \right)
+\black Z_p
+\blue\left(\bigotimes_{v''=p+1}^{n}Z_{v''} \right)
+	\nonumber\\	
+	&\otimes
+\left(X_s + i Y_s\right)
+\magenta \left(\bigotimes_{w=s+1}^{r-1} Z_w \right)
+\black Z_r
+\cyan \left(\bigotimes_{w'=r+1}^{q-1} Z_{w'} \right)
+\black Z_q
+\red \left(\bigotimes_{w''=q+1}^{p-1} Z_{w''} \right)
+\black Z_p
+\blue\left(\bigotimes_{w'''=p+1}^{n} Z_{w'''} \right)
+\black 
+- h.c.
+\end{align}
+Since $Z_p^2 = I$, performing the tensor products $\blue\bigotimes_{t=p+1}^n Z_t$ and $\cyan\bigotimes_{v=r+1}^{q-1} Z_v$ for even times becomes the identity operation, while $\red\bigotimes_{u=q+1}^{p-1} Z_u$ and $\magenta\bigotimes_{w=s+1}^{r-1} Z_w$ survive. 
+Therefore,
+\begin{align}
+	\hat \tau_{rs}^{pq} = & \frac{1}{16}\left(X_p - i Y_p\right)
+		\nonumber\\
+	& \otimes 
+	 \left(X_q - i Y_q\right)
+\red	 \left(\bigotimes_{u=q+1}^{p-1}Z_u \right)
+\black	  Z_p
+\nonumber\\
+	&\otimes
+	\left(X_r + i Y_r\right)
+\black Z_q
+\red \left(\bigotimes_{v'=q+1}^{p-1}Z_{v'} \right)
+\black Z_p
+	\nonumber\\	
+	&\otimes
+\left(X_s + i Y_s\right)
+\magenta \left(\bigotimes_{w=s+1}^{r-1} Z_w \right)
+\black Z_r
+\black Z_q
+\red \left(\bigotimes_{w''=q+1}^{p-1} Z_{w''} \right)
+\black Z_p
+\black 
+- h.c.
+\nonumber\\
+= & \frac{1}{16} \magenta \left(\bigotimes_{w=s+1}^{r-1} Z_w \right)\red \left(\bigotimes_{w''=q+1}^{p-1} Z_{w''} \right) 
+\black \left(X_p - i Y_p\right) \underbrace{Z_p Z_p Z_p}_{Z_p}
+	\otimes 
+	 \left(X_q - i Y_q\right) \underbrace{Z_q Z_q}_{I_q}
+	\otimes
+	\left(X_r + i Y_r\right) Z_r
+	\otimes
+\left(X_s + i Y_s\right)
+- h.c.
+\end{align}
+Furthermore, since
+\begin{subequations}
+	\begin{align}
+	(X_p-iY_p)Z_p = +(X_p-iY_p)\\
+	(X_p+iY_p)Z_p = -(X_p+iY_p)\\
+	Z_p(X_p-iY_p) = -(X_p-iY_p)\\
+	Z_p(X_p+iY_p) = +(X_p+iY_p)
+\end{align}
+\label{eq:sigma_Z}
+\end{subequations}
+we obtain
+\begin{align}
+	\hat \tau_{rs}^{pq} =  & -\frac{1}{16} \left(\bigotimes_{w=s+1}^{r-1} Z_w \right) \left(\bigotimes_{w''=q+1}^{p-1} Z_{w''} \right) \otimes
+ \left(X_p - i Y_p\right) 
+	\otimes 
+	 \left(X_q - i Y_q\right) 	\otimes
+	\left(X_r + i Y_r\right)
+	\otimes
+\left(X_s + i Y_s\right)
+- h.c.\nonumber\\
+&= \frac{1}{16} \left(\bigotimes_{w=s+1}^{r-1} Z_w \right) \left(\bigotimes_{w''=q+1}^{p-1} Z_{w''} \right) \otimes
+ \Bigl(
+\grey -X_p X_q X_r X_s 
++ X_r X_s Y_p Y_q 
+ - Y_p X_q Y_r X_s 
+- X_p Y_q Y_r X_s\nonumber\\
+&\grey- Y_p X_q X_r Y_s 
+- X_p Y_q X_r Y_s 
++ X_p X_q Y_r Y_s 
+- Y_p Y_q Y_r Y_s
+\black + i Y_p X_q X_r X_s 
++ i X_p Y_q X_r X_s 
++ i Y_p Y_q X_r Y_s 
+\nonumber\\
+&+ i Y_p Y_q Y_r X_s 
+- i X_p X_q X_r Y_s 
+ - i X_p X_q Y_r X_s 
+- i Y_p X_q Y_r Y_s 
+- i X_p Y_q Y_r Y_s 
+\black\Bigr) 
+ - h.c.\label{eq:pqrs}
+\end{align}
+Because of $h.c.$, the real terms will cancel out, and we finally have (setting $w\rightarrow t, \; w'' \rightarrow u$)
+\begin{align}
+	\hat \tau_{rs}^{pq} &= \frac{i}{8} \left(\bigotimes_{t=s+1}^{r-1} Z_t \right) \left(\bigotimes_{u=q+1}^{p-1} Z_{u} \right) 
+ \Bigl(
+\black +Y_p X_q X_r X_s 
+\black  + X_p Y_q X_r X_s
+\black + Y_p Y_q X_r  Y_s 
+\black+ Y_p Y_q Y_r  X_s \\&
+\black - X_p X_q X_r Y_s 
+\black - X_p X_q Y_r X_s 
+\black -Y_p  X_q  Y_r Y_s 
+\black- X_p Y_q Y_r Y_s 
+\black\Bigr) 
+\end{align}
+
+\subsection{$p>r>q>s$}
+We can investigate the different ordering cases. Here, we assume $p>r>q>s$. Using the anti-commutation relation of the fermion operators,
+\begin{align}
+	p^\dag q^\dag r s = -p^\dag r q^\dag s 
+\end{align} 
+for $q\ne r$. Then,
+\begin{align}
+	\hat \tau_{rs}^{pq} &= a_p^\dag a_q^\dag a_r a_s- h.c. \nonumber \\
+	&=  \frac{1}{16}\left(X_p - i Y_p\right)\blue\left(\bigotimes_{t=p+1}^{n}Z_t \right)	\nonumber\\
+	& \otimes
+	 \left(X_q - i Y_q\right)
+\cyan\left(\bigotimes_{u=q+1}^{r-1}Z_u \right)
+\black Z_r
+\red	 \left(\bigotimes_{u'=r+1}^{p-1}Z_{u'} \right)
+\black	  Z_p
+	   \blue\left(\bigotimes_{u''=p+1}^{n}Z_{u''} \right)\nonumber\\
+	&\otimes
+\left(X_r + i Y_r\right)
+\red \left(\bigotimes_{v'=r+1}^{p-1}Z_{v'} \right)
+\black Z_p
+\blue\left(\bigotimes_{v''=p+1}^{n}Z_{v''} \right)
+	\nonumber\\	
+	&\otimes
+\left(X_s + i Y_s\right)
+\magenta \left(\bigotimes_{w=s+1}^{q-1} Z_w \right)
+\black Z_q
+\cyan \left(\bigotimes_{w'=q+1}^{r-1} Z_{w'} \right)
+\black Z_r
+\red \left(\bigotimes_{w''=r+1}^{p-1} Z_{w''} \right)
+\black Z_p
+\blue\left(\bigotimes_{w'''=p+1}^{n} Z_{w'''} \right)
+\black 
+- h.c.\nonumber\\
+%
+	&=  \frac{1}{16}\left(X_p - i Y_p\right) Z_p
+ \otimes
+	 \left(X_q - i Y_q\right)Z_q
+\otimes
+\black Z_r\left(X_r + i Y_r\right)\black Z_r
+\otimes
+\left(X_s + i Y_s\right)\otimes
+\magenta \left(\bigotimes_{w=s+1}^{q-1} Z_w \right)
+\red \left(\bigotimes_{w''=r+1}^{p-1} Z_{w''} \right)
+\black 
+- h.c.\nonumber\\
+%
+	&=  -\frac{1}{16}
+	\magenta \left(\bigotimes_{w=s+1}^{q-1} Z_w \right)
+\red \left(\bigotimes_{w''=r+1}^{p-1} Z_{w''} \right)\black
+\otimes \left(X_p - i Y_p\right) 
+ \otimes
+	 \left(X_q - i Y_q\right)
+\otimes
+\left(X_r + i Y_r\right)
+\otimes
+\left(X_s + i Y_s\right)
+\black 
+- h.c.
+\end{align}
+This is exactly the same as Eq. (\ref{eq:pqrs}) except that $w$ and $w''$ run over $s+1\sim q-1$ and $r+1\sim p-1$, respectively (in Eq. (\ref{eq:pqrs}), $w = s+1 \sim r-1$ and $w = q+1 \sim p-1$). Hence, for this ordering $p > r > q > s$,
+\begin{align}
+		\hat \tau_{rs}^{pq} &= \frac{i }{8} \left(\bigotimes_{t=s+1}^{{\magenta q-1}} Z_t \right) \left(\bigotimes_{{\red u=r+1}}^{p-1} Z_{u} \right) 
+ \Bigl(
+\black +Y_p X_q X_r X_s 
+\black  + X_p Y_q X_r X_s
+\black + Y_p Y_q X_r  Y_s 
+\black+ Y_p Y_q Y_r  X_s \\&
+\black - X_p X_q X_r Y_s 
+\black - X_p X_q Y_r X_s 
+\black -Y_p  X_q  Y_r Y_s 
+\black- X_p Y_q Y_r Y_s 
+\black\Bigr) 
+\end{align}
+
+One might work out with other cases, but one can show that \red the general rule is that the CNOT ladders (the $Z$-tensors) occur between the largest two qubits, and between the smallest two qubits. \black 
+
+
+To see this, let us re-label and sort $p,q,r,s$ in ascending order as $i_1 < i_2 < i_3 < i_4$. Suppose the JW transformation is performed to these fermion operators. As described above, each fermion operator generates, whether creation or annihilation operators:
+\begin{align}
+	&{i_1} \rightarrow \sigma_{i_1} Z_{i_2} Z_{i_3} Z_{i_4}\left(\bigotimes_{j_1=i_1+1}^{i_2-1} Z_{j_1}\right) \left(\bigotimes_{j_2=i_2+1}^{i_3-1} Z_{j_2}\right)\left(\bigotimes_{j_3=i_3+1}^{i_4-1} Z_{j_3}\right)\left(\bigotimes_{j_4=i_4+1}^{n} Z_{j_4}\right)\\
+	&{i_2} \rightarrow \sigma_{i_2}Z_{i_3}Z_{i_4}\left(\bigotimes_{j_2=i_2+1}^{i_3-1} Z_{j_2}\right)\left(\bigotimes_{j_3=i_3+1}^{i_4-1} Z_{j_3}\right)\left(\bigotimes_{j_4=i_4+1}^{n} Z_{j_4}\right)\\
+	&{i_3} \rightarrow \sigma_{i_3}  Z_{i_4} \left(\bigotimes_{j_3=i_3+1}^{i_4-1} Z_{j_3}\right)\left(\bigotimes_{j_4=i_4+1}^{n} Z_{j_4}\right)\\
+	&{i_4} \rightarrow \sigma_{i_4} \left(\bigotimes_{j_4=i_4+1}^{n} Z_{j_4}\right)\\	
+\end{align}
+For convenience, we have decomposed $\bigotimes_{j=i+1}^n Z_j$, which is separated by the used indices. Here, $\sigma = \sigma^+$ for a creation operator or $\sigma^-$ for a annihilation operator, and they are defined as
+\begin{align}
+	\sigma^+ = \frac{1}{2}\left(X - i Y\right)\\
+	\sigma^- = \frac{1}{2}\left(X + i Y\right)	
+\end{align}
+and, from Eqs. (\ref{eq:sigma_Z}), they have the following properties:
+\begin{subequations}
+	\begin{align}
+	&\sigma^+ Z = \sigma^+ \\
+	&\sigma^- Z = -\sigma^-\\
+	&Z\sigma^+ = -\sigma^+ \\
+	&Z\sigma^- = \sigma^-
+	\end{align}
+\label{eq:sigma_Z}
+\end{subequations}
+
+Now, we consider the JW transform of the whole operator $p^\dag q^\dag r s$. First, notice that, there is no $Z$-tensor below the lowest index $i_1$, as the JW transformation gives the $I$-tensor for all fermion operators in $\hat \tau_{rs}^{pq}$. With {\it even} numbers  ($2k$) of fermion operators, there is neither the $Z$-tensor above the highest index $i_4$ because of the  cancellation $Z^{2k} = I$ (however, this is not the case for the odd-number fermion operators, $Z^{2k+1} = Z$). 
+
+Among the nearest-neighbor qubit-pairs for $i_4, i_3, i_2, i_1$ (that is, the $i_4-i_3$ pair, $i_3-i_2$ pair, and $i_2-i_1$ pair), it should be obvious that generally the $Z$-tensor between $i_2$ and $i_3$ cancels out (two arising from the JW transformation of $i_1$ and $i_2$). On the other hand, we always have $\bigotimes_{j = i_1+1}^{i_2-1} Z_j$ and $\bigotimes_{j = i_3+1}^{i_4-1} Z_j$ (appearing once and three times, respectively). 
+
+Now, what happens to $Z_{i_2}, Z_{i_3}, Z_{i_4}$? They are simply converted to the parity (sign) when combined with $\sigma^+$ and $\sigma^-$ (Eqs. (\ref{eq:sigma_Z})). Because of the anti-symmetry of fermion operators, it suffices to test only the cases where $i_4^\dag$ comes most left, and $p>q$ and $r>s$ for $p^\dag q^\dag r s$. Below, we omit the $Z$-tensors and only consider the sign change. 
+\begin{align*}
+%
+&	i_{4}^\dag i_3^\dag i_2 i_1 \rightarrow 
+\sigma_{4}^+ \otimes ( Z_4\sigma_{3}^+) \otimes (Z_4 Z_3 \sigma_{2}^- ) \otimes (Z_4 Z_3 Z_2\sigma_{1}^-) = \sigma_4^+ \otimes \sigma_3^+ \otimes (-\sigma^-_2) \otimes \sigma^-_1\\
+&	i_{4}^\dag i_2^\dag i_3 i_1 \rightarrow 
+\sigma_{4}^+  \otimes (Z_4 Z_3 \sigma_{2}^+ ) \otimes ( Z_4\sigma_{3}^-) \otimes (Z_4 Z_3 Z_2\sigma_{1}^-) = \sigma_4^+ \otimes (-\sigma_3^-) \otimes \sigma^-_2 \otimes \sigma^-_1\\
+&	i_{4}^\dag i_1^\dag i_3 i_2 \rightarrow 
+\sigma_{4}^+   \otimes (Z_4 Z_3 Z_2\sigma_{1}^+)  \otimes ( Z_4\sigma_{3}^-) \otimes (Z_4 Z_3 \sigma_{2}^- )= \sigma_4^+ \otimes (-\sigma_3^-) \otimes \sigma^-_2 \otimes \sigma^+_1
+\end{align*}
+Therefore, the sign is always negative, as long as $p>q$ and $r>s$.  Other strings can be always generalized from this result: for example, $i_4^\dag i_3^\dag i_1 i_2$ is simply the negative of $i^\dag_4 i^\dag_3 i_2 i_1$ (because the anti-commutator $\left[i_1,i_2\right]_+=0$). Another example is $i_3^\dag i_1^\dag i_4 i_2$, but this is simply the Hermitian-conjugate of $i^\dag_2 i^\dag_4 i_1 i_3 = i^\dag_4 i^\dag_2 i_3 i_1$, which is already discussed above.
+
+
+\subsection{Excitations to the same orbitals}
+Assume $p > q > r > s$. We consider the Jordan-Wigner transformation of the following doubles:
+\begin{enumerate}
+	\item $\tau^{pq}_{ps}$ 
+	\item $\tau^{pr}_{rs}$
+	\item $\tau^{ps}_{rs}$
+\end{enumerate}
+Other excitations are easily transformed using these results. We first note that the number operator for the orbital $p$ is
+\begin{align}
+	a_p^\dag a_p &= \frac{1}{2} (I_p - Z_p)
+\end{align}
+
+\subsubsection{$\tau^{pq}_{ps}$ }
+\begin{align}
+	\hat \tau_{ps}^{pq} &= \left(a^\dag_p a^\dag_q a_p a_s -h.c.\right)
+	\nonumber\\
+	&=- \left(a^\dag_p a_p a^\dag_q  a_s -h.c.\right)
+	\nonumber\\
+	&=-\frac{1}{8} (I_p - Z_p)\otimes (X_q-iY_q)\left(\bigotimes_{t=q+1}^{p-1} Z_t\right) Z_p\otimes (X_s + iY_s)\left(\bigotimes_{u=s+1}^{q-1} Z_u\right) Z_q \left(\bigotimes_{v=q+1}^{p-1} Z_v\right) Z_p - h.c.\nonumber\\
+	&=-\frac{1}{8} \left(\bigotimes_{u=s+1}^{q-1} Z_u\right)  \otimes (I_p - Z_p)\otimes \underbrace{(X_q-iY_q)Z_q}_{(X_q-iY_q)}  \otimes (X_s + iY_s)- h.c.\nonumber\\
+	&=-\frac{1}{8} \left(\bigotimes_{u=s+1}^{q-1} Z_u\right)  \otimes \left(X_q X_s -Z_p X_q X_s + Y_q Y_s - Z_p Y_q Y_s - i Y_q X_s +i Z_p Y_q X_s + i X_q Y_s - i Z_p X_q Y_s\right)- h.c.\nonumber\\	
+	&=i \frac{1}{4} \left(\bigotimes_{u=s+1}^{q-1} Z_u\right)  \otimes \left( Y_q X_s - Z_p Y_q X_s - X_q Y_s +Z_p X_q Y_s\right)
+\end{align}
+
+\subsubsection{ $\tau^{pq}_{qs}$}
+\begin{align}
+	\tau_{qs}^{pq} & =   \left(a^\dag_p a_q^\dag a_q a_s -h.c.\right)\nonumber\\
+	&=   \left(a^\dag_p a_s a_q^\dag a_q -h.c.\right)\nonumber\\
+	&= \frac{1}{8} \left(X_p - iY_p\right)  \otimes \left(X_s + i Y_s\right)
+\magenta \left(\bigotimes_{t=s+1}^{q-1} Z_t \right)
+\black Z_q
+\red \left(\bigotimes_{u=q+1}^{p-1} Z_{u} \right)
+\black Z_p
+\otimes (I_q - Z_q)
+\nonumber\\
+&= \frac{1}{8}  \left(\bigotimes_{t=s+1}^{q-1} Z_t \right) \left(\bigotimes_{u=q+1}^{p-1} Z_{u} \right) 
+\underbrace{\left(X_p - iY_p\right)Z_p}_{(X_p - iY_p)}  \otimes \left(X_s + i Y_s\right)
+\otimes\underbrace{ Z_q (I_q - Z_q)}_{(Z_q - I_q)}
+\nonumber\\
+	&= \frac{1}{8} \left(\bigotimes_{t=s+1}^{q-1}Z_t \right)  \left(\bigotimes_{u=q+1}^{p-1}Z_u \right) \otimes (X_pZ_q X_s -X_p X_s + Y_p Z_q Y_s - Y_pY_s + i X_p Z_q Y_s - iX_p Y_s - i Y_p Z_q X_s + iY_p X_s)-h.c.\nonumber\\
+	&= i\frac{1}{4} \left(\bigotimes_{t=s+1}^{q-1}Z_t \right)  \left(\bigotimes_{u=q+1}^{p-1}Z_u \right) \otimes ( X_p Z_q Y_s - Y_p Z_q X_s - X_p Y_s  +Y_p X_s)
+\end{align}
+\if0
+\subsubsection{$\tau^{ps}_{qr}$}
+\begin{align}
+	\tau^{pr}_{qr} &=   \left(a^\dag_p a^\dag_r a_q a_r - h.c.\right) \nonumber\\
+	&=  -  \left(a^\dag_p a_q a^\dag_r a_r  - h.c.\right)\nonumber\\
+	&= -\frac{1}{8} (X_p - iY	_p)\otimes (X_q + iY_q) \left(\bigotimes_{t=q+1}^{p-1}Z_t \right) Z_p \otimes \left(I_r - Z_r\right)   -h.c.
+	\nonumber\\
+	&= -\frac{1}{8} \left(\bigotimes_{t=q+1}^{p-1}Z_t \right)  \otimes \underbrace{(X_p - iY_p) Z_p}_{(X_p - iY_p)} \otimes(X_q + iY_q) \otimes (I_r - Z_r) -h.c.\nonumber\\
+	&= -\frac{1}{8} \left(\bigotimes_{t=q+1}^{p-1}Z_t \right)  \otimes \left(X_p X_q - X_p  X_q Z_r + Y_p Y_q - Y_p  Y_q Z_r -iY_p X_q +iY_p  X_q Z_r +iX_p Y_q - i X_p  Y_q Z_r\right) -h.c.\nonumber\\	
+	&= i\frac{1}{4} \left(\bigotimes_{t=q+1}^{p-1}Z_t \right)  \otimes \left(X_p Y_q Z_r -Y_p X_q Z_r -X_p Y_q +Y_p X_q  \right) 
+\end{align}
+\fi
+\subsubsection{$\tau^{ps}_{rs}$}
+\begin{align}
+	\tau^{ps}_{rs} &= \left(a^\dag_p a^\dag_s a_r a_s - h.c.\right) \nonumber\\
+	&=  -  \left(a^\dag_p a_r a^\dag_s a_s  - h.c.\right)\nonumber\\
+	&= -\frac{1}{8} (X_p - iY	_p)\otimes (X_r + iY_r) \left(\bigotimes_{t=r+1}^{p-1}Z_t \right) Z_p \otimes \left(I_s - Z_s\right)   -h.c.
+	\nonumber\\
+	&= -\frac{1}{8} \left(\bigotimes_{t=r+1}^{p-1}Z_t \right)  \otimes \underbrace{(X_p - iY_p) Z_p}_{(X_p - iY_p)} \otimes(X_r + iY_r) \otimes (I_s - Z_s) -h.c.\nonumber\\
+	&= -\frac{1}{8} \left(\bigotimes_{t=r+1}^{p-1}Z_t \right)  \otimes \left(X_p X_r - X_p  X_r Z_s + Y_p Y_r - Y_p  Y_r Z_s -iY_p X_r +iY_p  X_r Z_s +iX_p Y_r - i X_p  Y_r Z_s\right) -h.c.\nonumber\\	
+	&= i\frac{1}{4} \left(\bigotimes_{t=r+1}^{p-1}Z_t \right)  \otimes \left(X_p Y_r Z_s -Y_p X_r Z_s -X_p Y_r +Y_p X_r  \right) 
+\end{align}
+
+\newpage
+\section{Summary (generalized)}
+We generalize our result. Given a randomly ordered two-electron fermion operator, one only needs to do the following:
+\begin{enumerate}
+	\item Rearrange the operator to $p^\dag q^\dag r s$ with $p>q$ and $r>s$, and $\max(p,q,r,s) =p$ in terms of qubit. This may require to use the anti-commutation relation and may change the sign.
+	\item Check the identity among $p,q,r,s$. 
+	\begin{enumerate}
+		\item If $q \ne r,s$: \\Sort $p, q,r,s$ in ascending order and relabel them as $i_1<i_2<i_3<i_4$. Note that, from the step 1, $p=i_4$ is automatically assigned). Then,
+\begin{align}
+		\hat \tau_{rs}^{pq} &= \frac{i }{8} \left(\bigotimes_{t=i_1+1}^{i_2-1} Z_t \right) \left(\bigotimes_{u=i_3+1}^{i_4-1} Z_u \right) 
+ \Bigl(
+\black +Y_p X_q X_r X_s 
+\black  + X_p Y_q X_r X_s
+\black + Y_p Y_q X_r  Y_s 
+\black+ Y_p Y_q Y_r  X_s \nonumber\\&
+\black - X_p X_q X_r Y_s 
+\black - X_p X_q Y_r X_s 
+\black -Y_p  X_q  Y_r Y_s 
+\black- X_p Y_q Y_r Y_s 
+\black\Bigr)\label{eq:tpqrs} 
+\end{align}
+\item If $p = r$:
+(Make sure $q \ne s$ because if $q = s$, $\hat \tau_{rs}^{pq} = 0$)
+\begin{align}
+\hat \tau_{rs}^{pq} =	i \frac{1}{4} \left(\bigotimes_{u=s+1}^{q-1} Z_u\right)  \otimes \left( Y_q X_s - Z_p Y_q X_s - X_q Y_s +Z_p X_q Y_s\right)
+\end{align}
+\item If $q = r$: 
+\begin{align}
+	\hat \tau_{rs}^{pq} = i\frac{1}{4} \left(\bigotimes_{t=s+1}^{q-1}Z_t \right)  \left(\bigotimes_{u=q+1}^{p-1}Z_u \right) \otimes ( X_p Z_q Y_s - Y_p Z_q X_s - X_p Y_s  +Y_p X_s)
+\end{align}
+\item If $q = s$:
+\begin{align}
+	\hat \tau_{rs}^{pq} = i\frac{1}{4} \left(\bigotimes_{t=r+1}^{p-1}Z_t \right)  \otimes \left(X_p Y_r Z_s -Y_p X_r Z_s -X_p Y_r +Y_p X_r  \right) \end{align}
+\end{enumerate}
+\end{enumerate}
+
+{\it If $t_{rs}^{pq}$ is a parameter to be optimized and thus {\bf can absorb the sign}, one can ignore the sign.} This means, for methods like CCGSD, {\red one would simply skip the step 1 above and directly use Eq.~(\ref{eq:tpqrs}) by assigning $i_1,i_2,i_3,i_4$}. 
+
+
+\newpage
+\subsection{Example 1: $\hat \tau_{30}^{74}$}
+\begin{enumerate}
+	\item Set the operator in descending order for the creation and annihilation blocks, 
+\begin{align}
+\hat \tau_{30}^{74} = a_7^\dag a_4^\dag a_3 a_0 - h.c.
+\end{align}	
+That is, we have set $p = 7, q=4, r = 3, s=0$.
+	\item Since $p \ne r$ and $q \ne r, s$, we use equation (a). Let $i_1 = 0, i_2 = 3, i_3 = 4, i_4 = 7$.
+	\item A quantum circuit would be
+\begin{align}
+		\hat \tau_{30}^{74} &= \frac{i }{8} \left(\bigotimes_{t=0+1}^{3-1} Z_t \right) \left(\bigotimes_{u=4+1}^{7-1} Z_u \right) 
+ \Bigl(
+\black +Y_7 X_4 X_3 X_0 
+\black  + X_7 Y_4 X_3 X_0
+\black + Y_7 Y_4 X_3  Y_0 
+\black+ Y_7 Y_4 Y_3  X_0 \nonumber\\&
+\black - X_7 X_4 X_3 Y_0 
+\black - X_7 X_4 Y_3 X_0
+\black -Y_7  X_4  Y_3 Y_0 
+\black- X_7 Y_4 Y_3 Y_0
+\black\Bigr)\nonumber\\
+&= \frac{i }{8} \left(Z_1Z_2 \right) \left(Z_5Z_6\right) 
+ \Bigl(
+\black +Y_7 X_4 X_3 X_0 
+\black  + X_7 Y_4 X_3 X_0
+\black + Y_7 Y_4 X_3  Y_0 
+\black+ Y_7 Y_4 Y_3  X_0 \nonumber\\&
+\black - X_7 X_4 X_3 Y_0 
+\black - X_7 X_4 Y_3 X_0
+\black -Y_7  X_4  Y_3 Y_0 
+\black- X_7 Y_4 Y_3 Y_0
+\black\Bigr)\nonumber\\
+&=  \frac{i }{8}  \Bigl(
+  X_0 Z_1 Z_2 X_3 X_4 Z_5Z_6Y_7 
++ X_0 Z_1 Z_2 X_3 Y_4 Z_5Z_6X_7 
++ Y_0 Z_1 Z_2 X_3 Y_4 Z_5Z_6Y_7 
++ X_0 Z_1 Z_2 Y_3 Y_4 Z_5Z_6Y_7 \nonumber\\&
+- Y_0 Z_1 Z_2 X_3 X_4 Z_5Z_6X_7 
+- X_0 Z_1 Z_2 Y_3 X_4 Z_5Z_6X_7 
+- Y_0 Z_1 Z_2 Y_3 X_4 Z_5Z_6Y_7
+- Y_0 Z_1 Z_2 Y_3 Y_4 Z_5Z_6X_7 
+\black\Bigr)\nonumber\\
+\end{align}
+\end{enumerate}
+
+
+Comparing this result with OpenFermion, we confirm our derivation is correct.
+\begin{Verbatim}[frame=single, xleftmargin=4mm, xrightmargin=10mm]
+p=7
+q=4 
+r=3
+s=0 
+Epqrs=FermionOperator(str(p)+"^ "+str(q) +"^ " + str(r) + " " +str(s) + " ") 
+jordan_wigner(Epqrs-hermitian_conjugated(Epqrs))
+
+0.125j [X0 Z1 Z2 X3 X4 Z5 Z6 Y7] +
+0.125j [X0 Z1 Z2 X3 Y4 Z5 Z6 X7] +
+-0.125j [X0 Z1 Z2 Y3 X4 Z5 Z6 X7] +
+0.125j [X0 Z1 Z2 Y3 Y4 Z5 Z6 Y7] +
+-0.125j [Y0 Z1 Z2 X3 X4 Z5 Z6 X7] +
+0.125j [Y0 Z1 Z2 X3 Y4 Z5 Z6 Y7] +
+-0.125j [Y0 Z1 Z2 Y3 X4 Z5 Z6 Y7] +
+-0.125j [Y0 Z1 Z2 Y3 Y4 Z5 Z6 X7]
+\end{Verbatim}
+
+
+\newpage
+\subsection{Example 2: $\hat \tau_{60}^{84}$}
+\begin{enumerate}
+\item Set $p = 8, q=4, r = 6, s=0$.
+	\item Since $p\ne r$ and $r\ne r,s$, we use equation (a). Let $i_1 = 0, i_2 = 4, i_3 = 6, i_4 = 8$.
+	\item A quantum circuit would be
+\begin{align}
+		\hat \tau_{60}^{84} &= \frac{i}{8} \left(\bigotimes_{t=1}^{3} Z_t \right) \left(\bigotimes_{u=7}^{7} Z_u \right) 
+ \Bigl(
+\black +Y_8 X_4 X_6 X_0 
+\black  + X_8 Y_4 X_6 X_0
+\black + Y_8 Y_4 X_6  Y_0 
+\black+ Y_8 Y_4 Y_6  X_0 \\&
+\black - X_8 X_4 X_6 Y_0 
+\black - X_8 X_4 Y_6 X_0 
+\black -Y_8  X_4  Y_6 Y_0
+\black- X_8 Y_4 Y_6 Y_0
+\black\Bigr)\nonumber\\
+&= \frac{i}{8} \Bigl(
+  X_0 Z_1 Z_2 Z_3 X_4 X_6 Z_7 Y_8
++ X_0 Z_1 Z_2 Z_3 Y_4 X_6 Z_7 X_8
++ Y_0 Z_1 Z_2 Z_3 Y_4 X_6 Z_7 Y_8
++ X_0 Z_1 Z_2 Z_3 Y_4 Y_6 Z_7 Y_8\nonumber\\
+&- Y_0 Z_1 Z_2 Z_3 X_4 X_6 Z_7 X_8
+- X_0 Z_1 Z_2 Z_3 X_4 Y_6 Z_7 X_8
+- Y_0 Z_1 Z_2 Z_3 X_4 Y_6 Z_7 Y_8
+- Y_0 Z_1 Z_2 Z_3 Y_4 Y_6 Z_7 X_8
+\Bigr)
+\end{align}
+\end{enumerate}
+
+Comparing this result with OpenFermion, we confirm our derivation is correct.
+\begin{Verbatim}[frame=single, xleftmargin=4mm, xrightmargin=10mm]
+p=8
+q=4 
+r=6
+s=0 
+Epqrs=FermionOperator(str(p)+"^ "+str(q) +"^ " + str(r) + " " +str(s) + " ") 
+jordan_wigner(Epqrs-hermitian_conjugated(Epqrs))
+
+0.125j [X0 Z1 Z2 Z3 X4 X6 Z7 Y8] +
+-0.125j [X0 Z1 Z2 Z3 X4 Y6 Z7 X8] +
+0.125j [X0 Z1 Z2 Z3 Y4 X6 Z7 X8] +
+0.125j [X0 Z1 Z2 Z3 Y4 Y6 Z7 Y8] +
+-0.125j [Y0 Z1 Z2 Z3 X4 X6 Z7 X8] +
+-0.125j [Y0 Z1 Z2 Z3 X4 Y6 Z7 Y8] +
+0.125j [Y0 Z1 Z2 Z3 Y4 X6 Z7 Y8] +
+-0.125j [Y0 Z1 Z2 Z3 Y4 Y6 Z7 X8]
+\end{Verbatim}
+
+\newpage
+\subsection{Example 3. $\hat \tau_{06}^{62}$}
+\begin{enumerate}
+	\item Set the operator in descending order for the creation and annihilation blocks, 
+\begin{align}\hat \tau_{06}^{62} =   \left(a_6^\dag a_2^\dag a_0 a_6 - h.c.\right) =  - \left(a_6^\dag a_2^\dag a_6 a_0 - h.c.\right)  = -\hat \tau_{60}^{62}
+\end{align}	
+\item Set $p = 6, q = 2, r=6, s=0$. 
+\item Since $p=r$, use equation (b),
+\begin{align}
+\hat \tau_{06}^{62} &= -\hat \tau_{60}^{62} = -i\frac{1}{4} \left(\bigotimes_{u=0+1}^{2-1} Z_u\right)  \otimes \left( Y_2 X_0 - Z_6 Y_2 X_0 - X_2 Y_0 +Z_6 X_2 Y_0\right)\nonumber\\
+&=- i\frac{1}{4}\left( Z_1\right)\otimes \left( Y_2 X_0 - Z_6 Y_2 X_0 - X_2 Y_0 +Z_6 X_2 Y_0\right)\nonumber\\
+&=- i\frac{1}{4}\left( X_0 Z_1Y_2 - X_0 Z_1 Y_2 Z_6  - Y_0 Z_1 X_2 +Y_0Z_1X_2Z_6\right)\nonumber\\ 
+ \end{align}
+\end{enumerate}This agrees with the result from OpenFermion.
+
+\begin{Verbatim}[frame=single, xleftmargin=4mm, xrightmargin=10mm]
+p=6
+q=2 
+r=0
+s=6 
+Epqrs=FermionOperator(str(p)+"^ "+str(q) +"^ " + str(r) + " " +str(s) + " ") 
+jordan_wigner(Epqrs-hermitian_conjugated(Epqrs))
+
+-0.25j [X0 Z1 Y2] +
+0.25j [X0 Z1 Y2 Z6] +
+0.25j [Y0 Z1 X2] +
+-0.25j [Y0 Z1 X2 Z6]
+\end{Verbatim}
+
+\newpage
+\subsection{Example 4. $\hat \tau_{20}^{62}$}
+\begin{enumerate}
+\item Set $p = 6, q = 2, r=2, s=0$. 
+\item Since $q=r$, use equation (c),
+\begin{align}
+	\hat \tau_{20}^{62} &= i\frac{1}{4} \left(\bigotimes_{t=0+1}^{2-1}Z_t \right)  \left(\bigotimes_{u=2+1}^{6-1}Z_u \right) \otimes ( X_6 Z_2 Y_0 - Y_6 Z_2 X_0 - X_6 Y_0  +Y_6 X_0)\nonumber\\
+	&=i \frac{1}{4} \left(Z_1\right) \otimes \left(Z_3Z_4Z_5\right)\otimes \left(X_6 Z_2 Y_0 - Y_6 X_2 X_0 - X_6 Y_0 + Y_6 X_0\right)\nonumber\\
+	&= i \frac{1}{4} \left( Y_0 Z_1 Z_2 Z_3Z_4Z_5X_6 - X_0 Z_1 X_2 Z_3Z_4Z_5 Y_6 - Y_0Z_1 Z_3Z_4Z_5X_6 + X_0Z_1Z_3Z_4Z_5 Y_6\right)
+\end{align}
+\end{enumerate}
+This agrees with the result from OpenFermion.
+\begin{Verbatim}[frame=single, xleftmargin=4mm, xrightmargin=10mm]
+p=6
+q=2
+r=2
+s=0
+Epqrs=FermionOperator(str(p)+"^ "+str(q) +"^ " + str(r) + " " +str(s) + " ") 
+jordan_wigner(Epqrs-hermitian_conjugated(Epqrs))
+
+-0.25j [X0 Z1 Z2 Z3 Z4 Z5 Y6] +
+0.25j [X0 Z1 Z3 Z4 Z5 Y6] +
+0.25j [Y0 Z1 Z2 Z3 Z4 Z5 X6] +
+-0.25j [Y0 Z1 Z3 Z4 Z5 X6]
+\end{Verbatim}
+
+\newpage
+\subsection{Example 5: $\hat \tau_{53}^{73}$}
+\begin{enumerate}
+\item Set $p = 7, q = 3, r=5, s=3$. 
+\item Since $q=s$, use equation (d),
+\begin{align}
+	\hat \tau_{53}^{73} &= i\frac{1}{4} \left(\bigotimes_{t=5+1}^{7-1}Z_t \right)  \otimes \left(X_7 Y_5 Z_3 -Y_7 X_5 Z_3 -X_7 Y_5 +Y_7 X_5  \right) \nonumber\\
+	&=i\frac{1}{4} \left(Z_6\right) \otimes \left(X_7 Y_5 Z_3 -Y_7 X_5 Z_3 -X_7 Y_5 +Y_7 X_5  \right) \nonumber\\
+	&=i\frac{}{4}\left(Z_3 Y_5 Z_6 X_7 -Z_3 X_5 Z_6 Y_7 - Y_5 Z_6 X_7 + X_5  Z_6 Y_7  \right) 
+	 \end{align}
+\end{enumerate}
+Again, this agrees with OpenFermion,
+\begin{Verbatim}[frame=single, xleftmargin=4mm, xrightmargin=10mm]
+p=7 
+q=3 
+r=5 
+s=3 
+Epqrs=FermionOperator(str(p)+"^ "+str(q) +"^ " + str(r) + " " +str(s) + " ") 
+jordan_wigner(Epqrs-hermitian_conjugated(Epqrs))
+
+-0.25j [Z3 X5 Z6 Y7] +
+0.25j [Z3 Y5 Z6 X7] +
+0.25j [X5 Z6 Y7] +
+-0.25j [Y5 Z6 X7]
+\end{Verbatim}
+
+\end{document}
