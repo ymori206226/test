@@ -186,16 +186,15 @@ def single_ope(a, i, circuit, theta):
 
     Author(s): Yuto Mori
     """
-    global ncnot
     circuit.add_H_gate(a)
     circuit.add_RX_gate(i, -np.pi / 2)
     for k in range(a, i, -1):
         circuit.add_CNOT_gate(k, k - 1)
-        ncnot += 1
+
     circuit.add_RZ_gate(i, theta)
     for k in range(i, a):
         circuit.add_CNOT_gate(k + 1, k)
-        ncnot += 1
+
     circuit.add_H_gate(a)
     circuit.add_RX_gate(i, np.pi / 2)
 
@@ -203,11 +202,11 @@ def single_ope(a, i, circuit, theta):
     circuit.add_RX_gate(a, -np.pi / 2)
     for k in range(a, i, -1):
         circuit.add_CNOT_gate(k, k - 1)
-        ncnot += 1
+
     circuit.add_RZ_gate(i, -theta)
     for k in range(i, a):
         circuit.add_CNOT_gate(k + 1, k)
-        ncnot += 1
+        
     circuit.add_H_gate(i)
     circuit.add_RX_gate(a, np.pi / 2)
 
@@ -218,28 +217,28 @@ def double_ope_1(b, a, j, i, circuit, theta):
 
     Author(s): Yuto Mori
     """
-    global ncnot
+
     circuit.add_H_gate(b)
     circuit.add_H_gate(a)
     circuit.add_RX_gate(j, -np.pi / 2)
     circuit.add_H_gate(i)
     for k in range(b, a, -1):
         circuit.add_CNOT_gate(k, k - 1)
-        ncnot += 1
+        
     circuit.add_CNOT_gate(a, j)
-    ncnot += 1
+    
     for k in range(j, i, -1):
         circuit.add_CNOT_gate(k, k - 1)
-        ncnot += 1
+        
     circuit.add_RZ_gate(i, theta)
     for k in range(i, j):
         circuit.add_CNOT_gate(k + 1, k)
-        ncnot += 1
+        
     circuit.add_CNOT_gate(a, j)
-    ncnot += 1
+    
     for k in range(a, b):
         circuit.add_CNOT_gate(k + 1, k)
-        ncnot += 1
+        
     circuit.add_H_gate(b)
     circuit.add_H_gate(a)
     circuit.add_RX_gate(j, np.pi / 2)
@@ -252,28 +251,28 @@ def double_ope_2(b, a, j, i, circuit, theta):
 
     Author(s): Yuto Mori
     """
-    global ncnot
+
     circuit.add_RX_gate(b, -np.pi / 2)
     circuit.add_H_gate(a)
     circuit.add_RX_gate(j, -np.pi / 2)
     circuit.add_RX_gate(i, -np.pi / 2)
     for k in range(b, a, -1):
         circuit.add_CNOT_gate(k, k - 1)
-        ncnot += 1
+
     circuit.add_CNOT_gate(a, j)
-    ncnot += 1
+
     for k in range(j, i, -1):
         circuit.add_CNOT_gate(k, k - 1)
-        ncnot += 1
+
     circuit.add_RZ_gate(i, theta)
     for k in range(i, j):
         circuit.add_CNOT_gate(k + 1, k)
-        ncnot += 1
+
     circuit.add_CNOT_gate(a, j)
-    ncnot += 1
+
     for k in range(a, b):
         circuit.add_CNOT_gate(k + 1, k)
-        ncnot += 1
+
     circuit.add_RX_gate(b, np.pi / 2)
     circuit.add_H_gate(a)
     circuit.add_RX_gate(j, np.pi / 2)
@@ -286,28 +285,28 @@ def double_ope_3(b, a, j, i, circuit, theta):
 
     Author(s): Yuto Mori
     """
-    global ncnot
+    
     circuit.add_H_gate(b)
     circuit.add_RX_gate(a, -np.pi / 2)
     circuit.add_RX_gate(j, -np.pi / 2)
     circuit.add_RX_gate(i, -np.pi / 2)
     for k in range(b, a, -1):
         circuit.add_CNOT_gate(k, k - 1)
-        ncnot += 1
+        
     circuit.add_CNOT_gate(a, j)
-    ncnot += 1
+
     for k in range(j, i, -1):
         circuit.add_CNOT_gate(k, k - 1)
-        ncnot += 1
+
     circuit.add_RZ_gate(i, theta)
     for k in range(i, j):
         circuit.add_CNOT_gate(k + 1, k)
-        ncnot += 1
+
     circuit.add_CNOT_gate(a, j)
-    ncnot += 1
+
     for k in range(a, b):
         circuit.add_CNOT_gate(k + 1, k)
-        ncnot += 1
+
     circuit.add_H_gate(b)
     circuit.add_RX_gate(a, np.pi / 2)
     circuit.add_RX_gate(j, np.pi / 2)
@@ -320,28 +319,28 @@ def double_ope_4(b, a, j, i, circuit, theta):
 
     Author(s): Yuto Mori
     """
-    global ncnot
+
     circuit.add_H_gate(b)
     circuit.add_H_gate(a)
     circuit.add_H_gate(j)
     circuit.add_RX_gate(i, -np.pi / 2)
     for k in range(b, a, -1):
         circuit.add_CNOT_gate(k, k - 1)
-        ncnot += 1
+
     circuit.add_CNOT_gate(a, j)
-    ncnot += 1
+
     for k in range(j, i, -1):
         circuit.add_CNOT_gate(k, k - 1)
-        ncnot += 1
+
     circuit.add_RZ_gate(i, theta)
     for k in range(i, j):
         circuit.add_CNOT_gate(k + 1, k)
-        ncnot += 1
+
     circuit.add_CNOT_gate(a, j)
-    ncnot += 1
+
     for k in range(a, b):
         circuit.add_CNOT_gate(k + 1, k)
-        ncnot += 1
+
     circuit.add_H_gate(b)
     circuit.add_H_gate(a)
     circuit.add_H_gate(j)
@@ -354,28 +353,28 @@ def double_ope_5(b, a, j, i, circuit, theta):
 
     Author(s): Yuto Mori
     """
-    global ncnot
+
     circuit.add_RX_gate(b, -np.pi / 2)
     circuit.add_H_gate(a)
     circuit.add_H_gate(j)
     circuit.add_H_gate(i)
     for k in range(b, a, -1):
         circuit.add_CNOT_gate(k, k - 1)
-        ncnot += 1
+
     circuit.add_CNOT_gate(a, j)
-    ncnot += 1
+
     for k in range(j, i, -1):
         circuit.add_CNOT_gate(k, k - 1)
-        ncnot += 1
+
     circuit.add_RZ_gate(i, -theta)
     for k in range(i, j):
         circuit.add_CNOT_gate(k + 1, k)
-        ncnot += 1
+
     circuit.add_CNOT_gate(a, j)
-    ncnot += 1
+
     for k in range(a, b):
         circuit.add_CNOT_gate(k + 1, k)
-        ncnot += 1
+
     circuit.add_RX_gate(b, np.pi / 2)
     circuit.add_H_gate(a)
     circuit.add_H_gate(j)
@@ -388,28 +387,28 @@ def double_ope_6(b, a, j, i, circuit, theta):
 
     Author(s): Yuto Mori
     """
-    global ncnot
+
     circuit.add_H_gate(b)
     circuit.add_RX_gate(a, -np.pi / 2)
     circuit.add_H_gate(j)
     circuit.add_H_gate(i)
     for k in range(b, a, -1):
         circuit.add_CNOT_gate(k, k - 1)
-        ncnot += 1
+
     circuit.add_CNOT_gate(a, j)
-    ncnot += 1
+
     for k in range(j, i, -1):
         circuit.add_CNOT_gate(k, k - 1)
-        ncnot += 1
+
     circuit.add_RZ_gate(i, -theta)
     for k in range(i, j):
         circuit.add_CNOT_gate(k + 1, k)
-        ncnot += 1
+
     circuit.add_CNOT_gate(a, j)
-    ncnot += 1
+
     for k in range(a, b):
         circuit.add_CNOT_gate(k + 1, k)
-        ncnot += 1
+
     circuit.add_H_gate(b)
     circuit.add_RX_gate(a, np.pi / 2)
     circuit.add_H_gate(j)
@@ -422,28 +421,28 @@ def double_ope_7(b, a, j, i, circuit, theta):
 
     Author(s): Yuto Mori
     """
-    global ncnot
+
     circuit.add_RX_gate(b, -np.pi / 2)
     circuit.add_RX_gate(a, -np.pi / 2)
     circuit.add_RX_gate(j, -np.pi / 2)
     circuit.add_H_gate(i)
     for k in range(b, a, -1):
         circuit.add_CNOT_gate(k, k - 1)
-        ncnot += 1
+
     circuit.add_CNOT_gate(a, j)
-    ncnot += 1
+
     for k in range(j, i, -1):
         circuit.add_CNOT_gate(k, k - 1)
-        ncnot += 1
+
     circuit.add_RZ_gate(i, -theta)
     for k in range(i, j):
         circuit.add_CNOT_gate(k + 1, k)
-        ncnot += 1
+
     circuit.add_CNOT_gate(a, j)
-    ncnot += 1
+
     for k in range(a, b):
         circuit.add_CNOT_gate(k + 1, k)
-        ncnot += 1
+
     circuit.add_RX_gate(b, np.pi / 2)
     circuit.add_RX_gate(a, np.pi / 2)
     circuit.add_RX_gate(j, np.pi / 2)
@@ -456,28 +455,28 @@ def double_ope_8(b, a, j, i, circuit, theta):
 
     Author(s): Yuto Mori
     """
-    global ncnot
+
     circuit.add_RX_gate(b, -np.pi / 2)
     circuit.add_RX_gate(a, -np.pi / 2)
     circuit.add_H_gate(j)
     circuit.add_RX_gate(i, -np.pi / 2)
     for k in range(b, a, -1):
         circuit.add_CNOT_gate(k, k - 1)
-        ncnot += 1
+
     circuit.add_CNOT_gate(a, j)
-    ncnot += 1
+
     for k in range(j, i, -1):
         circuit.add_CNOT_gate(k, k - 1)
-        ncnot += 1
+
     circuit.add_RZ_gate(i, -theta)
     for k in range(i, j):
         circuit.add_CNOT_gate(k + 1, k)
-        ncnot += 1
+
     circuit.add_CNOT_gate(a, j)
-    ncnot += 1
+
     for k in range(a, b):
         circuit.add_CNOT_gate(k + 1, k)
-        ncnot += 1
+
     circuit.add_RX_gate(b, np.pi / 2)
     circuit.add_RX_gate(a, np.pi / 2)
     circuit.add_H_gate(j)
@@ -673,9 +672,9 @@ def upcc_Gsingles(circuit, norbs, theta_list, ndim1, ndim2, i):
         for i in range(a):
             i2 = 2 * i
             ### alpha ###
-            single_ope(a2, i2, circuit, theta_list[ia])
+            single_ope_Pauli(a2, i2, circuit, theta_list[ia])
             ### beta ###
-            single_ope(a2 + 1, i2 + 1, circuit, theta_list[ia])
+            single_ope_Pauli(a2 + 1, i2 + 1, circuit, theta_list[ia])
             ia = ia + 1
 
 
