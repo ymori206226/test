@@ -23,6 +23,7 @@ from .fileio import (
     print_amplitudes_spinfree,
     prints,
 )
+from .expope import Gdouble_ope
 from .init import get_occvir_lists
 from .utils import orthogonal_constraint
 
@@ -649,14 +650,15 @@ def upcc_Gdoubles(circuit, norbs, theta_list, ndim1, ndim2, i):
             ###  beta  ###
             i2b = i2 + 1
             # double_ope(max(b2,a2),min(b2,a2),max(j2,i2),min(j2,i2),circuit,theta_list[ijab])
-            double_ope_Pauli(
-                max(a2b, a2),
-                min(a2b, a2),
-                max(i2b, i2),
-                min(i2b, i2),
-                circuit,
-                theta_list[ijab],
-            )
+#            double_ope_Pauli(
+#                max(a2b, a2),
+#                min(a2b, a2),
+#                max(i2b, i2),
+#                min(i2b, i2),
+#                circuit,
+#                theta_list[ijab],
+#            )
+            Gdouble_ope(a2b,a2,i2b,i2,circuit,theta_list[ijab])
             ijab = ijab + 1
 
 
@@ -674,7 +676,10 @@ def upcc_Gsingles(circuit, norbs, theta_list, ndim1, ndim2, i):
             ### alpha ###
             single_ope_Pauli(a2, i2, circuit, theta_list[ia])
             ### beta ###
-            single_ope_Pauli(a2 + 1, i2 + 1, circuit, theta_list[ia])
+            if cf.spin == 1:
+                single_ope_Pauli(a2 + 1, i2 + 1, circuit, -theta_list[ia])
+            else:    
+                single_ope_Pauli(a2 + 1, i2 + 1, circuit, -theta_list[ia])
             ia = ia + 1
 
 
@@ -937,6 +942,11 @@ def cost_upccgsd(
     circuit = set_circuit_upccgsd(n_qubit_system, norbs, theta_list, k)
     for i in range(rho):
         circuit.update_quantum_state(state)
+
+    if cf.SpinProj:
+        from .phflib import S2Proj
+        state_P = S2Proj(state)
+        state   = state_P.copy()
     Eupccgsd = qulacs_hamiltonian.get_expectation_value(state)
     cost = Eupccgsd
     ### Project out the states contained in 'lower_states'
@@ -1474,26 +1484,28 @@ def ucc_doublesX(circuit, theta_list, occ_list, vir_list, ndim1=0):
     ### aa -> aa ###
     for [a, b] in itertools.combinations(vir_list_a, 2):
         for [i, j] in itertools.combinations(occ_list_a, 2):
-            double_ope_Pauli(b, a, j, i, circuit, theta_list[ijab])
+            if b > j:
+                Gdouble_ope(b, a, j, i, circuit, theta_list[ijab])
+            else:
+                Gdouble_ope(j, i, b, a, circuit, theta_list[ijab])
             ijab = ijab + 1
     ### ab -> ab ###
     for b in vir_list_b:
         for a in vir_list_a:
             for j in occ_list_b:
                 for i in occ_list_a:
-                    double_ope_Pauli(
-                        max(b, a),
-                        min(b, a),
-                        max(j, i),
-                        min(j, i),
-                        circuit,
-                        theta_list[ijab],
-                    )
+                    if(max(b,a) > max(j,i)):
+                        Gdouble_ope(max(b,a), min(b,a), max(j,i), min(j,i), circuit, theta_list[ijab])
+                    else:
+                        Gdouble_ope(max(j,i), min(j,i), max(b,a), min(b,a), circuit, theta_list[ijab])
                     ijab = ijab + 1
     ### bb -> bb ###
     for [a, b] in itertools.combinations(vir_list_b, 2):
         for [i, j] in itertools.combinations(occ_list_b, 2):
-            double_ope_Pauli(b, a, j, i, circuit, theta_list[ijab])
+            if b > j:
+                Gdouble_ope(b, a, j, i, circuit, theta_list[ijab])
+            else:
+                Gdouble_ope(j, i, b, a, circuit, theta_list[ijab])
             ijab = ijab + 1
 
 

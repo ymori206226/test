@@ -8,7 +8,7 @@ opterr=false
 nprocs=1
 
 # Directory (please change accordingly)
-QDIR=/home/${USER}/quket_test   #  directory where main.py exists
+QDIR=/home/${USER}/test/quket   #  directory where main.py exists
 WDIR=/work/${USER}/data    #  working directory
 if [ ! -d $WDIR ]; then
   mkdir $WDIR

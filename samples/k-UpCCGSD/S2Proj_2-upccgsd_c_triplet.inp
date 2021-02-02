@@ -1,0 +1,15 @@
+ basis        = 6-31G
+ multiplicity = 1
+ charge       = 0
+ n_electrons  = 2
+ n_orbitals   = 7
+ spinproj     = true
+ spin         = 3
+ euler        = 4, 2, 0
+ geometry
+ C  0  0  0
+ maxiter      = 10000
+ method       = 1-upccgsd
+ rho          = 1
+ theta_guess  = random
+ npar         = 4
