@@ -158,6 +158,9 @@ def read_input(job_no):
                     cf.euler_ngrids[2] = int(words[3])
                 else:
                     error("Format for Euler angle is wrong")
+            elif words[0].lower() == "nproj":
+                cf.number_ngrids = int(words[1])
+                cf.NumberProj =  cf.number_ngrids > 1
             elif words[0].lower() == "ds":
                 cf.DS = int(words[1])
             elif words[0].lower() == "lambda":
@@ -266,6 +269,10 @@ def read_input(job_no):
                 cf.hubbard_nx = int(words[1])
             elif words[0].lower() == "hubbard_ny":
                 cf.hubbard_ny = int(words[1])
+            elif words[0].lower() == "print_fci":
+                cf.print_fci = chkbool(words[1])
+            elif words[0].lower() == "approx_exp":
+                cf.approx_exp = chkbool(words[1])
             else:
                 error('No option "%s"' % words[0])
 

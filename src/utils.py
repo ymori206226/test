@@ -11,7 +11,7 @@ Utilities.
 
 from . import config as cf
 from . import mpilib as mpi
-from .fileio import prints, error
+from .fileio import prints, printmat, error
 
 
 def cost_mpi(cost, theta):
@@ -81,7 +81,7 @@ def chkmethod(method):
     """
     if method in cf.vqe_method_list:
         return True
-    elif "upccgsd" in method:
+    elif "upccgsd" or "bcs" in method:
         return True
     else:
         return False
@@ -183,6 +183,26 @@ def T1mult(noa, nob, nva, nvb, kappa1, kappa2):
     return kappa12
 
 
+def Binomial(n, r):
+    """Function:
+     Given integers n and r, compute nCr 
+
+     Args:
+        n (int): n of nCr
+        r (int): r of nCr
+
+     Returns:
+        nCr 
+    """
+    from operator import mul
+    from functools import reduce
+    r = min(r, n - r)
+    numer = reduce(mul, range(n, n - r, -1), 1)
+    denom = reduce(mul, range(1, r + 1), 1)
+    return numer // denom
+    
+
+
 def orthogonal_constraint(qulacs_hamiltonian, state):
     """Function
     Compute the penalty term for excited states based on 'orthogonally-constrained VQE' scheme.
@@ -196,3 +216,64 @@ def orthogonal_constraint(qulacs_hamiltonian, state):
         overlap = inner_product(cf.lower_states[i], state)
         extra_cost += -Ei * abs(overlap) ** 2
     return extra_cost
+
+
+def fci2qubit(norbs, nalpha, nbeta, fci_coeff):
+    """Function
+        Perform mapping from fci coefficients to qubit representation
+
+        Args: 
+            norbs (int): number of active orbitals
+            nalpha (int): number of alpha electrons
+            nbeta (int): number of beta electrons
+            fci_coeff (ndarray): FCI Coefficients in a (NDetA, NDetB) array
+                                 with
+                                 NDetA = Choose(norbs, nalpha)
+                                 NDetB = Choose(norbs, nbeta)
+    """
+    import numpy
+    from operator import itemgetter
+    from itertools import combinations
+    from qulacs import QuantumState
+    #printmat(fci_coeff)
+    NDetA = Binomial(norbs, nalpha)
+    NDetB = Binomial(norbs, nbeta)
+    if NDetA is not fci_coeff.shape[0] or NDetB is not fci_coeff.shape[1]:
+        prints("NDetA = {}  NDetB = {}   fci_coeff = {}".format(NDetA,NDetB,fci_coeff.shape))
+        error(" Wrong dimensions fci_coeff in fci2qubit")
+    listA =  list(combinations(range(norbs), nalpha))
+    listB =  list(combinations(range(norbs), nbeta))
+    
+    for isort in range(nalpha):
+        listA = sorted(listA, key=itemgetter(isort))
+    for isort in range(nbeta):
+        listB = sorted(listB, key=itemgetter(isort))
+    j = 0
+    n_qubit = norbs*2
+    opt = "0" + str(norbs*2) + "b"
+    vec = numpy.zeros(2**n_qubit)
+    for ib in range(NDetB):
+        occB = [n*2+1 for n in listB[ib]] 
+        for ia in range(NDetA):
+            occA = [n*2 for n in listA[ia]] 
+#            prints("Det {} {}".format(ia,ib),  "  occA ",occA, '  occB ',occB)
+            k = 0
+            for i in occA:
+                k += 2**i
+            for i in occB:
+                k += 2**i
+            if ia <= ib:
+                vec[k] = fci_coeff[ia,ib]
+            else:    
+                vec[k] = -fci_coeff[ia,ib]
+#            if abs(fci_coeff[ia,ib]) > 1e-4:
+#                prints("    Det# {}: ".format(j+1), end="");
+#                prints(
+#                "|", format(k, opt),"> : {}".format(fci_coeff[ia,ib]))
+#            j += 1
+    fci_state = QuantumState(n_qubit)
+    fci_state.load(vec)
+    return fci_state
+
+
+

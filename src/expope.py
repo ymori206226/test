@@ -5,9 +5,11 @@
 
 expope.py
 
-Functions to prepare singles and doubles rotations.
+Functions to prepare several types of rotations, including singles and doubles rotations.
 
 """
+
+from . import config as cf
 
 def Gdouble_ope(p,q,r,s,circuit,theta):
     """ Function:
@@ -24,6 +26,18 @@ def Gdouble_ope(p,q,r,s,circuit,theta):
                  Exp [i theta/2 ...]
     so theta is divided by two. Accordingly, we need to multiply theta by two.
     
+
+    Args:
+        p (int): excitation index 
+        q (int): excitation index 
+        r (int): excitation index 
+        s (int): excitation index 
+        circuit (QuantumCircuit): circuit to be updated
+        theta (float): real rotation parameter
+
+    Returns:
+        circuit (QuantumCircuit): circuit to be updated
+
     Author(s): Takashi Tsuchimochi
     """
 
@@ -68,7 +82,7 @@ def Gdouble_ope(p,q,r,s,circuit,theta):
             Gdoubles_pqrs(p,q,s,r,circuit,-theta)
 
 
-def Gdoubles_pqrs(p,q,r,s,circuit,theta):
+def Gdoubles_pqrs(p,q,r,s,circuit,theta,approx=cf.approx_exp):
     """ Function
         Given 
             Epqrs = p^ q^ r s
@@ -400,3 +414,22 @@ def Gdoubles_pqrq(p,q,r,circuit,theta):
     gate = PauliRotation(target_list, pauli_index, -theta/2) 
     circuit.add_gate(gate)
         
+
+        
+def bcs_single_ope(p, circuit, lam, theta):
+    """Function
+    Construct circuit for 
+       exp[ -i lam Z/2 ] exp[ -i theta Y/2) ]
+    acting on 2p and 2p+1 qubits,
+    required for BCS wave function. 
+
+    Args:
+        p (int): orbital index
+        circuit (QuantumCircuit): circuit to be updated
+        lam (float): phase parameter
+        theta (float): rotation parameter
+    Returns:
+        circuit (QuantumCircuit): circuit to be updated
+
+    """
+

@@ -20,6 +20,8 @@ from openfermion import MolecularData
 from openfermionpyscf import PyscfMolecularData
 
 from . import config as cf
+from .fileio import printmat, prints
+from .utils import Binomial
 
 
 def prepare_pyscf_molecule_mod(molecule):
@@ -171,7 +173,7 @@ def run_pyscf_mod(
     # Prepare pyscf molecule.
     pyscf_molecule = prepare_pyscf_molecule_mod(molecule)
     molecule.n_orbitals = int(pyscf_molecule.nao_nr())
-    molecule.n_qubits = 2 * molecule.n_orbitals
+    molecule.n_qubit = 2 * molecule.n_orbitals
     molecule.nuclear_repulsion = float(pyscf_molecule.energy_nuc())
 
     # Run SCF.
@@ -205,9 +207,15 @@ def run_pyscf_mod(
     molecule.overlap_integrals = pyscf_scf.get_ovlp()
     # CASCI (FCI)
     # if run_fci:
-    molecule.fci_energy = pyscf_scf.CASCI(
+    #molecule.fci_energy = pyscf_scf.CASCI(
+    #    n_active_orbitals, n_active_electrons
+    #).kernel()[0]
+    fci = pyscf_scf.CASCI(
         n_active_orbitals, n_active_electrons
-    ).kernel()[0]
+    ).fix_spin(ss=cf.spin-1).kernel()
+    molecule.fci_energy = fci[0]
+    cf.fci_coeff = fci[2]
+    #fci2qubit(n_active_orbitals,n_active_electrons,pyscf_molecule.spin,fci[2])
     # Return updated molecule instance.
     pyscf_molecular_data = PyscfMolecularData.__new__(PyscfMolecularData)
     pyscf_molecular_data.__dict__.update(molecule.__dict__)
@@ -227,3 +235,5 @@ def run_pyscf_mod(
     cf.rint = pyscf_molecule.intor("int1e_r")
 
     return pyscf_molecular_data
+
+

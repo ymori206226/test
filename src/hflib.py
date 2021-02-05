@@ -117,7 +117,7 @@ def cost_uhf(
         SaveTheta(noa * nva + nob * nvb, kappa_list, cf.tmp)
     if print_level > 1:
         prints("(UHF state)")
-        print_state(state, n_qubit_system)
+        print_state(state, n_qubit=n_qubit_system)
     # Store HF wave function
     cf.States = state
     return Euhf, S2

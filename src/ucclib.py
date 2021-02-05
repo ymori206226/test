@@ -28,7 +28,7 @@ from .init import get_occvir_lists
 from .utils import orthogonal_constraint
 
 
-def single_ope_Pauli(a, i, circuit, theta):
+def single_ope_Pauli(a, i, circuit, theta, approx=cf.approx_exp):
     """Function:
     Construct exp[theta ( a!i - i!a ) ] as a whole unitary and add to circuit
 
@@ -524,7 +524,7 @@ def ucc_occrot(circuit, noa, nob, nva, nvb, theta_list, ndim2=0):
             ia = ia + 1
 
 
-def ucc_Gsingles(circuit, noa, nob, nva, nvb, theta_list, ndim2=0):
+def ucc_Gsingles(circuit, norbs, theta_list, ndim2=0):
     """Function:
     Construct circuit for generalized singles prod_pq exp[theta (p!q - q!p )]
 
@@ -532,7 +532,6 @@ def ucc_Gsingles(circuit, noa, nob, nva, nvb, theta_list, ndim2=0):
     """
     ia = ndim2
     ### alpha ###
-    norbs = noa + nva
     for a in range(norbs):
         a2 = 2 * a
         for i in range(a):
@@ -628,63 +627,6 @@ def ucc_doubles(circuit, noa, nob, nva, nvb, theta_list, ndim1=0):
                     double_ope_Pauli(b2, a2, j2, i2, circuit, theta_list[ijab])
                     ijab = ijab + 1
 
-
-def upcc_Gdoubles(circuit, norbs, theta_list, ndim1, ndim2, i):
-    """Function:
-    Construct circuit for UpCC (pair-dobles part)
-
-    Author(s): Takahiro Yoshikura
-    """
-
-    ijab = (ndim1 + ndim2) * i
-
-    for a in range(norbs):
-        ###  alpha  ###
-        a2 = 2 * a
-        ### beta  ###
-        a2b = a2 + 1
-
-        for i in range(a):
-            ###  alpha  ###
-            i2 = 2 * i
-            ###  beta  ###
-            i2b = i2 + 1
-            # double_ope(max(b2,a2),min(b2,a2),max(j2,i2),min(j2,i2),circuit,theta_list[ijab])
-#            double_ope_Pauli(
-#                max(a2b, a2),
-#                min(a2b, a2),
-#                max(i2b, i2),
-#                min(i2b, i2),
-#                circuit,
-#                theta_list[ijab],
-#            )
-            Gdouble_ope(a2b,a2,i2b,i2,circuit,theta_list[ijab])
-            ijab = ijab + 1
-
-
-def upcc_Gsingles(circuit, norbs, theta_list, ndim1, ndim2, i):
-    """Function:
-    Construct circuit for UpCC (singles part)
-
-    Author(s): Takahiro Yoshikura, Takashi Tsuchimochi (spin-free)
-    """
-    ia = ndim2 + i * (ndim1 + ndim2)
-    for a in range(norbs):
-        a2 = 2 * a
-        for i in range(a):
-            i2 = 2 * i
-            ### alpha ###
-            single_ope_Pauli(a2, i2, circuit, theta_list[ia])
-            ### beta ###
-            if cf.SpinProj:
-                ### For spin-projection, deliberately break spin-symmetry
-                single_ope_Pauli(a2 + 1, i2 + 1, circuit, -theta_list[ia])
-            else:    
-                ### Standard spin-free singles
-                single_ope_Pauli(a2 + 1, i2 + 1, circuit,  theta_list[ia])
-            ia = ia + 1
-
-
 def set_circuit_occrot(n_qubit_system, noa, nob, nva, nvb, theta1):
     """Function:
     Construct new circuit for occ-occ rotation,  prod_ij exp[theta (i!j - j!i )]
@@ -703,7 +645,7 @@ def set_circuit_GS(n_qubit_system, noa, nob, nva, nvb, theta1):
     Author(s): Takashi Tsuchimochi
     """
     circuit = QuantumCircuit(n_qubit_system)
-    ucc_Gsingles(circuit, noa, nob, nva, nvb, theta1)
+    ucc_Gsingles(circuit, norbs, theta1)
     return circuit
 
 
@@ -760,26 +702,6 @@ def set_circuit_uccd(n_qubit, noa, nob, nva, nvb, theta_list):
     """
     circuit = QuantumCircuit(n_qubit)
     ucc_doubles(circuit, noa, nob, nva, nvb, theta_list)
-    return circuit
-
-
-def set_circuit_upccgsd(n_qubit, norbs, theta_list, k):
-    """Function:
-    Construct new circuit for UpCCGSD
-
-    Author(s): Takahiro Yoshikura
-    """
-    ndim1 = int(norbs * (norbs - 1) / 2)
-    ndim2 = ndim1
-    circuit = QuantumCircuit(n_qubit)
-
-    i = 0
-
-    for i in range(k):
-        upcc_Gdoubles(circuit, norbs, theta_list, ndim1, ndim2, i)
-        upcc_Gsingles(circuit, norbs, theta_list, ndim1, ndim2, i)
-        i = i + 1
-
     return circuit
 
 
@@ -895,7 +817,7 @@ def cost_uccsd(
             "  rho = %d" % rho,
         )
         prints("\n(UCCSD state)")
-        print_state(state, n_qubit_system)
+        print_state(state)
         if method == "uccsd":
             print_amplitudes(theta_list, noa, nob, nva, nvb, threshold)
         elif method == "sauccsd":
@@ -905,84 +827,6 @@ def cost_uccsd(
     cf.States = state
     return cost, S2
 
-
-def cost_upccgsd(
-    print_level,
-    n_qubit_system,
-    n_electron,
-    noa,
-    nob,
-    nva,
-    nvb,
-    rho,
-    qulacs_hamiltonian,
-    qulacs_s2,
-    kappa_list,
-    theta_list,
-    k,
-):
-    """Function:
-    Energy functional of UpCCGSD
-
-    Author(s): Takahiro Yoshikura
-    """
-
-    t1 = time.time()
-    norbs = noa + nva
-    ndim1 = int(norbs * (norbs - 1) / 2)
-    ndim2 = int(ndim1)
-    state = QuantumState(n_qubit_system)
-    # set_circuit = set_circuit_rhf(n_qubit_system,n_electron)
-    # set_circuit.update_quantum_state(state)
-    state.set_computational_basis(cf.current_det)
-
-    #    if np.linalg.norm(kappa_list) > 0.0001:
-    #        ## UUCCSD: generate UHF reference by applying exp(kappa)
-    #        circuit_uhf = set_circuit_uhf(n_qubit_system,noa,nob,nva,nvb,kappa_list)
-    #        circuit_uhf.update_quantum_state(state)
-
-    circuit = set_circuit_upccgsd(n_qubit_system, norbs, theta_list, k)
-    for i in range(rho):
-        circuit.update_quantum_state(state)
-
-    if cf.SpinProj:
-        from .phflib import S2Proj
-        state_P = S2Proj(state)
-        state   = state_P.copy()
-    Eupccgsd = qulacs_hamiltonian.get_expectation_value(state)
-    cost = Eupccgsd
-    ### Project out the states contained in 'lower_states'
-    cost += orthogonal_constraint(qulacs_hamiltonian, state)
-
-    S2 = qulacs_s2.get_expectation_value(state)
-    t2 = time.time()
-    cpu1 = t2 - t1
-    if print_level == 1:
-        cput = t2 - cf.t_old
-        cf.t_old = t2
-        cf.icyc += 1
-        prints(
-            "{cyc:5}:".format(cyc=cf.icyc),
-            "  E[{}-UpCCGSD] = {:.12f}".format(k, Eupccgsd),
-            "  <S**2> =",
-            "% 17.15f" % S2,
-            "  CPU Time = ",
-            "%5.2f" % cput,
-            " (%2.2f / step)" % cpu1,
-        )
-        SaveTheta(k * (ndim1 + ndim2), theta_list, cf.tmp)
-    if print_level > 1:
-        prints(
-            "Final:  E[{}-UpCCGSD] = {:.12f}".format(k, Eupccgsd),
-            "  <S**2> =",
-            "% 17.15f" % S2,
-            "  rho = %d" % rho,
-        )
-        prints("\n({}-UpCCGSD state)".format(k))
-        print_state(state)
-    # Store UpCCGSD wave function
-    cf.States = state
-    return cost, S2
 
 
 def cost_uccd(
@@ -1038,7 +882,7 @@ def cost_uccd(
         )
     if print_level > 1:
         prints("\n(UCCD state)")
-        print_state(state, n_qubit_system)
+        print_state(state)
     return Euccd, S2
 
 
@@ -1095,7 +939,7 @@ def cost_opt_ucc(
     elif method == "opt_uccsd":
         # First prepare UCCSD
         theta_list_rho = theta_list_fix / rho
-        circuit = set_circuit_uccsd(n_qubit_system, noa, nob, nva, nvb, theta_list_rho)
+        circuit = set_circuit_uccsd(n_qubit_system, noa, nob, nva, nvb, DS, theta_list_rho)
     for i in range(rho):
         circuit.update_quantum_state(state)
     # then rotate
@@ -1123,7 +967,7 @@ def cost_opt_ucc(
         )
     if print_level > 1:
         prints("\n(UCC state)")
-        print_state(state, n_qubit_system)
+        print_state(state)
     return Eucc, S2
 
 
@@ -1309,7 +1153,7 @@ def cost_opttest_uccsd(
             "  rho = %d" % rho,
         )
         prints("\n(UCCSD state)")
-        print_state(state, n_qubit_system)
+        print_state(state)
         if method == "uccsd":
             print_amplitudes(theta_list, noa, nob, nva, nvb)
         elif method == "sauccsd":
@@ -1415,7 +1259,7 @@ def cost_uccsdX(
             "  rho = %d" % rho,
         )
         prints("\n(UCCSD state)")
-        print_state(state, n_qubit_system)
+        print_state(state)
         if method == "uccsd":
             print_amplitudes(theta_list, noa, nob, nva, nvb, threshold)
         elif method == "sauccsd":
@@ -1578,3 +1422,4 @@ def ucc_singles_g(circuit, no, nv, theta_list, ndim2=0):
             # single_ope(a2,i2,circuit,theta_list[ia])
             single_ope_Pauli(a + no, i, circuit, theta_list[ia])
             ia = ia + 1
+

@@ -33,28 +33,41 @@ from .fileio import (
 
 def set_projection():
     """Function
-    Set the angles and weights for integration of spin-projection.
+    Set the angles and weights for integration of spin-projection and number-projection.
 
     Spin-rotation operator     Exp[ -i alpha Sz ]   Exp[ -i beta Sy ]   Exp[ -i gamma Sz ]
     weight                     Exp[ i m' alpha]      d*[j,m',m]         Exp[ i m gamma]
 
     Angles alpha and gamma are determined by Trapezoidal quadrature, and beta is determined by Gauss-Legendre quadrature.
 
+    Number-rotation operator   Exp[ -i phi N ] 
+    weight                     Exp[  i phi Ne ]  
+
+    phi are determined by Trapezoidal quadrature.
+
     """
-    prints(
-        "Projecting to spin space :  s = {:.1f}    Ms = {} ".format(
-            (cf.spin - 1) / 2, cf.Ms
+    if cf.SpinProj:
+        prints(
+            "Projecting to spin space :  s = {:.1f}    Ms = {} ".format(
+                (cf.spin - 1) / 2, cf.Ms
+            )
         )
-    )
-    prints(
-        "             Grid points :  (alpha,beta,gamma) = ({},{},{})".format(
-            cf.euler_ngrids[0], cf.euler_ngrids[1], cf.euler_ngrids[2]
+        prints(
+            "             Grid points :  (alpha,beta,gamma) = ({},{},{})".format(
+                cf.euler_ngrids[0], cf.euler_ngrids[1], cf.euler_ngrids[2]
+            )
         )
-    )
+    if cf.NumberProj: 
+        prints("Projecting to number space :  N = {}".format(cf.number_ngrids))
+
     cf.sp_angle = []
     cf.sp_weight = []
+    cf.np_angle = []
+    cf.np_weight = []
     trap = True
-    # Trapezoidal or Simpson for alpha, gamma
+
+    # Alpha
+
     if cf.euler_ngrids[0] > 1:
         if trap:
             alpha, wg_alpha = trapezoidal(0, 2 * np.pi, cf.euler_ngrids[0])
@@ -66,7 +79,9 @@ def set_projection():
 
     cf.sp_angle.append(alpha)
     cf.sp_weight.append(wg_alpha)
-    # Gauss-Legendre quadrature for beta angle
+
+    # Beta
+
     if cf.euler_ngrids[1] > 1:
         beta, wg_beta = np.polynomial.legendre.leggauss(cf.euler_ngrids[1])
         beta = np.arccos(beta)
@@ -80,6 +95,8 @@ def set_projection():
     cf.sp_angle.append(beta)
     cf.sp_weight.append(wg_beta)
 
+    # Gamma
+
     if cf.euler_ngrids[2] > 1:
         if trap:
             gamma, wg_gamma = trapezoidal(0, 2 * np.pi, cf.euler_ngrids[2])
@@ -90,6 +107,21 @@ def set_projection():
         wg_gamma = [1]
     cf.sp_angle.append(gamma)
     cf.sp_weight.append(wg_gamma)
+
+    
+    # phi
+
+    if cf.number_ngrids > 1:
+        if trap:
+            phi, wg_phi = trapezoidal(0, 2 * np.pi, cf.number_ngrids)
+        else:
+            gamma, wg_gamma = simpson(0, 2 * np.pi, cf.number_ngrids)
+    else:
+        phi = [0]
+        wg_phi = [1]
+    cf.np_angle = phi
+    cf.np_weight = wg_phi
+
 
 
 def trapezoidal(x0, x1, n):
@@ -290,22 +322,53 @@ def set_circuit_ExpSy(circuit, n_qubit_system, angle):
 
     for i in range(n_qubit_system):
         if i % 2 == 0:
-            single_ope_Pauli(i + 1, i, circuit, angle / 2)
+            single_ope_Pauli(i + 1, i, circuit, angle / 2, approx=False)
 
 
 def set_circuit_ExpSz(circuit, n_qubit_system, angle):
     """Function
     Construct circuit Exp[ -i angle Sz ]
+    (20210205) Bug fixed
+    Sz = 1/4 (-Z0 +Z1 -Z2 +Z3 ...)
 
     Author(s): Takashi Tsuchimochi
     """
 
     for i in range(n_qubit_system):
         if i % 2 == 0:
-            circuit.add_RZ_gate(i, -angle / 2)
+            circuit.add_RZ_gate(i, angle / 2)
         else:
-            circuit.add_RZ_gate(i, +angle / 2)
+            circuit.add_RZ_gate(i, -angle / 2)
 
+def set_circuit_ExpNa(circuit, n_qubit_system, angle):
+    """Function
+    Construct circuit Exp[ -i angle Na ] Exp[ i angle M/2]
+    Na = Number operator for alpha spin
+       = M/2  -  1/2 ( Z0 + Z2 + Z4 + ...) 
+    The phase Exp[ -i angle M/2 ] is canceled out here,
+    and treated elsewhere.
+
+    Author(s): Takashi Tsuchimochi
+    """
+
+    for i in range(n_qubit_system):
+        if i % 2 == 0:
+            circuit.add_RZ_gate(i, angle)
+            
+def set_circuit_ExpNb(circuit, n_qubit_system, angle):
+    """Function
+    Construct circuit Exp[ -i angle Nb ] Exp[ i angle M/2]
+      Nb = Number operator for beta spin
+         = M/2  -  1/2 ( Z1 + Z3 + Z5 + ...) 
+    The phase Exp[ -i angle M/2 ] is canceled out here,
+    and treated elsewhere.
+
+    Author(s): Takashi Tsuchimochi
+    """
+
+    for i in range(n_qubit_system):
+        if i % 2 == 1:
+            circuit.add_RZ_gate(i, angle)
 
 def set_circuit_Rg(circuit, n_qubit_system, alpha, beta, gamma):
     """Function
@@ -470,7 +533,7 @@ def cost_proj(
         circuit_uhf.update_quantum_state(state)
         # Then prepare UCCSD
         theta_list_rho = theta_list / rho
-        circuit = set_circuit_uccsd(n_qubit, noa, nob, nva, nvb, theta_list_rho)
+        circuit = set_circuit_uccsd(n_qubit, noa, nob, nva, nvb, 0, theta_list_rho)
         for i in range(rho):
             circuit.update_quantum_state(state)
         if print_level > 0:
@@ -518,7 +581,7 @@ def cost_proj(
 
     if print_level > 1:
         prints("State before projection")
-        print_state(state, n_qubit_system)
+        print_state(state, n_qubit=n_qubit_system)
         if ref == "puccsd" or ref == "opt_puccd":
             print_amplitudes(theta_list, noa, nob, nva, nvb, threshold)
     #    '''
@@ -613,7 +676,7 @@ def cost_proj(
             "% 17.15f" % S2,
             "  rho = %d" % rho,
         )
-        print_state(state, n_qubit - 1)
+        print_state(state, n_qubit=n_qubit - 1)
         if ref == "puccsd" or ref == "opt_puccd":
             print_amplitudes(theta_list, noa, nob, nva, nvb)
         prints("HUg", HUg)
@@ -640,7 +703,7 @@ def S2Proj(Q):
     """
     spin = cf.spin
     s = (spin - 1) / 2
-    Ms = cf.Ms
+    Ms = cf.Ms / 2   
 
     n_qubit = Q.get_qubit_count()
     state_P = QuantumState(n_qubit)
@@ -671,84 +734,51 @@ def S2Proj(Q):
 
     # Normalize
     norm2 = state_P.get_squared_norm()
+    if norm2 < 1e-8:
+        error("Norm of spin-projected state is too small!\n",
+              "This usually means the broken-symmetry state has NO component ",
+              "of the target spin.")
     state_P.normalize(norm2)
     # print_state(state_P,name="P|Q>",threshold=1e-6)
     return state_P
 
 
-def S2Proj_test(qulacs_s2):
+def NProj(Q):
     """Function
-       Perform spin-projection to QuantumState |Q>
+       Perform number-projection to QuantumState |Q>
 
-          |Q'>  =  Ps |Q>
+          |Q'>  =  PN |Q>
 
-       where Ps is a spin-projection operator (non-unitary).
+       where PN is a number-projection operator (non-unitary).
 
-          Ps = \sum_i^ng   wg[i] Ug[i]
+          PN = \sum_i^ng   wg[i] Ug[i]
 
        This function provides a shortcut to |Q'>, which is unreal.
-       One actually needs to develop a quantum circuit for this (See PRR 2, 043142 (2020)).
+       One actually needs to develop a quantum circuit for this (See QST 6, 014004 (2021)).
 
 
     Author(s): Takashi Tsuchimochi
     """
-    spin = cf.spin
-    s = (spin - 1) / 2
-    Ms = cf.Ms
-    ### TEST
-    n_qubit = cf.n_active_orbitals * 2
-    Q = QuantumState(n_qubit)
-    Q.set_computational_basis(0b000000111111)
-    ndim = int(n_qubit * (n_qubit - 1) / 2)
-    theta_random = np.random.rand(ndim)
-    theta_random = LoadTheta(ndim, filepath="./random")
-    from .hflib import set_circuit_ghf
-
-    ghf = set_circuit_ghf(n_qubit, theta_random)
-    ghf.update_quantum_state(Q)
-    print_state(Q, name="|Q> = Random GHF state")
-    prints("<S**2> = {: 17.15f} ".format(qulacs_s2.get_expectation_value(Q)))
+    n_qubit = Q.get_qubit_count()
     state_P = QuantumState(n_qubit)
     state_P.multiply_coef(0)
-    nalpha = max(cf.euler_ngrids[0], 1)
-    nbeta = max(cf.euler_ngrids[1], 1)
-    ngamma = max(cf.euler_ngrids[2], 1)
-    for ialpha in range(nalpha):
-        alpha = cf.sp_angle[0][ialpha]
-        alpha_coef = cf.sp_weight[0][ialpha] * np.exp(1j * alpha * Ms)
-        for ibeta in range(nbeta):
-            beta = cf.sp_angle[1][ibeta]
-            beta_coef = cf.sp_weight[1][ibeta] * cf.dmm[ibeta]
-            for igamma in range(ngamma):
-                gamma = cf.sp_angle[2][igamma]
-                gamma_coef = cf.sp_weight[2][igamma] * np.exp(1j * gamma * Ms)
-                coef = (2 * s + 1) / (8 * np.pi) * (alpha_coef * beta_coef * gamma_coef)
-                ### Copy quantum state of UHF (cannot be done in real device) ###
-                state_g = QuantumState(n_qubit)
-                state_g.load(Q)
-                ### Construct Rg circuit
-                circuit_Rg = QuantumCircuit(n_qubit)
-                set_circuit_Rg(circuit_Rg, n_qubit, alpha, beta, gamma)
-                # circuit_Rg.update_quantum_state(state_g)
-                # set_circuit_ExpSy(circuit_Rg,n_qubit,beta)
-                circuit_Rg.update_quantum_state(state_g)
-                # prints(" Updated ", coef)
-                # print_state(state_g)
-                state_g.multiply_coef(coef)
-                state_P.add_state(state_g)
+    state_g = QuantumState(n_qubit)
+    nphi = max(cf.number_ngrids, 1)
+    #print_state(Q)
+    for iphi in range(nphi):
+        coef = cf.np_weight[iphi] * np.exp(1j * cf.np_angle[iphi] * (cf.n_active_electrons - cf.n_active_orbitals))
+        state_g= Q.copy()
+        circuit = QuantumCircuit(n_qubit)
+        set_circuit_ExpNa(circuit,n_qubit,cf.np_angle[iphi])
+        set_circuit_ExpNb(circuit,n_qubit,cf.np_angle[iphi])
+        circuit.update_quantum_state(state_g)
+        state_g.multiply_coef(coef)
+        state_P.add_state(state_g)       
     norm2 = state_P.get_squared_norm()
-    print(norm2)
+    if norm2 < 1e-8:
+        error("Norm of number-projected state is too small!\n",
+              "This usually means the broken-symmetry state has NO component ",
+              "of the target number.")
     state_P.normalize(norm2)
-    print_state(state_P, name="P|Q>", threshold=1e-6)
-    prints(
-        "<S**2> = {: 17.15f} ".format(
-            qulacs_s2.get_transition_amplitude(state_P, state_P)
-        )
-    )
-    print(
-        "<S**2> = {: 17.15f} ".format(
-            qulacs_s2.get_transition_amplitude(state_P, state_P)
-        )
-    )
-    exit()
     return state_P
+

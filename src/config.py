@@ -51,6 +51,7 @@ rdm1 = "./" + input_name + ".1rdm"
 ################################################################
 
 # Method_list
+method = None
 vqe_method_list = [
     "uhf",
     "phf",
@@ -91,10 +92,12 @@ hubbard_u = 1  # Hubbard model (U interaction)
 hubbard_nx = 0  # Number of lattices in x direction: not needed if n_orbitals is defined (see below)
 hubbard_ny = 1  # Number of lattices in y direction (needed only for 2d-hubbard)
 
-# Spin-Projection
+# Symmetry-Projection
 SpinProj = False  # Whether or not to perform Spin Projection
 euler_ngrids = [0, -1, 0]
 dmm = 0
+NumberProj = False # Whether or not to perform Number Projection
+number_ngrids = 0
 
 # Lagrange multiplier for Spin-Constrained Calculation
 constraint_lambda = 0
@@ -114,9 +117,11 @@ Do2RDM = 0
 
 # VQE Quantum State(s)
 States = None
+approx_exp = False
 
 # qulacs (VQE part)
 print_level = 1  # Printing level
+print_fci = 0  # Whether fci is printed initially
 mix_level = 0  # Number of pairs of orbitals to be mixed (to break symmetry)
 rho = 1  # Trotter number
 kappa_guess = "zero"  # Guess for kappa: 'zero', 'read', 'mix', 'random'
@@ -129,6 +134,8 @@ DS = 0  # Ordering of T1 and T2: 0 for Exp[T1]Exp[T2], 1 for Exp[T2]Exp[T1]
 print_amp_thres = 1e-2  # Threshold for T amplitudes to be printed
 fci_energy = 0
 hf_energy = 0
+fci_state = None
+fci_coeff = None
 excited_states = []
 mo_coeff = None
 natom = 0

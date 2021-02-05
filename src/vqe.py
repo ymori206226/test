@@ -26,9 +26,12 @@ from .phflib import cost_proj
 from .ucclib import (
     cost_uccd,
     cost_opt_ucc,
-    cost_upccgsd,
     cost_uccsdX,
 )
+from .upcclib import(
+    cost_upccgsd,
+)
+from .agpbcs import cost_bcs
 from .jmucc import cost_jmucc
 from .prop import dipole, get_1RDM
 
@@ -89,10 +92,12 @@ def VQE_driver(
         ndim1 = (noa + nob) * (nva + nvb)
     else:
         ndim1 = noa * nva + nob * nvb
-    ndim2aa = int(noa * (noa - 1) * nva * (nva - 1) / 4)
-    ndim2ab = int(noa * nob * nva * nvb)
-    ndim2bb = int(nob * (nob - 1) * nvb * (nvb - 1) / 4)
+    prints('noa {}   nob {}   nva {}   nvb {}'.format(noa,nob,nva,nvb))
+    ndim2aa = noa * (noa - 1) * nva * (nva - 1) // 4
+    ndim2ab = noa * nob * nva * nvb
+    ndim2bb = nob * (nob - 1) * nvb * (nvb - 1) // 4
     ndim2 = ndim2aa + ndim2ab + ndim2bb
+    prints(' {}   {}  {}'.format(ndim2aa,ndim2ab,ndim2bb))
     if method == "sauccsd":
         ndim1 = noa * nva
         ndim2 = int(ndim1 * (ndim1 + 1) / 2)
@@ -101,6 +106,9 @@ def VQE_driver(
 
     qulacs_hamiltonian = create_observable_from_openfermion_text(str(jw_hamiltonian))
     qulacs_s2 = create_observable_from_openfermion_text(str(jw_s2))
+    #prints("TEST E[FCI] = ",qulacs_hamiltonian.get_expectation_value(cf.fci_state))
+    #error()
+    prints('nactiveorbitals  ',cf.n_active_orbitals)
 
     ### HxZ and S**2xZ and IxZ  ###
     ### Trick! Remove the zeroth-order term, which is the largest
@@ -227,10 +235,56 @@ def VQE_driver(
             kappa_list,
             theta_list,
         )
+    elif "bcs" in method:
+        ###BCS###
+        if "ebcs" in method:
+            k_param = method[0 : method.find("-ebcs")]
+        else:
+            k_param = method[0 : method.find("-bcs")]
+        if not k_param.isdecimal():
+            prints("Unrecognized k: ", k_param)
+            error("k-BCS without specifying k.")
+        k_param = int(k_param)
+        if k_param < 1:
+            error("0-bcs is just HF!")
+        norbs = noa + nva
+        ndim1 = int(norbs * (norbs - 1) / 2)
+        ndim2 = norbs
+        ndim = ndim1 + ndim2
 
-    elif "upccgsd" in method:
+        ndim = k_param * (ndim1 + ndim2)
+        cost_wrap = lambda theta_list: cost_bcs(
+            0,
+            n_qubit_system,
+            n_electron,
+            noa,
+            nob,
+            nva,
+            nvb,
+            qulacs_hamiltonian,
+            qulacs_s2,
+            theta_list,
+            k_param,
+        )[0]
+        cost_callback = lambda theta_list: cost_bcs(
+            print_control,
+            n_qubit_system,
+            n_electron,
+            noa,
+            nob,
+            nva,
+            nvb,
+            qulacs_hamiltonian,
+            qulacs_s2,
+            theta_list,
+            k_param,
+        )     
+    elif "pccgsd" or "pccgsd" in method:
         ###UpCCGSD###
-        k_param = method[0 : method.find("-upccgsd")]
+        if "upccgsd" in method:
+            k_param = method[0 : method.find("-upccgsd")]
+        elif "epccgsd" in method:
+            k_param = method[0 : method.find("-epccgsd")]
         if not k_param.isdecimal():
             prints("Unrecognized k: ", k_param)
             error("k-UpCCGSD without specifying k.")
@@ -240,9 +294,9 @@ def VQE_driver(
         norbs = noa + nva
         ndim1 = int(norbs * (norbs - 1) / 2)
         ndim2 = int(norbs * (norbs - 1) / 2)
-        ndim = ndim1 + ndim2
-
         ndim = k_param * (ndim1 + ndim2)
+        if "epccgsd" in method:
+            ndim += ndim1
         cost_wrap = lambda theta_list: cost_upccgsd(
             0,
             n_qubit_system,
@@ -251,7 +305,6 @@ def VQE_driver(
             nob,
             nva,
             nvb,
-            rho,
             qulacs_hamiltonian,
             qulacs_s2,
             kappa_list,
@@ -266,7 +319,6 @@ def VQE_driver(
             nob,
             nva,
             nvb,
-            rho,
             qulacs_hamiltonian,
             qulacs_s2,
             kappa_list,
@@ -714,7 +766,23 @@ def VQE_driver(
         )
         SaveTheta(ndim, final_param_list, cf.theta_list_file)
 
-    elif "upccgsd" in method:
+    elif "bcs" in method:
+        cost_bcs(
+            print_control + 1,
+            n_qubit_system,
+            n_electron,
+            noa,
+            nob,
+            nva,
+            nvb,
+            qulacs_hamiltonian,
+            qulacs_s2,
+            final_param_list,
+            k_param,
+        )
+        SaveTheta(ndim, final_param_list, cf.theta_list_file)
+
+    elif "pccgsd" in method:
         cost_upccgsd(
             print_control + 1,
             n_qubit_system,
@@ -723,7 +791,6 @@ def VQE_driver(
             nob,
             nva,
             nvb,
-            rho,
             qulacs_hamiltonian,
             qulacs_s2,
             kappa_list,
@@ -821,7 +888,8 @@ def VQE_driver(
         SaveTheta(ndim, final_param_list, cf.theta_list_file)
 
     if cf.States is not None:
-        dipole(cf.States)
+        if cf.model=='chemical':
+            dipole(cf.States)
         if cf.Do1RDM:
             Daa, Dbb = get_1RDM(cf.States, print_level=1)
         ### Test

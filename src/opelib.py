@@ -79,10 +79,13 @@ def generate_operators(
 
     # Broadcasting computed objects in open-fermion and pyscf
     cf.mo_coeff = mpi.comm.bcast(cf.mo_coeff, root=0)
+    cf.fci_coeff = mpi.comm.bcast(cf.fci_coeff, root=0)
     cf.natom = mpi.comm.bcast(cf.natom, root=0)
     cf.atom_charges = mpi.comm.bcast(cf.atom_charges, root=0)
     cf.atom_coords = mpi.comm.bcast(cf.atom_coords, root=0)
     cf.rint = mpi.comm.bcast(cf.rint, root=0)
+
+    #error()
 
     cf.Hamiltonian_operator = mpi.comm.bcast(cf.Hamiltonian_operator, root=0)
     cf.S2_operator = mpi.comm.bcast(cf.S2_operator, root=0)
