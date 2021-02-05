@@ -1,0 +1,16 @@
+basis        = hubbard
+n_electrons  = 7 
+multiplicity = 2
+hubbard_nx   = 6
+hubbard_u    = 8
+method       = uhf
+npar         = 4
+
+@@@
+
+method       = uccsd
+
+@@@
+
+method       = 2-upccgsd
+theta_guess  = random
