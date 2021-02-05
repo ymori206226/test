@@ -110,6 +110,8 @@ while Finish is False:
     from src.opelib import generate_operators, get_hubbard
     from src.phflib import set_projection
     from src.vqe import VQE_driver
+    from src.utils import fci2qubit
+    from src.fileio import print_state
 
     prints("+-------------+")
     prints("|  Job # %3d  |" % job_no)
@@ -120,7 +122,30 @@ while Finish is False:
         )
     )
 
-    if cf.basis != "hubbard":
+    if cf.basis == "hubbard":
+        cf.model = 'hubbard'
+        if mpi.main_rank:
+            jw_hamiltonian, jw_s2 = get_hubbard(
+                cf.hubbard_u,
+                cf.hubbard_nx,
+                cf.hubbard_ny,
+                cf.n_active_electrons,
+                cf.run_fci,
+            )
+            prints(
+                "Hubbard model: nx = %d  " % cf.hubbard_nx,
+                "ny = %d  " % cf.hubbard_ny,
+                "U = %2.2f" % cf.hubbard_u,
+            )
+        else:
+            jw_hamiltonian = None
+            jw_s2 = None
+        cf.n_active_orbitals = cf.hubbard_nx * cf.hubbard_ny
+        jw_hamiltonian = mpi.comm.bcast(jw_hamiltonian, root=0)
+        jw_s2 = mpi.comm.bcast(jw_s2, root=0)
+
+    else: 
+        cf.model = 'chemical'
         if cf.geometry is None:
             error("No geometry specified.")
         elif cf.geom_update:
@@ -143,25 +168,6 @@ while Finish is False:
             if cf.print_level > 2:
                 prints("jw_hamiltonian:\n", jw_hamiltonian)
 
-    elif cf.basis == "hubbard":
-        if mpi.main_rank:
-            jw_hamiltonian, jw_s2 = get_hubbard(
-                cf.hubbard_u,
-                cf.hubbard_nx,
-                cf.hubbard_ny,
-                cf.n_active_electrons,
-                cf.run_fci,
-            )
-            prints(
-                "Hubbard model: nx = %d  " % cf.hubbard_nx,
-                "ny = %d  " % cf.hubbard_ny,
-                "U = %2.2f" % cf.hubbard_u,
-            )
-        else:
-            jw_hamiltonian = None
-            jw_s2 = None
-        jw_hamiltonian = mpi.comm.bcast(jw_hamiltonian, root=0)
-        jw_s2 = mpi.comm.bcast(jw_s2, root=0)
 
     # If maxiter = 0, skip the VQE part. This option is useful to do PySCF for different geometries
     # (to read and utilize initial guess HF orbitals, which sometimes can change by occupying the wrong orbitals).
@@ -180,6 +186,12 @@ while Finish is False:
                 cf.n_active_electrons, cf.multiplicity
             )
         )
+    cf.nalpha = (cf.n_active_electrons + cf.multiplicity - 1)//2
+    cf.nbeta  = cf.n_active_electrons - cf.nalpha
+    #cf.fci_state = fci2qubit(cf.n_active_orbitals,cf.nalpha,cf.nbeta,cf.fci_coeff)
+    #if cf.print_fci:
+    #    print_state(cf.fci_state, name="(FCI)", threshold=cf.print_amp_thres)
+
 
     # Check initial determinant
     if cf.det == -1:
@@ -189,7 +201,7 @@ while Finish is False:
 
     if cf.method in ("phf", "suhf", "sghf", "opt_puccsd", "opt_puccd"):
         cf.SpinProj = True
-    if cf.SpinProj:
+    if cf.SpinProj or cf.NumberProj:
         if cf.method not in (
             "uccsd",
             "uccd",
@@ -202,11 +214,10 @@ while Finish is False:
             "opt_puccd",
         ):
             prints("Spin-Projection is not yet available for {}.".format(cf.method))
-        elif cf.method in ("uccd", "uccsd"):
-            cf.method = "p" + cf.method
+        #elif cf.method in ("uccd", "uccsd"):
+        #    cf.method = "p" + cf.method
 
         set_projection()
-
     # VQE part
     VQE_driver(
         jw_hamiltonian,
