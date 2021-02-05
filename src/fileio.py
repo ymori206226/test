@@ -226,7 +226,6 @@ def print_amplitudes(theta_list, noa, nob, nva, nvb, threshold=0.01, filepath=cf
                             "%2.10f" % (theta_list[ijab]),
                             filepath=filepath,
                         )
-                    prints('ijab ({}, {}, {}, {}) = {} '.format(i,j,a,b,ijab))
                     ijab = ijab + 1
                 for i in range(j + 1, noa):
                     ii = i + 1
@@ -244,17 +243,14 @@ def print_amplitudes(theta_list, noa, nob, nva, nvb, threshold=0.01, filepath=cf
                             "%2.10f" % (theta_list[ijab]),
                             filepath=filepath,
                         )
-                    prints('ijab ({}, {}, {}, {}) = {} '.format(i,j,a,b,ijab))
                     ijab = ijab + 1
         for a in range(min(b + 1, nva), nva):
-            prints('a ', a, ' nva ',nva)
             aa = a + 1 + noa
             for j in range(nob):
                 jj = j + 1
                 for i in range(j + 1):
                     ii = i + 1
                     # a > b, j > i
-                    prints('ijab ({}, {}, {}, {}) = {} '.format(i,j,a,b,ijab))
                     if abs(theta_list[ijab]) > threshold:
                         prints(
                             ii,

@@ -682,6 +682,7 @@ def cost_proj(
         prints("HUg", HUg)
         prints("Ug", Ug)
 
+
     return Ep, S2
 
 

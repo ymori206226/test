@@ -92,12 +92,10 @@ def VQE_driver(
         ndim1 = (noa + nob) * (nva + nvb)
     else:
         ndim1 = noa * nva + nob * nvb
-    prints('noa {}   nob {}   nva {}   nvb {}'.format(noa,nob,nva,nvb))
     ndim2aa = noa * (noa - 1) * nva * (nva - 1) // 4
     ndim2ab = noa * nob * nva * nvb
     ndim2bb = nob * (nob - 1) * nvb * (nvb - 1) // 4
     ndim2 = ndim2aa + ndim2ab + ndim2bb
-    prints(' {}   {}  {}'.format(ndim2aa,ndim2ab,ndim2bb))
     if method == "sauccsd":
         ndim1 = noa * nva
         ndim2 = int(ndim1 * (ndim1 + 1) / 2)
@@ -107,8 +105,6 @@ def VQE_driver(
     qulacs_hamiltonian = create_observable_from_openfermion_text(str(jw_hamiltonian))
     qulacs_s2 = create_observable_from_openfermion_text(str(jw_s2))
     #prints("TEST E[FCI] = ",qulacs_hamiltonian.get_expectation_value(cf.fci_state))
-    #error()
-    prints('nactiveorbitals  ',cf.n_active_orbitals)
 
     ### HxZ and S**2xZ and IxZ  ###
     ### Trick! Remove the zeroth-order term, which is the largest

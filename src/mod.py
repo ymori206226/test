@@ -181,13 +181,6 @@ def run_pyscf_mod(
     pyscf_scf.verbose = 0
     pyscf_scf.run(chkfile=cf.chk, init_guess=guess, conv_tol=1e-12, conv_tol_grad=1e-12)
     molecule.hf_energy = float(pyscf_scf.e_tot)
-    if verbose:
-        print(
-            "Hartree-Fock energy for {} ({} electrons) is {}.".format(
-                molecule.name, molecule.n_electrons, molecule.hf_energy
-            )
-        )
-
     # Hold pyscf data in molecule. They are required to compute density
     # matrices and other quantities.
     molecule._pyscf_data = pyscf_data = {}
@@ -198,6 +191,7 @@ def run_pyscf_mod(
     molecule.canonical_orbitals = pyscf_scf.mo_coeff.astype(float)
     molecule.orbital_energies = pyscf_scf.mo_energy.astype(float)
 
+
     # Get integrals.
     one_body_integrals, two_body_integrals = compute_integrals_mod(
         pyscf_molecule, pyscf_scf
@@ -205,14 +199,19 @@ def run_pyscf_mod(
     molecule.one_body_integrals = one_body_integrals
     molecule.two_body_integrals = two_body_integrals
     molecule.overlap_integrals = pyscf_scf.get_ovlp()
+
     # CASCI (FCI)
-    # if run_fci:
-    #molecule.fci_energy = pyscf_scf.CASCI(
-    #    n_active_orbitals, n_active_electrons
-    #).kernel()[0]
+    ### Change the spin ... (S,Ms) = (spin, multiplicity) 
+    pyscf_molecule.spin = cf.spin-1
+    pyscf_scf = compute_scf_mod(pyscf_molecule)
+    pyscf_scf.run()
+    ### reload mo coeffictions
+    pyscf_scf.mo_coeff = molecule.canonical_orbitals
+    pyscf_scf.mo_energy = molecule.orbital_energies
+
     fci = pyscf_scf.CASCI(
         n_active_orbitals, n_active_electrons
-    ).fix_spin(ss=cf.spin-1).kernel()
+    ).kernel()
     molecule.fci_energy = fci[0]
     cf.fci_coeff = fci[2]
     #fci2qubit(n_active_orbitals,n_active_electrons,pyscf_molecule.spin,fci[2])
