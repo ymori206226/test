@@ -1,3 +1,10 @@
+(2021/02/05) Tsuchimochi
+1. Bug fixed for hubbard model and spin-projection (Sz part) in phflib.py 
+2. Spin and Ms correctly treated in mod.py (specify 'multiplicity' to define Ms = (noa - nob)/2, and 'spin' to define actual spin 2s+1)
+3. Introduced BCS and number-projection (agpbcs.py and NProj in phflib.py)
+4. Introduced extended UpCCGSD 
+5. Created upcclib.py module 
+
 (2021/02/02) Tsuchimochi
 1. Bug fixed for print_state (in fileio.py) and single_ope (ncnot undefined).
 2. Introduced Gdouble_ope in expope.py for general double excitations.
