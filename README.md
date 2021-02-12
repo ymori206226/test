@@ -1,5 +1,6 @@
 # quket
 ```
+  02/12 mori
  Quantum Computing Simulator Ver 0.3
      Copyright 2019-2020 Takashi Tsuchimochi, Yuto Mori, Takahiro Yoshikura. All rights Reserved.
 
