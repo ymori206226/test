@@ -552,6 +552,53 @@ def VQE_driver(
             cf.SpinProj,
         )
 
+    elif method == "ic_mrucc":
+        nstates = len(cf.multi_weights)
+        core_num = n_qubit_system
+        vir_index = 0
+        from .init import int2occ
+        for istate in range(nstates):
+            ### Read state integer and extract occupied/virtual info
+            occ_list_tmp = int2occ(cf.multi_states[istate])
+            vir_tmp = occ_list_tmp[-1] + 1
+            for ii in range(len(occ_list_tmp)):
+                if ii == occ_list_tmp[ii]: core_tmp = ii + 1
+            vir_index = max(vir_index,vir_tmp)
+            core_num = min(core_num,core_tmp)
+        vir_num = n_qubit_system - vir_index
+        act_num = n_qubit_system - core_num - vir_num
+        from .icmrucc import calc_num_ic_theta
+        ndim1, ndim2 = calc_num_ic_theta(n_qubit_system,vir_num,act_num,core_num)
+        ndim = ndim1 + ndim2
+        cost_wrap = lambda theta_list : cost_ic_mrucc(
+            0,
+            n_qubit_system,
+            n_electron,
+            vir_num,
+            act_num,
+            core_num,
+            rho,
+            DS,
+            qulacs_hamiltonian,
+            qulacs_s2,
+            theta_list,
+            print_amp_thres
+        )
+        cost_callback = lambda theta_list : cost_ic_mrucc(
+            print_control,
+            n_qubit_system,
+            n_electron,
+            vir_num,
+            act_num,
+            core_num,
+            rho,
+            DS,
+            qulacs_hamiltonian,
+            qulacs_s2,
+            theta_list,
+            print_amp_thres
+        )
+
     prints("Performing VQE for ", method)
     prints("Number of VQE parameters: {}".format(ndim))
     prints(
@@ -880,6 +927,23 @@ def VQE_driver(
             final_param_list,
             print_amp_thres,
             cf.SpinProj,
+        )
+        SaveTheta(ndim, final_param_list, cf.theta_list_file)
+
+    elif method == "ic_mrucc":
+        cost_ic_mrucc(
+            print_control + 1,
+            n_qubit_system,
+            n_electron,
+            vir_num,
+            act_num,
+            core_num,
+            rho,
+            DS,
+            qulacs_hamiltonian,
+            qulacs_s2,
+            final_param_list,
+            print_amp_thres
         )
         SaveTheta(ndim, final_param_list, cf.theta_list_file)
 

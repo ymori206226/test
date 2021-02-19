@@ -57,6 +57,8 @@ def read_input(job_no):
         hubbard_nx (int):       Hubbard lattice size for x-direction
         hubbard_ny (int):       Hubbard lattice size for y-direction
 
+        act2act (bool):         For ic-MRUCC, act-to-act
+
         Putting '@@@' in lines separates multiple jobs in one input file.
         (the options from previous jobs will be used unless redefined)
 
@@ -273,6 +275,8 @@ def read_input(job_no):
                 cf.print_fci = chkbool(words[1])
             elif words[0].lower() == "approx_exp":
                 cf.approx_exp = chkbool(words[1])
+            elif words[0].lower() == "act2act":
+                cf.act2act_ops = chkbool(words[1])
             else:
                 error('No option "%s"' % words[0])
 

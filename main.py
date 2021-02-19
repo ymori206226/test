@@ -212,6 +212,7 @@ while Finish is False:
             "sghf",
             "opt_puccsd",
             "opt_puccd",
+            "ic_mrucc"
         ):
             prints("Spin-Projection is not yet available for {}.".format(cf.method))
         #elif cf.method in ("uccd", "uccsd"):

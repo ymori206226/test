@@ -67,6 +67,7 @@ vqe_method_list = [
     "opt_psauccd",
     "opt_uccd",
     "opt_uccsd",
+    "ic_mrucc"
 ]
 # PeriodicTable to check the input atoms are supported.
 PeriodicTable = ["H", "He", "Li", "Be", "B", "C", "N", "O", "F", "Ne"]
@@ -154,3 +155,6 @@ ftol = 1e-9  # Convergence criterion based on energy (cost)
 eps = 1e-6  # Numerical step
 maxiter = 1000  # Maximum iterations: if 0, skip VQE and only JW-transformation is carried out.
 maxfun = 10000000000  # Maximum function evaluations. Virtual infinity.
+
+# ic-MRUCC
+act2act_ops = False
