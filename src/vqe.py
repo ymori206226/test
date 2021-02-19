@@ -275,7 +275,7 @@ def VQE_driver(
             theta_list,
             k_param,
         )     
-    elif "pccgsd" or "pccgsd" in method:
+    elif "pccgsd" in method or "pccgsd" in method:
         ###UpCCGSD###
         if "upccgsd" in method:
             k_param = method[0 : method.find("-upccgsd")]
