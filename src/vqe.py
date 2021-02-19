@@ -34,6 +34,7 @@ from .upcclib import(
 from .agpbcs import cost_bcs
 from .jmucc import cost_jmucc
 from .prop import dipole, get_1RDM
+from .icmrucc import cost_ic_mrucc
 
 from . import sampling
 
