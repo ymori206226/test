@@ -1,3 +1,8 @@
+(2021/02/27) Tsuchimochi
+1. Introduced "QuketData" class (init.py) to handle parameters/operators 
+2. Accordingly renamed parameter names, the most important one being 'method' changed to 'ansatz'
+3. QITE implemented, can be invoked by 'method = qite'
+
 (2021/02/05) Tsuchimochi
 1. Bug fixed for hubbard model and spin-projection (Sz part) in phflib.py 
 2. Spin and Ms correctly treated in mod.py (specify 'multiplicity' to define Ms = (noa - nob)/2, and 'spin' to define actual spin 2s+1)
