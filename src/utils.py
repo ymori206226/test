@@ -73,16 +73,24 @@ def chkbool(string):
         error("")
 
 
-def chkmethod(method):
+def chkmethod(method, ansatz):
     """Function:
     Check method is available in method_list
 
     Author(s): Takashi Tsuchimochi
     """
-    if method in cf.vqe_method_list:
+    if ansatz == None:
         return True
-    elif "upccgsd" or "bcs" in method:
-        return True
+    if method == "vqe":
+        if (ansatz in cf.vqe_ansatz_list) or ("pccgsd" in ansatz) or ("bcs" in ansatz):
+            return True
+        else:
+            return False
+    elif method in ("qite", "qlanczos"):
+        if (ansatz in cf.qite_ansatz_list):
+            return True
+        else:
+            return False
     else:
         return False
 
@@ -203,17 +211,17 @@ def Binomial(n, r):
     
 
 
-def orthogonal_constraint(qulacs_hamiltonian, state):
+def orthogonal_constraint(QuketData, state):
     """Function
     Compute the penalty term for excited states based on 'orthogonally-constrained VQE' scheme.
     """
     from qulacs.state import inner_product
 
-    nstates = len(cf.lower_states)
+    nstates = len(QuketData.lower_states)
     extra_cost = 0
     for i in range(nstates):
-        Ei = qulacs_hamiltonian.get_expectation_value(cf.lower_states[i])
-        overlap = inner_product(cf.lower_states[i], state)
+        Ei = QuketData.qulacs.Hamiltonian.get_expectation_value(QuketData.lower_states[i])
+        overlap = inner_product(QuketData.lower_states[i], state)
         extra_cost += -Ei * abs(overlap) ** 2
     return extra_cost
 
@@ -275,5 +283,33 @@ def fci2qubit(norbs, nalpha, nbeta, fci_coeff):
     fci_state.load(vec)
     return fci_state
 
+def lstsq(a, b, cond=None, overwrite_a=False, overwrite_b=False, check_finite=True, lapack_driver=None):
+    """Function
+    Wrapper for scipy.linalg.lstsq, which is known to have some bug related to 'SVD failure'.
+    This wrapper simply tries lstsq some times until it succeeds... 
+    """
+    import scipy
+    i = 0
+    while i < 5: 
+        try: 
+            i += 1
+            x, res, rnk, s = scipy.linalg.lstsq(a, b, cond=cond, overwrite_a=overwrite_a, overwrite_b=overwrite_b, check_finite=check_finite, lapack_driver=lapack_driver)
+            break 
+        except: 
+            continue
+    if i == 5:
+        print("lstsq does not seem to converge...")
+        def cost_fun(vct):
+            return LA.norm(np.dot(Amat, vct) - b_l) ** 2
 
+        def J_cost_fun(vct):
+            wct = np.dot(a, vct)
+            wct = np.dot(a.T, wct)
+            return 2.0 * (wct - zct)
 
+        x = scipy.optimize.minimize(
+            cost_fun, method='Newton-CG', jac=J_cost_fun, tol=1e-8).x
+        res = None
+        rnk = None
+        s = None
+    return x, res, rnk, s    

@@ -71,15 +71,8 @@ def set_circuit_ghf(n_qubit_system, kappa_list):
 
 
 def cost_uhf(
+    Quket,
     print_level,
-    n_qubit_system,
-    n_electron,
-    noa,
-    nob,
-    nva,
-    nvb,
-    qulacs_hamiltonian,
-    qulacs_s2,
     kappa_list,
 ):
     """Function:
@@ -87,17 +80,28 @@ def cost_uhf(
 
     Author(s):  Takashi Tsuchimochi
     """
+    noa = Quket.noa
+    nob = Quket.nob
+    nva = Quket.nva
+    nvb = Quket.nvb
+    n_electron = noa + nob
+    n_qubit = Quket.n_qubit
+
     t1 = time.time()
-    state = QuantumState(n_qubit_system)
+    state = QuantumState(n_qubit)
     if noa == nob:
-        circuit_rhf = set_circuit_rhf(n_qubit_system, n_electron)
+        circuit_rhf = set_circuit_rhf(n_qubit, n_electron)
     else:
-        circuit_rhf = set_circuit_rohf(n_qubit_system, noa, nob)
+        circuit_rhf = set_circuit_rohf(n_qubit, noa, nob)
     circuit_rhf.update_quantum_state(state)
-    circuit_uhf = set_circuit_uhf(n_qubit_system, noa, nob, nva, nvb, kappa_list)
+    circuit_uhf = set_circuit_uhf(n_qubit, noa, nob, nva, nvb, kappa_list)
     circuit_uhf.update_quantum_state(state)
-    Euhf = qulacs_hamiltonian.get_expectation_value(state)
-    S2 = qulacs_s2.get_expectation_value(state)
+    Euhf = Quket.qulacs.Hamiltonian.get_expectation_value(state)
+    cost = Euhf
+    ### Project out the states contained in 'lower_states'
+    from .utils import orthogonal_constraint
+    cost += orthogonal_constraint(Quket, state)
+    S2 = Quket.qulacs.S2.get_expectation_value(state)
     t2 = time.time()
     cpu1 = t2 - t1
     if print_level > 0:
@@ -117,9 +121,9 @@ def cost_uhf(
         SaveTheta(noa * nva + nob * nvb, kappa_list, cf.tmp)
     if print_level > 1:
         prints("(UHF state)")
-        print_state(state, n_qubit=n_qubit_system)
+        print_state(state, n_qubit=n_qubit)
     # Store HF wave function
-    cf.States = state
+    Quket.state = state
     return Euhf, S2
 
 

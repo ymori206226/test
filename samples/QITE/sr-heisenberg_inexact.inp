@@ -1,0 +1,10 @@
+n_orbitals = 4
+method       = qite
+ansatz       = inexact
+basis        = sr-heisenberg
+nterm        = 4
+dimension    = 4
+db           = 0.01
+maxiter      = 1000
+det          = 0101
+npar       = 2

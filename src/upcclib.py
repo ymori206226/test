@@ -91,26 +91,12 @@ def upcc_Gsingles(circuit, norbs, theta_list, ndim1, ndim2, i):
             ### alpha ###
             single_ope_Pauli(a2, i2, circuit, theta_list[ia])
             ### beta ###
-            if cf.SpinProj:
-                ### For spin-projection, deliberately break spin-symmetry
-                single_ope_Pauli(a2 + 1, i2 + 1, circuit, -theta_list[ia])
-                #single_ope_Pauli(a2 + 1, i2 + 1, circuit, 0)
-            else:    
-                ### Standard spin-free singles
-                single_ope_Pauli(a2 + 1, i2 + 1, circuit,  theta_list[ia])
+            single_ope_Pauli(a2 + 1, i2 + 1, circuit,  theta_list[ia])
             ia = ia + 1
 
-
 def cost_upccgsd(
+    Quket,
     print_level,
-    n_qubit_system,
-    n_electron,
-    noa,
-    nob,
-    nva,
-    nvb,
-    qulacs_hamiltonian,
-    qulacs_s2,
     kappa_list,
     theta_list,
     k,
@@ -122,34 +108,32 @@ def cost_upccgsd(
     """
 
     t1 = time.time()
-    norbs = noa + nva
+    noa = Quket.noa
+    nob = Quket.nob
+    norbs = Quket.n_orbital
+    n_qubit = Quket.n_qubit
+    det = Quket.det
+
     ndim1 = int(norbs * (norbs - 1) / 2)
     ndim2 = int(ndim1)
-    state = QuantumState(n_qubit_system)
-    # set_circuit = set_circuit_rhf(n_qubit_system,n_electron)
-    # set_circuit.update_quantum_state(state)
-    state.set_computational_basis(cf.current_det)
+    state = QuantumState(n_qubit)
+    state.set_computational_basis(det)
 
-    #    if np.linalg.norm(kappa_list) > 0.0001:
-    #        ## UUCCSD: generate UHF reference by applying exp(kappa)
-    #        circuit_uhf = set_circuit_uhf(n_qubit_system,noa,nob,nva,nvb,kappa_list)
-    #        circuit_uhf.update_quantum_state(state)
-
-    if "epccgsd" in cf.method:
-        circuit = set_circuit_epccgsd(n_qubit_system, norbs, theta_list, k)
+    if "epccgsd" in Quket.ansatz:
+        circuit = set_circuit_epccgsd(n_qubit, norbs, theta_list, k)
     else:    
-        circuit = set_circuit_upccgsd(n_qubit_system, norbs, theta_list, k)
+        circuit = set_circuit_upccgsd(n_qubit, norbs, theta_list, k)
     circuit.update_quantum_state(state)
-    if cf.SpinProj:
+    if Quket.projection.SpinProj:
         from .phflib import S2Proj
-        state_P = S2Proj(state)
+        state_P = S2Proj(Quket,state)
         state   = state_P.copy()
-    Eupccgsd = qulacs_hamiltonian.get_expectation_value(state)
+    Eupccgsd = Quket.qulacs.Hamiltonian.get_expectation_value(state)
     cost = Eupccgsd
     ### Project out the states contained in 'lower_states'
-    cost += orthogonal_constraint(qulacs_hamiltonian, state)
+    cost += orthogonal_constraint(Quket, state)
 
-    S2 = qulacs_s2.get_expectation_value(state)
+    S2 = Quket.qulacs.S2.get_expectation_value(state)
     t2 = time.time()
     cpu1 = t2 - t1
     if print_level == 1:
@@ -173,8 +157,8 @@ def cost_upccgsd(
             "% 17.15f" % S2,
         )
         prints("\n({}-UpCCGSD state)".format(k))
-        print_state(state, threshold=cf.print_amp_thres)
+        print_state(state, threshold=Quket.print_amp_thres)
     # Store UpCCGSD wave function
-    cf.States = state
+    Quket.state = state
     return cost, S2
 

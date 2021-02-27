@@ -42,7 +42,7 @@ def print_geom(geometry):
     Author(s): Takashi Tsuchimochi
     """
     prints("\n *** Geometry **************************")
-    for iatom in range(cf.natom):
+    for iatom in range(len(geometry)):
         prints(
             "  {:2s}    {:8.4f}   {:8.4f}   {:8.4f}".format(
                 geometry[iatom][0],

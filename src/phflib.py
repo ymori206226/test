@@ -30,100 +30,6 @@ from .fileio import (
     error,
 )
 
-
-def set_projection():
-    """Function
-    Set the angles and weights for integration of spin-projection and number-projection.
-
-    Spin-rotation operator     Exp[ -i alpha Sz ]   Exp[ -i beta Sy ]   Exp[ -i gamma Sz ]
-    weight                     Exp[ i m' alpha]      d*[j,m',m]         Exp[ i m gamma]
-
-    Angles alpha and gamma are determined by Trapezoidal quadrature, and beta is determined by Gauss-Legendre quadrature.
-
-    Number-rotation operator   Exp[ -i phi N ] 
-    weight                     Exp[  i phi Ne ]  
-
-    phi are determined by Trapezoidal quadrature.
-
-    """
-    if cf.SpinProj:
-        prints(
-            "Projecting to spin space :  s = {:.1f}    Ms = {} ".format(
-                (cf.spin - 1) / 2, cf.Ms
-            )
-        )
-        prints(
-            "             Grid points :  (alpha,beta,gamma) = ({},{},{})".format(
-                cf.euler_ngrids[0], cf.euler_ngrids[1], cf.euler_ngrids[2]
-            )
-        )
-    if cf.NumberProj: 
-        prints("Projecting to number space :  N = {}".format(cf.number_ngrids))
-
-    cf.sp_angle = []
-    cf.sp_weight = []
-    cf.np_angle = []
-    cf.np_weight = []
-    trap = True
-
-    # Alpha
-
-    if cf.euler_ngrids[0] > 1:
-        if trap:
-            alpha, wg_alpha = trapezoidal(0, 2 * np.pi, cf.euler_ngrids[0])
-        else:
-            alpha, wg_alpha = simpson(0, 2 * np.pi, cf.euler_ngrids[0])
-    else:
-        alpha = [0]
-        wg_alpha = [1]
-
-    cf.sp_angle.append(alpha)
-    cf.sp_weight.append(wg_alpha)
-
-    # Beta
-
-    if cf.euler_ngrids[1] > 1:
-        beta, wg_beta = np.polynomial.legendre.leggauss(cf.euler_ngrids[1])
-        beta = np.arccos(beta)
-        beta = beta.tolist()
-        cf.dmm = weightspin(cf.euler_ngrids[1], cf.spin, cf.Ms, cf.Ms, beta)
-    else:
-        beta = [0]
-        wg_beta = [1]
-        cf.dmm = [1]
-
-    cf.sp_angle.append(beta)
-    cf.sp_weight.append(wg_beta)
-
-    # Gamma
-
-    if cf.euler_ngrids[2] > 1:
-        if trap:
-            gamma, wg_gamma = trapezoidal(0, 2 * np.pi, cf.euler_ngrids[2])
-        else:
-            gamma, wg_gamma = simpson(0, 2 * np.pi, cf.euler_ngrids[2])
-    else:
-        gamma = [0]
-        wg_gamma = [1]
-    cf.sp_angle.append(gamma)
-    cf.sp_weight.append(wg_gamma)
-
-    
-    # phi
-
-    if cf.number_ngrids > 1:
-        if trap:
-            phi, wg_phi = trapezoidal(0, 2 * np.pi, cf.number_ngrids)
-        else:
-            gamma, wg_gamma = simpson(0, 2 * np.pi, cf.number_ngrids)
-    else:
-        phi = [0]
-        wg_phi = [1]
-    cf.np_angle = phi
-    cf.np_weight = wg_phi
-
-
-
 def trapezoidal(x0, x1, n):
     """Function
     Return points and weights based on trapezoidal rule
@@ -480,21 +386,12 @@ def controlled_Ug(circuit, n_qubit, anc, beta):
 
 
 def cost_proj(
+    Quket,
     print_level,
-    n_qubit,
-    n_electron,
-    noa,
-    nob,
-    nva,
-    nvb,
-    rho,
-    DS,
-    anc,
     qulacs_hamiltonianZ,
     qulacs_s2Z,
     coef0_H,
     coef0_S2,
-    ref,
     kappa_list,
     theta_list=0,
     threshold=0.01,
@@ -505,12 +402,24 @@ def cost_proj(
     Author(s): Takashi Tsuchimochi
     """
     t1 = time.time()
+    noa = Quket.noa
+    nob = Quket.nob
+    nva = Quket.nva
+    nvb = Quket.nvb
+    n_electron = Quket.n_electron
+    rho = Quket.rho
+    DS = Quket.DS
+    anc = Quket.anc
+    n_qubit_system = Quket.n_qubit
+    n_qubit = n_qubit_system + 1
     ndim1 = noa * nva + nob * nvb
     ndim2aa = int(noa * (noa - 1) * nva * (nva - 1) / 4)
     ndim2ab = int(noa * nob * nva * nvb)
     ndim2bb = int(nob * (nob - 1) * nvb * (nvb - 1) / 4)
     ndim2 = ndim2aa + ndim2ab + ndim2bb
-    n_qubit_system = n_qubit - 1
+    ref = Quket.ansatz
+
+
     state = QuantumState(n_qubit)
     if noa == nob:
         circuit_rhf = set_circuit_rhfZ(n_qubit, n_electron)
@@ -594,19 +503,19 @@ def cost_proj(
     Ep = 0
     S2 = 0
     Norm = 0
-    nalph = max(cf.euler_ngrids[0], 1)
-    nbeta = max(cf.euler_ngrids[1], 1)
-    ngamm = max(cf.euler_ngrids[2], 1)
+    nalph = max(Quket.projection.euler_ngrids[0], 1)
+    nbeta = max(Quket.projection.euler_ngrids[1], 1)
+    ngamm = max(Quket.projection.euler_ngrids[2], 1)
     ig = 0
     for ialph in range(nalph):
-        alph = cf.sp_angle[0][ialph]
-        alph_coef = cf.sp_weight[0][ialph]
+        alph = Quket.projection.sp_angle[0][ialph]
+        alph_coef = Quket.projection.sp_weight[0][ialph]
         for ibeta in range(nbeta):
-            beta = cf.sp_angle[1][ibeta]
-            beta_coef = cf.sp_weight[1][ibeta] * cf.dmm[ibeta]
+            beta = Quket.projection.sp_angle[1][ibeta]
+            beta_coef = Quket.projection.sp_weight[1][ibeta] * Quket.projection.dmm[ibeta]
             for igamm in range(ngamm):
-                gamm = cf.sp_angle[2][igamm]
-                gamm_coef = cf.sp_weight[2][igamm]
+                gamm = Quket.projection.sp_angle[2][igamm]
+                gamm_coef = Quket.projection.sp_weight[2][igamm]
 
                 ### Copy quantum state of UHF (cannot be done in real device) ###
                 state_g = QuantumState(n_qubit)
@@ -686,7 +595,7 @@ def cost_proj(
     return Ep, S2
 
 
-def S2Proj(Q):
+def S2Proj(Quket,Q):
     """Function
        Perform spin-projection to QuantumState |Q>
 
@@ -702,25 +611,25 @@ def S2Proj(Q):
 
     Author(s): Takashi Tsuchimochi
     """
-    spin = cf.spin
+    spin = Quket.projection.spin
     s = (spin - 1) / 2
-    Ms = cf.Ms / 2   
+    Ms = Quket.projection.Ms / 2   
 
     n_qubit = Q.get_qubit_count()
     state_P = QuantumState(n_qubit)
     state_P.multiply_coef(0)
-    nalpha = max(cf.euler_ngrids[0], 1)
-    nbeta = max(cf.euler_ngrids[1], 1)
-    ngamma = max(cf.euler_ngrids[2], 1)
+    nalpha = max(Quket.projection.euler_ngrids[0], 1)
+    nbeta = max(Quket.projection.euler_ngrids[1], 1)
+    ngamma = max(Quket.projection.euler_ngrids[2], 1)
     for ialpha in range(nalpha):
-        alpha = cf.sp_angle[0][ialpha]
-        alpha_coef = cf.sp_weight[0][ialpha] * np.exp(1j * alpha * Ms)
+        alpha = Quket.projection.sp_angle[0][ialpha]
+        alpha_coef = Quket.projection.sp_weight[0][ialpha] * np.exp(1j * alpha * Ms)
         for ibeta in range(nbeta):
-            beta = cf.sp_angle[1][ibeta]
-            beta_coef = cf.sp_weight[1][ibeta] * cf.dmm[ibeta]
+            beta = Quket.projection.sp_angle[1][ibeta]
+            beta_coef = Quket.projection.sp_weight[1][ibeta] * Quket.projection.dmm[ibeta]
             for igamma in range(ngamma):
-                gamma = cf.sp_angle[2][igamma]
-                gamma_coef = cf.sp_weight[2][igamma] * np.exp(1j * gamma * Ms)
+                gamma = Quket.projection.sp_angle[2][igamma]
+                gamma_coef = Quket.projection.sp_weight[2][igamma] * np.exp(1j * gamma * Ms)
                 # Total Weight
                 coef = (2 * s + 1) / (8 * np.pi) * (alpha_coef * beta_coef * gamma_coef)
 
@@ -744,7 +653,7 @@ def S2Proj(Q):
     return state_P
 
 
-def NProj(Q):
+def NProj(Quket,Q):
     """Function
        Perform number-projection to QuantumState |Q>
 
@@ -764,14 +673,14 @@ def NProj(Q):
     state_P = QuantumState(n_qubit)
     state_P.multiply_coef(0)
     state_g = QuantumState(n_qubit)
-    nphi = max(cf.number_ngrids, 1)
+    nphi = max(Quket.projection.number_ngrids, 1)
     #print_state(Q)
     for iphi in range(nphi):
-        coef = cf.np_weight[iphi] * np.exp(1j * cf.np_angle[iphi] * (cf.n_active_electrons - cf.n_active_orbitals))
+        coef = Quket.projection.np_weight[iphi] * np.exp(1j * Quket.projection.np_angle[iphi] * (Quket.projection.n_active_electrons - Quket.projection.n_active_orbitals))
         state_g= Q.copy()
         circuit = QuantumCircuit(n_qubit)
-        set_circuit_ExpNa(circuit,n_qubit,cf.np_angle[iphi])
-        set_circuit_ExpNb(circuit,n_qubit,cf.np_angle[iphi])
+        set_circuit_ExpNa(circuit,n_qubit,Quket.projection.np_angle[iphi])
+        set_circuit_ExpNb(circuit,n_qubit,Quket.projection.np_angle[iphi])
         circuit.update_quantum_state(state_g)
         state_g.multiply_coef(coef)
         state_P.add_state(state_g)       

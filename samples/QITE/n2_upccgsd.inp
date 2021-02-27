@@ -1,0 +1,15 @@
+basis        = sto-3G
+multiplicity = 1
+charge       = 0
+n_electrons  = 6
+n_orbitals   = 6
+geometry     
+N  0  0  0   
+N  0  0  1.6 
+method       = qite
+ansatz       = upccgsd
+nterm        = 1
+db           = 0.1
+maxiter      = 1000
+det          = 0000111111
+npar = 2

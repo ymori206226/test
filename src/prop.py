@@ -16,22 +16,22 @@ from .opelib import FermionOperator_to_Observable, FermionOperator_to_Operator
 from openfermion.ops import FermionOperator
 
 
-def dipole(state):
+def dipole(QuketData):
     """Function
         Prepare the dipole operator and get expectation value.
 
     Author(s): Takashi Tsuchimochi
     """
     # Prepare Operators for Qulacs
-    qulacs_dipole_x = FermionOperator_to_Observable(cf.Dipole_operator[0])
-    qulacs_dipole_y = FermionOperator_to_Observable(cf.Dipole_operator[1])
-    qulacs_dipole_z = FermionOperator_to_Observable(cf.Dipole_operator[2])
-    dx = -qulacs_dipole_x.get_expectation_value(state)
-    dy = -qulacs_dipole_y.get_expectation_value(state)
-    dz = -qulacs_dipole_z.get_expectation_value(state)
+    qulacs_dipole_x = FermionOperator_to_Observable(QuketData.operators.Dipole_operator[0],QuketData.n_qubit)
+    qulacs_dipole_y = FermionOperator_to_Observable(QuketData.operators.Dipole_operator[1],QuketData.n_qubit)
+    qulacs_dipole_z = FermionOperator_to_Observable(QuketData.operators.Dipole_operator[2],QuketData.n_qubit)
+    dx = -qulacs_dipole_x.get_expectation_value(QuketData.state)
+    dy = -qulacs_dipole_y.get_expectation_value(QuketData.state)
+    dz = -qulacs_dipole_z.get_expectation_value(QuketData.state)
     d = [dx, dy, dz]
-    for i in range(cf.natom):
-        d += cf.atom_charges[i] * cf.atom_coords[i]
+    for i in range(QuketData.natom):
+        d += QuketData.atom_charges[i] * QuketData.atom_coords[i]
 
     d = d / 0.393456
 
@@ -40,15 +40,15 @@ def dipole(state):
     prints("| mu | = {:.5f}".format(np.sqrt(d[0] ** 2 + d[1] ** 2 + d[2] ** 2)))
 
 
-def get_1RDM(state, print_level=1):
+def get_1RDM(QuketData, print_level=1):
     """Function
-    Compute 1RDM of QuantmState `state`.
+    Compute 1RDM of QuantmState `state` in QuketData.
 
     Author(s): Taisei Nishimaki, Takashi Tsuchimochi
     """
     prints("\n === Computing 1RDM === ")
-    n_qubit = state.get_qubit_count()
-    norbs = int(n_qubit / 2)
+    n_qubit = QuketData.n_qubit 
+    norbs = QuketData.n_orbital 
     Daa = np.zeros((norbs, norbs))
     Dbb = np.zeros((norbs, norbs))
     Daa_mat = np.zeros((norbs, norbs))
@@ -64,8 +64,8 @@ def get_1RDM(state, print_level=1):
             # Fermionoperatorからjw変換、qulacsで読み込める形に変換して期待値を表示
             string = str(i) + "^ " + str(j)
             Epq = FermionOperator(string)
-            Epq_qu = FermionOperator_to_Operator(Epq)
-            Epq_expect = Epq_qu.get_expectation_value(state).real
+            Epq_qu = FermionOperator_to_Operator(Epq, n_qubit)
+            Epq_expect = Epq_qu.get_expectation_value(QuketData.state).real
             Dpq = Epq_expect
             if i % 2 == 0 and j % 2 == 0:
                 Daa[jj][ii] = Dpq

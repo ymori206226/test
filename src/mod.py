@@ -147,6 +147,7 @@ def run_pyscf_mod(
     n_active_orbitals,
     n_active_electrons,
     molecule,
+    spin=None,
     run_scf=True,
     run_mp2=False,
     run_cisd=False,
@@ -202,7 +203,9 @@ def run_pyscf_mod(
 
     # CASCI (FCI)
     ### Change the spin ... (S,Ms) = (spin, multiplicity) 
-    pyscf_molecule.spin = cf.spin-1
+    if spin == None:
+        spin = molecule.multiplicity
+    pyscf_molecule.spin = spin-1
     pyscf_scf = compute_scf_mod(pyscf_molecule)
     pyscf_scf.run()
     ### reload mo coeffictions
@@ -213,26 +216,43 @@ def run_pyscf_mod(
         n_active_orbitals, n_active_electrons
     ).kernel()
     molecule.fci_energy = fci[0]
-    cf.fci_coeff = fci[2]
+    #cf.fci_coeff = fci[2]
     #fci2qubit(n_active_orbitals,n_active_electrons,pyscf_molecule.spin,fci[2])
     # Return updated molecule instance.
     pyscf_molecular_data = PyscfMolecularData.__new__(PyscfMolecularData)
     pyscf_molecular_data.__dict__.update(molecule.__dict__)
     pyscf_molecular_data.save()
 
-    #   Keep molecular data in config.py
-    cf.hf_energy = molecule.hf_energy
-    cf.fci_energy = molecule.fci_energy
-    cf.mo_coeff = pyscf_scf.mo_coeff.astype(float)
-    cf.natom = pyscf_molecule.natm
-    cf.atom_charges = []
-    cf.atom_coords = []
-    for i in range(cf.natom):
-        cf.atom_charges.append(pyscf_molecule.atom_charges()[i])
-        cf.atom_coords.append(pyscf_molecule.atom_coords()[i])
+    ##   Keep molecular data in config.py
+    #cf.hf_energy = pyscf_molecular_data.hf_energy
+    #cf.fci_energy = pyscf_molecular_data.fci_energy
+    #cf.mo_coeff = pyscf_scf.mo_coeff.astype(float)
+    #cf.natom = pyscf_molecule.natm
+    #cf.atom_charges = []
+    #cf.atom_coords = []
+    #for i in range(cf.natom):
+    #    cf.atom_charges.append(pyscf_molecule.atom_charges()[i])
+    #    cf.atom_coords.append(pyscf_molecule.atom_coords()[i])
 
-    cf.rint = pyscf_molecule.intor("int1e_r")
+    #cf.rint = pyscf_molecule.intor("int1e_r")
 
-    return pyscf_molecular_data
+    return pyscf_molecular_data, pyscf_molecule
 
+
+class PyscfMolecularData(MolecularData):
+
+    """A derived class from openfermion.hamiltonians.MolecularData. This class
+    is created to store the PySCF method objects as well as molecule data from
+    a fixed basis set at a fixed geometry that is obtained from PySCF
+    electronic structure packages. This class provides an interface to access
+    the PySCF Hartree-Fock, MP, CI, Coupled-Cluster methods and their energies,
+    density matrices and wavefunctions.
+    Attributes:
+        _pyscf_data(dict): To store PySCF method objects temporarily.
+    """
+    def __init__(self, geometry=None, basis=None, multiplicity=None,
+                 charge=0, description="", filename="", data_directory=None):
+        MolecularData.__init__(self, geometry, basis, multiplicity,
+                               charge, description, filename, data_directory)
+        self._pyscf_data = {}
 

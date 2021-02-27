@@ -705,143 +705,12 @@ def set_circuit_uccd(n_qubit, noa, nob, nva, nvb, theta_list):
     return circuit
 
 
-def cost_uccsd(
+def cost_uccd(
+    Quket,
     print_level,
-    n_qubit_system,
-    n_electron,
-    noa,
-    nob,
-    nva,
-    nvb,
-    rho,
-    DS,
-    qulacs_hamiltonian,
-    qulacs_s2,
-    method,
     kappa_list,
     theta_list,
     threshold=0.01,
-):
-    """Function:
-    Energy functional of UCCSD (including spin-adapted UCCSD)
-
-    Author(s): Takashi Tsuchimochi
-    """
-
-    from .hflib import set_circuit_rhf, set_circuit_rohf
-
-    t1 = time.time()
-    state = QuantumState(n_qubit_system)
-
-    # state = gen_initial_det()
-
-    # print_state(state,name='initial state ')
-    if noa == nob:
-        circuit_rhf = set_circuit_rhf(n_qubit_system, n_electron)
-    else:
-        circuit_rhf = set_circuit_rohf(n_qubit_system, noa, nob)
-    circuit_rhf.update_quantum_state(state)
-
-    theta_list_rho = theta_list / rho
-    if method == "sauccsd":
-        circuit = set_circuit_sauccsd(n_qubit_system, noa, nva, DS, theta_list_rho)
-        ndim1 = nob * nva
-        ndim2 = int(ndim1 * (ndim1 + 1) / 2)
-    else:
-        circuit = set_circuit_uccsd(
-            n_qubit_system, noa, nob, nva, nvb, DS, theta_list_rho
-        )
-        ndim1 = noa * nva + nob * nvb
-        ndim2aa = int(noa * (noa - 1) * nva * (nva - 1) / 4)
-        ndim2ab = int(noa * nob * nva * nvb)
-        ndim2bb = int(nob * (nob - 1) * nvb * (nvb - 1) / 4)
-        ndim2 = ndim2aa + ndim2ab + ndim2bb
-    ### Note "kappa is not optimized" !!!
-    if DS:
-        for i in range(rho):
-            circuit.update_quantum_state(state)
-    else:
-        for i in range(rho):
-            circuit.update_quantum_state(state)
-
-    ### Project out the states contained in 'lower_states'
-
-    Euccsd = qulacs_hamiltonian.get_expectation_value(state)
-    S2 = qulacs_s2.get_expectation_value(state)
-    cost = Euccsd
-    if cf.constraint_lambda > 0:
-        S4 = cf.qulacs_s4.get_expectation_value(state)
-        penalty = cf.constraint_lambda * (S4)
-        cost += penalty
-    t2 = time.time()
-    cpu1 = t2 - t1
-    if print_level == -1:
-        prints(
-            "Initial E[%s] = " % method,
-            "{:.12f}".format(Euccsd),
-            "  <S**2> =",
-            "% 17.15f" % S2,
-            "  rho = %d" % rho,
-        )
-    if print_level == 1:
-        # cf.constraint_lambda *= 1.1
-        cput = t2 - cf.t_old
-        cf.t_old = t2
-        cf.icyc += 1
-        prints(
-            "{cyc:5}:".format(cyc=cf.icyc),
-            "  E[%s] = " % method,
-            "{:.12f}".format(Euccsd),
-            "  <S**2> =",
-            "% 17.15f" % S2,
-            "  CPU Time = ",
-            "%5.2f" % cput,
-            " (%2.2f / step)" % cpu1,
-        )
-        if cf.constraint_lambda != 0:
-            prints(
-                "lambda = ",
-                cf.constraint_lambda,
-                "<S**4> =",
-                "%17.15f" % S4,
-                "  Penalty = ",
-                "%2.15f" % penalty,
-            )
-        SaveTheta(ndim1 + ndim2, theta_list, cf.tmp)
-    if print_level > 1:
-        prints(
-            "Final:  E[%s] = " % method,
-            "{:.12f}".format(Euccsd),
-            "  <S**2> =",
-            "% 17.15f" % S2,
-            "  rho = %d" % rho,
-        )
-        prints("\n(UCCSD state)")
-        print_state(state)
-        if method == "uccsd":
-            print_amplitudes(theta_list, noa, nob, nva, nvb, threshold)
-        elif method == "sauccsd":
-            print_amplitudes_spinfree(theta_list, noa, nva, threshold)
-
-    # Store UCCSD wave function
-    cf.States = state
-    return cost, S2
-
-
-
-def cost_uccd(
-    print_level,
-    n_qubit_system,
-    n_electron,
-    noa,
-    nob,
-    nva,
-    nvb,
-    rho,
-    qulacs_hamiltonian,
-    qulacs_s2,
-    kappa_list,
-    theta_list,
 ):
     """Function:
     Energy functional of UCCD
@@ -853,20 +722,23 @@ def cost_uccd(
     from .hflib import set_circuit_rhf
 
     t1 = time.time()
-    state = QuantumState(n_qubit_system)
-    set_circuit = set_circuit_rhf(n_qubit_system, n_electron)
+    n_qubit = Quket.n_qubit
+    n_electron = Quket.n_electron
+    rho = Quket.rho
+    noa = Quket.noa
+    nob = Quket.nob
+    nva = Quket.nva
+    nvb = Quket.nvb
+
+    state = QuantumState(n_qubit)
+    set_circuit = set_circuit_rhf(n_qubit, n_electron)
     set_circuit.update_quantum_state(state)
 
-    #    if np.linalg.norm(kappa_list) > 0.0001:
-    #        ## UUCCSD: generate UHF reference by applying exp(kappa)
-    #        circuit_uhf = set_circuit_uhf(n_qubit_system,noa,nob,nva,nvb,kappa_list)
-    #        circuit_uhf.update_quantum_state(state)
-
-    circuit = set_circuit_uccd(n_qubit_system, noa, nob, nva, nvb, theta_list)
+    circuit = set_circuit_uccd(n_qubit, noa, nob, nva, nvb, theta_list)
     for i in range(rho):
         circuit.update_quantum_state(state)
-    Euccd = qulacs_hamiltonian.get_expectation_value(state)
-    S2 = qulacs_s2.get_expectation_value(state)
+    Euccd = Quket.qulacs.Hamiltonian.get_expectation_value(state)
+    S2 = Quket.qulacs.S2.get_expectation_value(state)
     t2 = time.time()
     cput = t2 - t1
     if print_level > 0:
@@ -880,95 +752,11 @@ def cost_uccd(
             "  CPU Time = ",
             "%2.5f" % cput,
         )
+        SaveTheta(Quket.ndim, theta_list, cf.tmp)
     if print_level > 1:
         prints("\n(UCCD state)")
         print_state(state)
     return Euccd, S2
-
-
-def cost_opt_ucc(
-    print_level,
-    n_qubit_system,
-    n_electron,
-    noa,
-    nob,
-    nva,
-    nvb,
-    rho,
-    Gen,
-    optk,
-    qulacs_hamiltonian,
-    qulacs_s2,
-    method,
-    theta_list_fix,
-    theta_list_opt,
-):
-    """Function:
-    Energy functional of optimized UCCD (opt_uccd)
-    !!!!! Not maintained and thus may fail !!!!!
-
-    Author(s): Takashi Tsuchimochi
-    """
-    from .hflib import set_circuit_uhf
-
-    t1 = time.time()
-    state = QuantumState(n_qubit_system)
-    set_circuit = set_circuit_rhf(n_qubit_system, n_electron)
-    set_circuit.update_quantum_state(state)
-    if Gen:
-        norbs = noa + nva
-        ndim1 = norbs * (norbs - 1)
-    else:
-        ndim1 = noa * nva + nob * nvb
-    ndim2aa = int(noa * (noa - 1) * nva * (nva - 1) / 4)
-    ndim2ab = int(noa * nob * nva * nvb)
-    ndim2bb = int(nob * (nob - 1) * nvb * (nvb - 1) / 4)
-    ndim2 = ndim2aa + ndim2ab + ndim2bb
-
-    if method == "opt_uccd":
-        if optk:
-            #  optimize e^kappa with fixed T2: only ndim1 parameters in theta_list_opt and ndim2 in theta_list_fix
-            theta_list = theta_list_opt
-            theta_list = np.hstack((theta_list, theta_list_fix))
-        else:
-            #  optimize both kappa and T2: ndim1+ndim2 parameters in theta_list_opt  and no data in theta_list_fix
-            theta_list = theta_list_opt
-        # First prepare UCCD
-        theta_list_rho = theta_list[ndim1 : ndim1 + ndim2] / rho
-        circuit = set_circuit_uccd(n_qubit_system, noa, nob, nva, nvb, theta_list_rho)
-    elif method == "opt_uccsd":
-        # First prepare UCCSD
-        theta_list_rho = theta_list_fix / rho
-        circuit = set_circuit_uccsd(n_qubit_system, noa, nob, nva, nvb, DS, theta_list_rho)
-    for i in range(rho):
-        circuit.update_quantum_state(state)
-    # then rotate
-    if Gen:
-        circuit_uhf = set_circuit_GS(n_qubit_system, noa, nob, nva, nvb, theta_list)
-    else:
-        circuit_uhf = set_circuit_uhf(n_qubit_system, noa, nob, nva, nvb, theta_list)
-
-    circuit_uhf.update_quantum_state(state)
-
-    Eucc = qulacs_hamiltonian.get_expectation_value(state)
-    S2 = qulacs_s2.get_expectation_value(state)
-    t2 = time.time()
-    cput = t2 - t1
-    if print_level > 0:
-        cf.icyc += 1
-        prints(
-            "{cyc:5}:".format(cyc=cf.icyc),
-            "  E[%s] = " % method,
-            "{:.12f}".format(Eucc),
-            "  <S**2> =",
-            "% 17.15f" % S2,
-            "  CPU Time = ",
-            "%2.5f" % cput,
-        )
-    if print_level > 1:
-        prints("\n(UCC state)")
-        print_state(state)
-    return Eucc, S2
 
 
 #############################
@@ -1073,107 +861,9 @@ def ucc_doubles_spinfree1(circuit, noa, nob, nva, nvb, theta_list, ndim1=0):
                     ijab = ijab + 1
 
 
-def cost_opttest_uccsd(
-    print_level,
-    n_qubit_system,
-    n_electron,
-    noa,
-    nob,
-    nva,
-    nvb,
-    rho,
-    DS,
-    Gen,
-    qulacs_hamiltonian,
-    qulacs_s2,
-    method,
-    kappa_list,
-    theta_list,
-    threshold=0.0000005,
-):
-    """Function:
-    Only for test purpose
-
-    Author(s): Takashi Tsuchimochi
-    """
-
-    from .hflib import set_circuit_rhf, set_circuit_rohf
-
-    t1 = time.time()
-    state = QuantumState(n_qubit_system)
-    if noa == nob:
-        circuit_rhf = set_circuit_rhf(n_qubit_system, n_electron)
-    else:
-        circuit_rhf = set_circuit_rohf(n_qubit_system, noa, nob)
-    circuit_rhf.update_quantum_state(state)
-
-    theta_list_rho = theta_list / rho
-    if method == "sauccsd":
-        circuit = set_circuit_sauccsd(n_qubit_system, noa, nva, DS, theta_list_rho)
-    else:
-        circuit = set_circuit_uccsd(
-            n_qubit_system, noa, nob, nva, nvb, DS, theta_list_rho
-        )
-    ### Note "kappa is not optimized" !!!
-    for i in range(rho):
-        circuit.update_quantum_state(state)
-    circuit_uhf = set_circuit_GS(n_qubit_system, noa, nob, nva, nvb, kappa_list)
-
-    circuit_uhf.update_quantum_state(state)
-
-    Euccsd = qulacs_hamiltonian.get_expectation_value(state)
-    S2 = qulacs_s2.get_expectation_value(state)
-    t2 = time.time()
-    cput = t2 - t1
-    if print_level == -1:
-        prints(
-            "Initial E[%s] = " % method,
-            "{:.12f}".format(Euccsd),
-            "  <S**2> =",
-            "% 17.15f" % S2,
-            "  rho = %d" % rho,
-        )
-    if print_level == 1:
-        cf.icyc += 1
-        prints(
-            "{cyc:5}:".format(cyc=cf.icyc),
-            "  E[%s] = " % method,
-            "{:.12f}".format(Euccsd),
-            "  <S**2> =",
-            "% 17.15f" % S2,
-            "  CPU Time = ",
-            "%2.5f" % cput,
-        )
-    if print_level > 1:
-        prints(
-            "Final:  E[%s] = " % method,
-            "{:.12f}".format(Euccsd),
-            "  <S**2> =",
-            "% 17.15f" % S2,
-            "  rho = %d" % rho,
-        )
-        prints("\n(UCCSD state)")
-        print_state(state)
-        if method == "uccsd":
-            print_amplitudes(theta_list, noa, nob, nva, nvb)
-        elif method == "sauccsd":
-            print_amplitudes_spinfree(theta_list, noa, nob)
-    return Euccsd, S2
-
-
 def cost_uccsdX(
+    Quket,
     print_level,
-    n_qubit_system,
-    n_electron,
-    noa,
-    nob,
-    nva,
-    nvb,
-    rho,
-    DS,
-    qulacs_hamiltonian,
-    qulacs_s2,
-    method,
     kappa_list,
     theta_list,
     threshold=0.01,
@@ -1187,29 +877,30 @@ def cost_uccsdX(
 
     t1 = time.time()
 
-    det = cf.current_det
-    if method == "sauccsd":
+    det = Quket.current_det
+    n_qubit_system = Quket.n_qubit
+    noa = Quket.noa
+    nob = Quket.nob
+    nva = Quket.nva
+    nvb = Quket.nvb
+    rho = Quket.rho
+    DS = Quket.DS
+    if Quket.ansatz == "sauccsd":
         state = create_sauccsd_state(n_qubit_system, noa, nva, rho, DS, theta_list, det)
     else:
         state = create_uccsd_state(
-            n_qubit_system,
-            noa,
-            nob,
-            nva,
-            nvb,
-            rho,
-            DS,
+            Quket,
             theta_list,
-            det,
-            SpinProj=cf.SpinProj,
+            Quket.det,
+            SpinProj=Quket.projection.SpinProj,
         )
 
-    Euccsd = qulacs_hamiltonian.get_expectation_value(state)
-    S2 = qulacs_s2.get_expectation_value(state)
+    Euccsd = Quket.qulacs.Hamiltonian.get_expectation_value(state)
+    S2 = Quket.qulacs.S2.get_expectation_value(state)
     cost = Euccsd
 
     ### Project out the states contained in 'lower_states'
-    cost += orthogonal_constraint(qulacs_hamiltonian, state)
+    cost += orthogonal_constraint(Quket, state)
 
     if cf.constraint_lambda > 0:
         S4 = cf.qulacs_s4.get_expectation_value(state)
@@ -1219,7 +910,7 @@ def cost_uccsdX(
     cpu1 = t2 - t1
     if print_level == -1:
         prints(
-            "Initial E[%s] = " % method,
+            "Initial E[%s] = " % Quket.ansatz,
             "{:.12f}".format(Euccsd),
             "  <S**2> =",
             "% 17.15f" % S2,
@@ -1232,7 +923,7 @@ def cost_uccsdX(
         cf.icyc += 1
         prints(
             "{cyc:5}:".format(cyc=cf.icyc),
-            "  E[%s] = " % method,
+            "  E[%s] = " % Quket.ansatz,
             "{:.12f}".format(Euccsd),
             "  <S**2> =",
             "% 17.15f" % S2,
@@ -1249,10 +940,10 @@ def cost_uccsdX(
                 "  Penalty = ",
                 "%2.15f" % penalty,
             )
-        SaveTheta(cf.ndim, theta_list, cf.tmp)
+        SaveTheta(Quket.ndim, theta_list, cf.tmp)
     if print_level > 1:
         prints(
-            "Final:  E[%s] = " % method,
+            "Final:  E[%s] = " % Quket.ansatz,
             "{:.12f}".format(Euccsd),
             "  <S**2> =",
             "% 17.15f" % S2,
@@ -1260,9 +951,9 @@ def cost_uccsdX(
         )
         prints("\n(UCCSD state)")
         print_state(state)
-        if method == "uccsd":
+        if Quket.ansatz == "uccsd":
             print_amplitudes(theta_list, noa, nob, nva, nvb, threshold)
-        elif method == "sauccsd":
+        elif Quket.ansatz == "sauccsd":
             print_amplitudes_spinfree(theta_list, noa, nva, threshold)
 
     # Store UCCSD wave function
@@ -1271,16 +962,16 @@ def cost_uccsdX(
 
 
 def set_circuit_uccsdX(
-    n_qubit_system, noa, nob, nva, nvb, DS, theta_list, occ_list, vir_list
+    Quket, theta_list, occ_list, vir_list
 ):
     """Function
     Prepare a Quantum Circuit for a UCC state from an arbitrary determinant specified by occ_list and vir_list.
 
     Author(s):  Yuto Mori
     """
-    ndim1 = noa * nva + nob * nvb
-    circuit = QuantumCircuit(n_qubit_system)
-    if DS:
+    ndim1 = Quket.noa * Quket.nva + Quket.nob * Quket.nvb
+    circuit = QuantumCircuit(Quket.n_qubit)
+    if Quket.DS:
         ucc_singlesX(circuit, theta_list, occ_list, vir_list, 0)
         ucc_doublesX(circuit, theta_list, occ_list, vir_list, ndim1)
     else:
@@ -1356,7 +1047,7 @@ def ucc_doublesX(circuit, theta_list, occ_list, vir_list, ndim1=0):
 
 
 def create_uccsd_state(
-    n_qubit_system, noa, nob, nva, nvb, rho, DS, theta_list, det, SpinProj=False
+    Quket, theta_list, det, SpinProj=False
 ):
     """Function
     Prepare a UCC state based on theta_list.
@@ -1366,26 +1057,20 @@ def create_uccsd_state(
     """
     ### Form RHF bits
 
-    state = QuantumState(n_qubit_system)
+    state = QuantumState(Quket.n_qubit)
     state.set_computational_basis(det)
+    occ_list, vir_list = get_occvir_lists(Quket.n_qubit, det)
 
-    occ_list, vir_list = get_occvir_lists(n_qubit_system, det)
-
-    theta_list_rho = theta_list / rho
+    theta_list_rho = theta_list / Quket.rho
     circuit = set_circuit_uccsdX(
-        n_qubit_system, noa, nob, nva, nvb, DS, theta_list_rho, occ_list, vir_list
+        Quket, theta_list_rho, occ_list, vir_list
     )
-    for i in range(rho):
+    for i in range(Quket.rho):
         circuit.update_quantum_state(state)
 
     if SpinProj:
         from .phflib import S2Proj
-
-        # prints('\nBefor: in create_uccsd_state')
-        # print_state(state)
-        state_P = S2Proj(state)
-        # prints('\nAfter: in create_uccsd_state')
-        # print_state(state_P)
+        state_P = S2Proj(Quket,state)
         return state_P
     else:
         return state

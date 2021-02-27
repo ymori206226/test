@@ -26,7 +26,7 @@ def set_circuit_bcs(n_qubit, norbs, theta_list, k):
             pauli_index = [2,1]
             gate = PauliRotation(target_list, pauli_index, -theta_list[p+ioff])     
             circuit.add_gate(gate)
-            if "ebcs" in cf.method:
+            if "ebcs" in Quket.ansatz:
                 if (p < norbs-1):
                     circuit.add_CNOT_gate(2*p, 2*p+2)
                     circuit.add_CNOT_gate(2*p+1, 2*p+3)
@@ -34,15 +34,8 @@ def set_circuit_bcs(n_qubit, norbs, theta_list, k):
     return circuit
 
 def cost_bcs(
+    Quket,
     print_level,
-    n_qubit_system,
-    n_electron,
-    noa,
-    nob,
-    nva,
-    nvb,
-    qulacs_hamiltonian,
-    qulacs_s2,
     theta_list,
     k,
 ):
@@ -53,31 +46,37 @@ def cost_bcs(
     """
 
     t1 = time.time()
+    noa = Quket.noa
+    nob = Quket.nob
+    nva = Quket.nva
+    nvb = Quket.nvb
+    n_qubit = Quket.n_qubit
+    det = Quket.det
     norbs = noa + nva
     ndim1 = (norbs-1)*norbs//2
     ndim2 = norbs
-    state = QuantumState(n_qubit_system)
-    state.set_computational_basis(cf.current_det)
+    state = QuantumState(n_qubit)
+    state.set_computational_basis(det)
 
-    circuit = set_circuit_bcs(n_qubit_system, norbs, theta_list, k)
+    circuit = set_circuit_bcs(n_qubit, norbs, theta_list, k)
     circuit.update_quantum_state(state)
 
-    if cf.SpinProj:
+    if Quket.projection.SpinProj:
         from .phflib import S2Proj
-        state_P = S2Proj(state)
+        state_P = S2Proj(Quket,state)
         state   = state_P.copy()
-    if cf.NumberProj:
+    if Quket.projection.NumberProj:
         from .phflib import NProj
-        state_P = NProj(state)
+        state_P = NProj(Quket,state)
         state   = state_P.copy()
     #print_state(state, threshold=cf.print_amp_thres)
 
-    Ebcs = qulacs_hamiltonian.get_expectation_value(state)
+    Ebcs = Quket.qulacs.Hamiltonian.get_expectation_value(state)
     cost = Ebcs
     ### Project out the states contained in 'lower_states'
-    cost += orthogonal_constraint(qulacs_hamiltonian, state)
+    cost += orthogonal_constraint(Quket, state)
 
-    S2 = qulacs_s2.get_expectation_value(state)
+    S2 = Quket.qulacs.S2.get_expectation_value(state)
     t2 = time.time()
     cpu1 = t2 - t1
     if print_level == 1:
@@ -102,9 +101,9 @@ def cost_bcs(
         )
         prints("\n({}-kBCS state)".format(k))
         printmat(theta_list)
-        print_state(state, threshold=cf.print_amp_thres)
+        print_state(state, threshold=Quket.print_amp_thres)
     # Store kBCS wave function
-    cf.States = state
+    Quket.state = state
     return cost, S2
 
 

@@ -51,18 +51,15 @@ def create_kappalist(ndim1, occ_list, noa, nob, nva, nvb):
     return kappa
 
 
-def create_HS2S(qulacs_hamiltonian, qulacs_s2, states):
+def create_HS2S(QuketData, states):
     X_num = len(states)
     H = np.zeros((X_num, X_num), dtype=np.complex)
     S2 = np.zeros((X_num, X_num), dtype=np.complex)
     S = np.zeros((X_num, X_num), dtype=np.complex)
     for i in range(X_num):
-        #        prints('\nState {} in create_HS2S'.format(i))
-        #        print_state(states[i])
-        #        prints('S**2 = ',qulacs_s2.get_expectation_value(states[i]))
         for j in range(i + 1):
-            H[i, j] = qulacs_hamiltonian.get_transition_amplitude(states[i], states[j])
-            S2[i, j] = qulacs_s2.get_transition_amplitude(states[i], states[j])
+            H[i, j] = QuketData.qulacs.Hamiltonian.get_transition_amplitude(states[i], states[j])
+            S2[i, j] = QuketData.qulacs.S2.get_transition_amplitude(states[i], states[j])
             S[i, j] = inner_product(states[i], states[j])
             if i != j:
                 H[j, i] = H[i, j]
@@ -73,7 +70,7 @@ def create_HS2S(qulacs_hamiltonian, qulacs_s2, states):
 
 ## Spin Adapted ##
 def create_sa_state(
-    n_qubit_system,
+    n_qubit,
     n_electron,
     noa,
     nob,
@@ -91,20 +88,20 @@ def create_sa_state(
 
     Author(s):  Yuto Mori
     """
-    state = QuantumState(n_qubit_system)
+    state = QuantumState(n_qubit)
     from .hflib import set_circuit_rhf, set_circuit_rohf, set_circuit_uhf
 
     if noa == nob:
-        circuit_rhf = set_circuit_rhf(n_qubit_system, n_electron)
+        circuit_rhf = set_circuit_rhf(n_qubit, n_electron)
     else:
-        circuit_rhf = set_circuit_rohf(n_qubit_system, noa, nob)
+        circuit_rhf = set_circuit_rohf(n_qubit, noa, nob)
     circuit_rhf.update_quantum_state(state)
     theta_list_rho = theta_list / rho
     circuit = set_circuit_sauccsdX(
-        n_qubit_system, noa, nob, nva, nvb, DS, theta_list_rho, occ_list, vir_list
+        n_qubit, noa, nob, nva, nvb, DS, theta_list_rho, occ_list, vir_list
     )
     if np.linalg.norm(kappa_list) > 0.0001:
-        circuit_uhf = set_circuit_uhf(n_qubit_system, noa, nob, nva, nvb, kappa_list)
+        circuit_uhf = set_circuit_uhf(n_qubit, noa, nob, nva, nvb, kappa_list)
         circuit_uhf.update_quantum_state(state)
     for i in range(rho):
         circuit.update_quantum_state(state)
@@ -112,7 +109,7 @@ def create_sa_state(
 
 
 def set_circuit_sauccsdX(
-    n_qubit_system, noa, nob, nva, nvb, DS, theta_list, occ_list, vir_list
+    n_qubit, noa, nob, nva, nvb, DS, theta_list, occ_list, vir_list
 ):
     """Function
     Prepare a Quantum Circuit for a spin-free Jeziorski-Monkhorst UCC state based on theta_list.
@@ -120,7 +117,7 @@ def set_circuit_sauccsdX(
     Author(s):  Yuto Mori
     """
     ndim1 = noa * nva
-    circuit = QuantumCircuit(n_qubit_system)
+    circuit = QuantumCircuit(n_qubit)
     if DS:
         ucc_sa_singlesX(circuit, theta_list, occ_list, vir_list, 0)
         ucc_sa_doublesX(circuit, theta_list, occ_list, vir_list, ndim1)
@@ -212,20 +209,9 @@ def get_baji(b, a, j, i, no, nv):
 
 
 def cost_jmucc(
+    Quket,
     print_level,
-    n_qubit_system,
-    n_electron,
-    noa,
-    nob,
-    nva,
-    nvb,
-    rho,
-    DS,
-    qulacs_hamiltonian,
-    qulacs_s2,
     theta_lists,
-    threshold,
-    SpinProj=None,
 ):
     """Function
     Cost function of Jeziorski-Monkhorst UCCSD.
@@ -234,7 +220,13 @@ def cost_jmucc(
     """
 
     t1 = time.time()
-    nstates = len(cf.multi_weights)
+    noa = Quket.noa
+    nob = Quket.nob
+    nva = Quket.nva
+    nvb = Quket.nvb
+    n_electron = Quket.n_electron
+    n_qubit = Quket.n_qubit
+    nstates = len(Quket.multi_weights)
     ndim1 = noa * nva + nob * nvb
     ndim2aa = int(noa * (noa - 1) * nva * (nva - 1) / 4)
     ndim2ab = int(noa * nob * nva * nvb)
@@ -246,8 +238,8 @@ def cost_jmucc(
     vir_lists = []
     for istate in range(nstates):
         ### Read state integer and extract occupied/virtual info
-        occ_list_tmp = int2occ(cf.multi_states[istate])
-        vir_list_tmp = [i for i in range(n_qubit_system) if i not in occ_list_tmp]
+        occ_list_tmp = int2occ(Quket.multi_states[istate])
+        vir_list_tmp = [i for i in range(n_qubit) if i not in occ_list_tmp]
         occ_lists.extend(occ_list_tmp)
         vir_lists.extend(vir_list_tmp)
 
@@ -262,23 +254,17 @@ def cost_jmucc(
     ### Prepare JM basis
     states = []
     for istate in range(nstates):
-        det = cf.multi_states[istate]
+        det = Quket.multi_states[istate]
         state = create_uccsd_state(
-            n_qubit_system,
-            noa,
-            nob,
-            nva,
-            nvb,
-            rho,
-            DS,
+            Quket,
             theta_lists[ndim * istate : ndim * (istate + 1)],
-            det,
-            SpinProj=SpinProj,
+            Quket.det,
+            SpinProj=Quket.projection.SpinProj,
         )
         #        prints('\n State {}?'.format(istate))
         #        print_state(state)
         states.append(state)
-    H, S2, S = create_HS2S(qulacs_hamiltonian, qulacs_s2, states)
+    H, S2, S = create_HS2S(Quket, states)
 
     #    invS   = np.linalg.inv(S)
     #    H_invS = np.dot(invS,H)
@@ -360,7 +346,7 @@ def cost_jmucc(
             prints(" E            : {:.8f} ".format(en[istate]))
             prints(" <S**2>       : {:.5f} ".format(s2[istate]))
             prints(" Superposition: ")
-            spstate = QuantumState(n_qubit_system)
+            spstate = QuantumState(n_qubit)
             spstate.multiply_coef(0)
             for jstate in range(nstates0):
                 state = states[jstate].copy()
@@ -374,7 +360,7 @@ def cost_jmucc(
     cost = 0
     norm = 0
     for istate in range(nstates0):
-        norm += cf.multi_weights[istate]
-        cost += cf.multi_weights[istate] * en[istate]
+        norm += Quket.multi_weights[istate]
+        cost += Quket.multi_weights[istate] * en[istate]
     cost /= norm
     return cost

@@ -1,0 +1,36 @@
+///////////////////////////////////////////////////////////////////////////////////
+///                                                                             ///
+///                                                                             ///
+///              QQQ       UUU  UUU    KKK   KK    EEEEEEE    TTTTTTT           ///
+///             Q   Q       u    U      K   K       E    E    T  T  T           ///
+///            Q     Q      U    U      K  K        E  E         T              ///
+///            Q     Q      U    U      KKK         EEEE         T              ///
+///            Q QQQ Q      U    U      K  K        E  E         T              ///
+///             Q   Q       U    U      K   K       E    E       T              ///
+///              QQQ QQ      UUUU      KKK   KK    EEEEEEE      TTT             ///
+///                                                                             ///
+///                      Quantum Computing Simulator Ver 0.3.1                  ///
+///                                                                             ///
+///        Copyright 2019-2021                                                  ///
+///        QC Project Team, Ten-no Research Group                               ///
+///        All rights Reserved.                                                 ///
+///                                                                             ///
+///////////////////////////////////////////////////////////////////////////////////
+Start at 2021-02-27 03:47:18.713208
++-------------+
+|  Job #   1  |
++-------------+
+8 processes  x  4 threads  =  Total 32 cores
+
+ *** Geometry **************************
+  N       0.0000     0.0000     0.0000
+  N       0.0000     0.0000     1.6000
+ ***************************************
+
+E[FCI] = -107.51339505094943
+E[HF]  = -107.18484646079969
+
+Performing QITE for chemical Hamiltonian
+Initial configuration: |000000111111>
+Convergence criteria:  ftol = 1E-09 
+Normal termination of quket at 2021-02-27 03:47:22.271183
