@@ -70,10 +70,10 @@ def VQE_driver(
     # cf.constraint_lambda = 100
 
     ### set up the number of orbitals and such ###
-    n_electron = Quket.n_electron 
-    n_qubit_system = Quket.n_qubit 
-    n_qubit = n_qubit_system + 1
-    anc = n_qubit_system
+    n_electrons = Quket.n_electrons 
+    n_qubits_system = Quket.n_qubits 
+    n_qubits = n_qubits_system + 1
+    anc = n_qubits_system
 
     spin_gen = ansatz in ("sghf")
     norbs = noa + nva
@@ -330,8 +330,8 @@ def VQE_driver(
         ndim = ndim1 + ndim2
         cost_wrap = lambda theta_list : cost_ic_mrucc(
             0,
-            n_qubit_system,
-            n_electron,
+            n_qubits_system,
+            n_electrons,
             vir_num,
             act_num,
             core_num,
@@ -344,8 +344,8 @@ def VQE_driver(
         )
         cost_callback = lambda theta_list : cost_ic_mrucc(
             print_control,
-            n_qubit_system,
-            n_electron,
+            n_qubits_system,
+            n_electrons,
             vir_num,
             act_num,
             core_num,
@@ -363,7 +363,7 @@ def VQE_driver(
     prints(
         "Initial configuration: ",
         "|",
-        format(Quket.det, "0" + str(n_qubit_system) + "b"),
+        format(Quket.det, "0" + str(n_qubits_system) + "b"),
         ">",
     )
     prints("Convergence criteria:  ftol = {:1.0E}   gtol = {:1.0E}".format(Quket.ftol, Quket.gtol))
@@ -600,10 +600,10 @@ def VQE_driver(
             Daa, Dbb = get_1RDM(Quket, print_level=1)
         ### Test
     #        from .opelib import single_operator_gradient
-    #        g=np.zeros((n_qubit_system,n_qubit_system))
-    #        for q in range(n_qubit_system):
+    #        g=np.zeros((n_qubits_system,n_qubits_system))
+    #        for q in range(n_qubits_system):
     #            for p in range(q):
-    #                g[p][q] = single_operator_gradient(p,q,jw_hamiltonian,cf.States,n_qubit_system)
+    #                g[p][q] = single_operator_gradient(p,q,jw_hamiltonian,cf.States,n_qubits_system)
     #        printmat(g,filepath=None,name="Grad")
     #
     t2 = time.time()
@@ -617,16 +617,16 @@ def VQE_driver(
     # There are n_term - 1 Pauli operators to measure (identity not counted).
     # <HUg> = \sum_I  h_I <P_I Ug>
     # theta_list = ([ 0.0604642 ,  0.785282  ,  1.28474901, -0.0248133 , -0.01770559,       -0.7854844 , -0.28473988,  0.02487922])
-    # sampling.cost_phf_sample(1,n_qubit,n_electron,noa,nob,nva,nvb,anc,qulacs_hamiltonianZ,qulacs_s2Z,qulacs_ancZ,theta_list,1000000)
-    # sampling.cost_uhf_sample(1,n_qubit_system,n_electron,noa,nob,nva,nvb,qulacs_hamiltonian,qulacs_s2,theta_list,1000)
-    # cost_uhf(1,n_qubit_system,n_electron,noa,nob,nva,nvb,qulacs_hamiltonian,qulacs_s2,theta_list)
-    # sampling.cost_uhf_sample(1,n_qubit_system,n_electron,noa,nob,nva,nvb,qulacs_hamiltonian,qulacs_s2,theta_list,100000)
+    # sampling.cost_phf_sample(1,n_qubits,n_electrons,noa,nob,nva,nvb,anc,qulacs_hamiltonianZ,qulacs_s2Z,qulacs_ancZ,theta_list,1000000)
+    # sampling.cost_uhf_sample(1,n_qubits_system,n_electrons,noa,nob,nva,nvb,qulacs_hamiltonian,qulacs_s2,theta_list,1000)
+    # cost_uhf(1,n_qubits_system,n_electrons,noa,nob,nva,nvb,qulacs_hamiltonian,qulacs_s2,theta_list)
+    # sampling.cost_uhf_sample(1,n_qubits_system,n_electrons,noa,nob,nva,nvb,qulacs_hamiltonian,qulacs_s2,theta_list,100000)
     samplelist = [10, 100, 1000, 10000, 100000, 1000000, 10000000]
     samplelist = [10, 100, 1000, 10000]
     # samplelist = [1]
     # samplelist = [1000000]
-    # sampling.cost_uhf_sample(1,n_qubit_system,n_electron,noa,nob,nva,nvb,qulacs_hamiltonian,qulacs_s2,uhf_theta_list,samplelist)
-    # sampling.cost_phf_sample(1,n_qubit,n_electron,noa,nob,nva,nvb,rho,anc,qulacs_hamiltonian,qulacs_hamiltonianZ,qulacs_s2Z,qulacs_ancZ,coef0_H,coef0_S2,method,opt.x,samplelist)
+    # sampling.cost_uhf_sample(1,n_qubits_system,n_electrons,noa,nob,nva,nvb,qulacs_hamiltonian,qulacs_s2,uhf_theta_list,samplelist)
+    # sampling.cost_phf_sample(1,n_qubits,n_electrons,noa,nob,nva,nvb,rho,anc,qulacs_hamiltonian,qulacs_hamiltonianZ,qulacs_s2Z,qulacs_ancZ,coef0_H,coef0_S2,method,opt.x,samplelist)
 
     #####################
     ### Rotation test ###
@@ -640,7 +640,7 @@ def VQE_driver(
         else:
             kappa_list = np.zeros(ndim1)
         theta_list = opt.x 
-        cost_wrap = lambda kappa_list: cost_opttest_uccsd(0,n_qubit_system,n_electron,noa,nob,nva,nvb,rho,DS,Gen,qulacs_hamiltonian,qulacs_s2,method,kappa_list,theta_list)[0]
+        cost_wrap = lambda kappa_list: cost_opttest_uccsd(0,n_qubits_system,n_electrons,noa,nob,nva,nvb,rho,DS,Gen,qulacs_hamiltonian,qulacs_s2,method,kappa_list,theta_list)[0]
         opt = minimize(cost_wrap, kappa_list,    
               method=opt_method,options=opt_options)
     """

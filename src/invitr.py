@@ -64,16 +64,16 @@ def exp_iht(h, t):
     return PauliRotation(target_list, pauli_id, -t * coef.real)
 
 
-def exp_iHt(H, t, n_qubit=None):
+def exp_iHt(H, t, n_qubits=None):
     """
     ハミルトニアンH = sum_i h[i] に対して、一次のTrotter近似
     Exp[-iHt] ~ Prod_i  Exp[-i h[i] t]
     を行う量子回路を生成する
     """
     nterms = H.get_term_count()
-    if n_qubit == None:
-        n_qubit = H.get_qubit_count()
-    Circuit = QuantumCircuit(n_qubit)
+    if n_qubits == None:
+        n_qubits = H.get_qubit_count()
+    Circuit = QuantumCircuit(n_qubits)
     for i in nterms:
         h = H.get_term(i)
         Circuit.add_gate(exp_iht(h, t))

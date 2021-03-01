@@ -10,8 +10,8 @@ from .fileio import (
 )
 from .upcclib import upcc_Gsingles
 from .utils import orthogonal_constraint
-def set_circuit_bcs(n_qubit, norbs, theta_list, k):
-    circuit = QuantumCircuit(n_qubit)
+def set_circuit_bcs(n_qubits, norbs, theta_list, k):
+    circuit = QuantumCircuit(n_qubits)
     ndim1 = norbs*(norbs-1)//2 
     ndim = norbs + ndim1
     for i in range(k):
@@ -50,15 +50,15 @@ def cost_bcs(
     nob = Quket.nob
     nva = Quket.nva
     nvb = Quket.nvb
-    n_qubit = Quket.n_qubit
+    n_qubits = Quket.n_qubits
     det = Quket.det
     norbs = noa + nva
     ndim1 = (norbs-1)*norbs//2
     ndim2 = norbs
-    state = QuantumState(n_qubit)
+    state = QuantumState(n_qubits)
     state.set_computational_basis(det)
 
-    circuit = set_circuit_bcs(n_qubit, norbs, theta_list, k)
+    circuit = set_circuit_bcs(n_qubits, norbs, theta_list, k)
     circuit.update_quantum_state(state)
 
     if Quket.projection.SpinProj:

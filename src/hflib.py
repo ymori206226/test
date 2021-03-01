@@ -18,25 +18,25 @@ from . import config as cf
 from .fileio import prints, SaveTheta, print_state
 
 
-def set_circuit_rhf(n_qubit_system, n_electron):
+def set_circuit_rhf(n_qubits_system, n_electrons):
     """Function:
     Construct circuit for RHF |0000...1111>
 
     Author(s): Yuto Mori
     """
-    circuit = QuantumCircuit(n_qubit_system)
-    for i in range(n_electron):
+    circuit = QuantumCircuit(n_qubits_system)
+    for i in range(n_electrons):
         circuit.add_X_gate(i)
     return circuit
 
 
-def set_circuit_rohf(n_qubit_system, noa, nob):
+def set_circuit_rohf(n_qubits_system, noa, nob):
     """Function:
     Construct circuit for ROHF |0000...10101111>
 
     Author(s): Yuto Mori, Takashi Tsuchimochi
     """
-    circuit = QuantumCircuit(n_qubit_system)
+    circuit = QuantumCircuit(n_qubits_system)
     for i in range(noa):
         circuit.add_X_gate(2 * i)
     for i in range(nob):
@@ -44,26 +44,26 @@ def set_circuit_rohf(n_qubit_system, noa, nob):
     return circuit
 
 
-def set_circuit_uhf(n_qubit_system, noa, nob, nva, nvb, kappa_list):
+def set_circuit_uhf(n_qubits_system, noa, nob, nva, nvb, kappa_list):
     """Function:
     Construct circuit for UHF by orbital rotation
 
     Author(s):  Takashi Tsuchimochi
     """
-    circuit = QuantumCircuit(n_qubit_system)
+    circuit = QuantumCircuit(n_qubits_system)
     ucc_singles(circuit, noa, nob, nva, nvb, kappa_list)
     return circuit
 
 
-def set_circuit_ghf(n_qubit_system, kappa_list):
+def set_circuit_ghf(n_qubits_system, kappa_list):
     """Function:
     Construct circuit for GHF by general spin orbital rotation
 
     Author(s):  Takashi Tsuchimochi
     """
-    circuit = QuantumCircuit(n_qubit_system)
+    circuit = QuantumCircuit(n_qubits_system)
     pq = 0
-    for p in range(n_qubit_system):
+    for p in range(n_qubits_system):
         for q in range(p):
             single_ope_Pauli(p, q, circuit, kappa_list[pq])
             pq += 1
@@ -84,17 +84,17 @@ def cost_uhf(
     nob = Quket.nob
     nva = Quket.nva
     nvb = Quket.nvb
-    n_electron = noa + nob
-    n_qubit = Quket.n_qubit
+    n_electrons = noa + nob
+    n_qubits = Quket.n_qubits
 
     t1 = time.time()
-    state = QuantumState(n_qubit)
+    state = QuantumState(n_qubits)
     if noa == nob:
-        circuit_rhf = set_circuit_rhf(n_qubit, n_electron)
+        circuit_rhf = set_circuit_rhf(n_qubits, n_electrons)
     else:
-        circuit_rhf = set_circuit_rohf(n_qubit, noa, nob)
+        circuit_rhf = set_circuit_rohf(n_qubits, noa, nob)
     circuit_rhf.update_quantum_state(state)
-    circuit_uhf = set_circuit_uhf(n_qubit, noa, nob, nva, nvb, kappa_list)
+    circuit_uhf = set_circuit_uhf(n_qubits, noa, nob, nva, nvb, kappa_list)
     circuit_uhf.update_quantum_state(state)
     Euhf = Quket.qulacs.Hamiltonian.get_expectation_value(state)
     cost = Euhf
@@ -121,7 +121,7 @@ def cost_uhf(
         SaveTheta(noa * nva + nob * nvb, kappa_list, cf.tmp)
     if print_level > 1:
         prints("(UHF state)")
-        print_state(state, n_qubit=n_qubit)
+        print_state(state, n_qubits=n_qubits)
     # Store HF wave function
     Quket.state = state
     return Euhf, S2

@@ -257,9 +257,9 @@ def fci2qubit(norbs, nalpha, nbeta, fci_coeff):
     for isort in range(nbeta):
         listB = sorted(listB, key=itemgetter(isort))
     j = 0
-    n_qubit = norbs*2
+    n_qubits = norbs*2
     opt = "0" + str(norbs*2) + "b"
-    vec = numpy.zeros(2**n_qubit)
+    vec = numpy.zeros(2**n_qubits)
     for ib in range(NDetB):
         occB = [n*2+1 for n in listB[ib]] 
         for ia in range(NDetA):
@@ -279,7 +279,7 @@ def fci2qubit(norbs, nalpha, nbeta, fci_coeff):
 #                prints(
 #                "|", format(k, opt),"> : {}".format(fci_coeff[ia,ib]))
 #            j += 1
-    fci_state = QuantumState(n_qubit)
+    fci_state = QuantumState(n_qubits)
     fci_state.load(vec)
     return fci_state
 

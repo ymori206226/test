@@ -20,7 +20,7 @@ from .. import config as cf
 
 
 def qite_exact(Quket):
-    nspin = Quket.n_qubit
+    nspin = Quket.n_qubits
     db = Quket.dt
     ntime = Quket.maxiter
     qbit = Quket.det

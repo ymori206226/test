@@ -63,7 +63,7 @@ def make_hamiltonian(model, nspin, nterm):
 
 def qite_inexact(Quket, nterm, D):
     ### Parameter setting
-    n = Quket.n_qubit
+    n = Quket.n_qubits
     db = Quket.dt
     ntime = Quket.maxiter
     qbit = Quket.det

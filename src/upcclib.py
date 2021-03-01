@@ -14,7 +14,7 @@ from .ucclib import single_ope_Pauli, ucc_Gsingles
 from .expope import Gdouble_ope
 from .utils import orthogonal_constraint
 
-def set_circuit_upccgsd(n_qubit, norbs, theta_list, k):
+def set_circuit_upccgsd(n_qubits, norbs, theta_list, k):
     """Function:
     Construct new circuit for UpCCGSD
 
@@ -22,7 +22,7 @@ def set_circuit_upccgsd(n_qubit, norbs, theta_list, k):
     """
     ndim1 = int(norbs * (norbs - 1) / 2)
     ndim2 = ndim1
-    circuit = QuantumCircuit(n_qubit)
+    circuit = QuantumCircuit(n_qubits)
 
     i = 0
 
@@ -33,7 +33,7 @@ def set_circuit_upccgsd(n_qubit, norbs, theta_list, k):
 
     return circuit
 
-def set_circuit_epccgsd(n_qubit, norbs, theta_list, k):
+def set_circuit_epccgsd(n_qubits, norbs, theta_list, k):
     """Function:
     Construct new circuit for EpCCGSD
 
@@ -42,7 +42,7 @@ def set_circuit_epccgsd(n_qubit, norbs, theta_list, k):
     ndim1 = int(norbs * (norbs - 1) / 2)
     ndim2 = ndim1
     ndim  = ndim1 + ndim2
-    circuit = QuantumCircuit(n_qubit)
+    circuit = QuantumCircuit(n_qubits)
 
     for i in range(k-1):
         upcc_Gdoubles(circuit, norbs, theta_list, ndim1, ndim2, i)
@@ -110,19 +110,19 @@ def cost_upccgsd(
     t1 = time.time()
     noa = Quket.noa
     nob = Quket.nob
-    norbs = Quket.n_orbital
-    n_qubit = Quket.n_qubit
+    norbs = Quket.n_orbitals
+    n_qubits = Quket.n_qubits
     det = Quket.det
 
     ndim1 = int(norbs * (norbs - 1) / 2)
     ndim2 = int(ndim1)
-    state = QuantumState(n_qubit)
+    state = QuantumState(n_qubits)
     state.set_computational_basis(det)
 
     if "epccgsd" in Quket.ansatz:
-        circuit = set_circuit_epccgsd(n_qubit, norbs, theta_list, k)
+        circuit = set_circuit_epccgsd(n_qubits, norbs, theta_list, k)
     else:    
-        circuit = set_circuit_upccgsd(n_qubit, norbs, theta_list, k)
+        circuit = set_circuit_upccgsd(n_qubits, norbs, theta_list, k)
     circuit.update_quantum_state(state)
     if Quket.projection.SpinProj:
         from .phflib import S2Proj

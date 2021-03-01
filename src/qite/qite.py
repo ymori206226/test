@@ -23,7 +23,7 @@ def QITE_driver(Quket):
     prints("Performing QITE for {} Hamiltonian".format(Quket.model))
     prints(
         "Initial configuration: |",
-        format(Quket.det, "0" + str(Quket.n_qubit) + "b"),
+        format(Quket.det, "0" + str(Quket.n_qubits) + "b"),
         ">",
     )
     prints("Convergence criteria:  ftol = {:1.0E} ".format(Quket.ftol))
@@ -44,11 +44,11 @@ def QITE_driver(Quket):
             ansatz_operator = Quket.operators.Hamiltonian
             ansatz_operator *= ansatz_operator
         if Quket.ansatz == "uccsd":
-            ansatz_operator = uccsd(Quket.n_orbital, Quket.det)
+            ansatz_operator = uccsd(Quket.n_orbitals, Quket.det)
         if Quket.ansatz == "uccgsd":
-            ansatz_operator = uccgsd(Quket.n_orbital, Quket.det)
+            ansatz_operator = uccgsd(Quket.n_orbitals, Quket.det)
         if Quket.ansatz == "upccgsd":
-            ansatz_operator = upccgsd(Quket.n_orbital, Quket.det)
+            ansatz_operator = upccgsd(Quket.n_orbitals, Quket.det)
         if Quket.ansatz == "cite":
             ### Classical ITE
             id_set = []
@@ -58,7 +58,7 @@ def QITE_driver(Quket):
                 ansatz_operator,
                 Quket.operators.jw_Hamiltonian,
                 Quket.model,
-                Quket.n_qubit,
+                Quket.n_qubits,
                 Quket.ansatz,
                 Quket.truncate,
             )

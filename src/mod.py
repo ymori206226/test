@@ -9,13 +9,15 @@ Modified versions of OpenFermionPySCF routines
 to enable active space calculations.
 
 """
-
 from __future__ import absolute_import
-from functools import reduce
-import numpy
-from pyscf import gto, ao2mo, scf, fci, mcscf
-import pyscf
 
+from functools import reduce
+from typing import Dict
+from dataclasses import dataclass
+
+import numpy
+import pyscf
+from pyscf import gto, ao2mo, scf, fci, mcscf
 from openfermion import MolecularData
 from openfermionpyscf import PyscfMolecularData
 
@@ -100,15 +102,9 @@ def compute_integrals_mod(pyscf_molecule, pyscf_scf):
 
 
 ### modify generate_molecular_hamiltonian to be able to use chkfile
-def generate_molecular_hamiltonian_mod(
-    guess,
-    geometry,
-    basis,
-    multiplicity,
-    charge=0,
-    n_active_electrons=None,
-    n_active_orbitals=None,
-):
+def generate_molecular_hamiltonian_mod(guess, geometry, basis, multiplicity,
+                                       charge=0, n_active_electrons=None,
+                                       n_active_orbitals=None):
     """Function
     Old subroutine to get molecular hamiltonian by using pyscf.
 
@@ -116,47 +112,32 @@ def generate_molecular_hamiltonian_mod(
     """
 
     # Run electronic structure calculations
-    molecule = run_pyscf_mod(
-        guess,
-        n_active_orbitals,
-        n_active_electrons,
-        MolecularData(geometry, basis, multiplicity, charge),
-    )
+    molecule = run_pyscf_mod(guess, n_active_orbitals, n_active_electrons,
+                             MolecularData(geometry, basis, multiplicity, charge))
     # Freeze core orbitals and truncate to active space
     if n_active_electrons is None:
         n_core_orbitals = 0
         occupied_indices = None
     else:
-        n_core_orbitals = (molecule.n_electrons - n_active_electrons) // 2
+        n_core_orbitals = (molecule.n_electrons-n_active_electrons)//2
         occupied_indices = list(range(n_core_orbitals))
 
     if n_active_orbitals is None:
         active_indices = None
     else:
-        active_indices = list(
-            range(n_core_orbitals, n_core_orbitals + n_active_orbitals)
-        )
+        active_indices = list(range(n_core_orbitals,
+                                    n_core_orbitals+n_active_orbitals))
 
-    return molecule.get_molecular_hamiltonian(
-        occupied_indices=occupied_indices, active_indices=active_indices
-    )
+    return molecule.get_molecular_hamiltonian(occupied_indices=occupied_indices,
+                                              active_indices=active_indices)
 
 
-def run_pyscf_mod(
-    guess,
-    n_active_orbitals,
-    n_active_electrons,
-    molecule,
-    spin=None,
-    run_scf=True,
-    run_mp2=False,
-    run_cisd=False,
-    run_ccsd=False,
-    run_fci=False,
-    verbose=False,
-):
+def run_pyscf_mod(guess, n_active_orbitals, n_active_electrons, molecule,
+                  spin=None, run_scf=True, run_mp2=False, run_cisd=False,
+                  run_ccsd=False, run_fci=False, verbose=False):
     """Function
     This function runs a pyscf calculation.
+
     Args:
         molecule: An instance of the MolecularData or PyscfMolecularData class.
         run_scf: Optional boolean to run SCF calculation.
@@ -174,13 +155,14 @@ def run_pyscf_mod(
     # Prepare pyscf molecule.
     pyscf_molecule = prepare_pyscf_molecule_mod(molecule)
     molecule.n_orbitals = int(pyscf_molecule.nao_nr())
-    molecule.n_qubit = 2 * molecule.n_orbitals
+    molecule.n_qubits = 2 * molecule.n_orbitals
     molecule.nuclear_repulsion = float(pyscf_molecule.energy_nuc())
 
     # Run SCF.
     pyscf_scf = compute_scf_mod(pyscf_molecule)
     pyscf_scf.verbose = 0
-    pyscf_scf.run(chkfile=cf.chk, init_guess=guess, conv_tol=1e-12, conv_tol_grad=1e-12)
+    pyscf_scf.run(chkfile=cf.chk, init_guess=guess,
+                  conv_tol=1e-12, conv_tol_grad=1e-12)
     molecule.hf_energy = float(pyscf_scf.e_tot)
     # Hold pyscf data in molecule. They are required to compute density
     # matrices and other quantities.
@@ -202,7 +184,7 @@ def run_pyscf_mod(
     molecule.overlap_integrals = pyscf_scf.get_ovlp()
 
     # CASCI (FCI)
-    ### Change the spin ... (S,Ms) = (spin, multiplicity) 
+    ### Change the spin ... (S,Ms) = (spin, multiplicity)
     if spin == None:
         spin = molecule.multiplicity
     pyscf_molecule.spin = spin-1
@@ -239,8 +221,8 @@ def run_pyscf_mod(
     return pyscf_molecular_data, pyscf_molecule
 
 
+@dataclass
 class PyscfMolecularData(MolecularData):
-
     """A derived class from openfermion.hamiltonians.MolecularData. This class
     is created to store the PySCF method objects as well as molecule data from
     a fixed basis set at a fixed geometry that is obtained from PySCF
@@ -250,9 +232,19 @@ class PyscfMolecularData(MolecularData):
     Attributes:
         _pyscf_data(dict): To store PySCF method objects temporarily.
     """
-    def __init__(self, geometry=None, basis=None, multiplicity=None,
-                 charge=0, description="", filename="", data_directory=None):
-        MolecularData.__init__(self, geometry, basis, multiplicity,
-                               charge, description, filename, data_directory)
-        self._pyscf_data = {}
+    #----------For MolecularData----------
+    geometry: List = None
+    basis: str = None
+    multiplicity: int = None
+    charge: int = 0
+    description: str = ""
+    filename: str = ""
+    data_directory: str = None
+    #----------For PyscfMolecularData----------
+    _pyscf_data: Dict = field(init=False, default_factory=dict)
 
+    def __post_init__(self, *args, **kwds):
+        super().__init__(geometry=self.geometry, basis=self.basis,
+                         multiplicity=self.multiplicity, charge=self.charge,
+                         description=self.description, filename=self.filename,
+                         data_directory=self.data_directory)

@@ -37,7 +37,7 @@ def make_antisymmetric_group(
 
 def qite_anti(Quket, id_set, size):
     ### Parameter setting
-    n = Quket.n_qubit
+    n = Quket.n_qubits
     db = Quket.dt
     ntime = Quket.maxiter
     qbit = Quket.det

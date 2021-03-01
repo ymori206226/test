@@ -54,14 +54,14 @@ def print_geom(geometry):
     prints(" ***************************************\n")
 
 
-def openfermion_print_state(state, n_qubit, j_state):
+def openfermion_print_state(state, n_qubits, j_state):
     """Function
     print out jth wave function in state
 
     Author(s): Takashi Tsuchimochi
     """
-    opt = "0" + str(n_qubit) + "b"
-    for i in range(2 ** n_qubit):
+    opt = "0" + str(n_qubits) + "b"
+    for i in range(2 ** n_qubits):
         v = state[i][j_state]
         if abs(v) ** 2 > 0.01:
             prints(
@@ -115,7 +115,7 @@ def error(*message):
     exit()
 
 
-def print_state(state, n_qubit=None, filepath=cf.log, threshold=0.01, name=None):
+def print_state(state, n_qubits=None, filepath=cf.log, threshold=0.01, name=None):
     """Function
     print out quantum state as qubits
 
@@ -123,11 +123,11 @@ def print_state(state, n_qubit=None, filepath=cf.log, threshold=0.01, name=None)
     """
     if type(name) == str:
         prints(name)
-    if n_qubit is None:
-        n_qubit = state.get_qubit_count()
-    opt = "0" + str(n_qubit) + "b"
+    if n_qubits is None:
+        n_qubits = state.get_qubit_count()
+    opt = "0" + str(n_qubits) + "b"
     prints(" Basis       Coef", filepath=filepath)
-    for i in range(2 ** n_qubit):
+    for i in range(2 ** n_qubits):
         v = state.get_vector()[i]
         if abs(v) ** 2 > threshold:
             prints(

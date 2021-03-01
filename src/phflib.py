@@ -143,26 +143,26 @@ def wigner_d_matrix(j, m, n, angle):
     return d_matrix
 
 
-def set_circuit_rhfZ(n_qubit, n_electron):
+def set_circuit_rhfZ(n_qubits, n_electrons):
     """Function:
     Construct circuit for RHF |0000...1111> with one ancilla
 
     Author(s): Takashi Tsuchimochi
     """
-    circuit = QuantumCircuit(n_qubit)
-    for i in range(n_electron):
+    circuit = QuantumCircuit(n_qubits)
+    for i in range(n_electrons):
         circuit.add_X_gate(i)
     return circuit
 
 
-def set_circuit_rohfZ(n_qubit, noa, nob):
+def set_circuit_rohfZ(n_qubits, noa, nob):
     """Function:
     Construct circuit for ROHF |0000...10101111> with one ancilla
 
     Author(s): Takashi Tsuchimochi
     """
     # generate circuit for rhf
-    circuit = QuantumCircuit(n_qubit)
+    circuit = QuantumCircuit(n_qubits)
     for i in range(noa):
         circuit.add_X_gate(2 * i)
     for i in range(nob):
@@ -170,36 +170,36 @@ def set_circuit_rohfZ(n_qubit, noa, nob):
     return circuit
 
 
-def set_circuit_uhfZ(n_qubit, noa, nob, nva, nvb, theta_list):
+def set_circuit_uhfZ(n_qubits, noa, nob, nva, nvb, theta_list):
     """Function:
     Construct circuit for UHF with one ancilla
 
     Author(s): Takashi Tsuchimochi
     """
-    circuit = QuantumCircuit(n_qubit)
+    circuit = QuantumCircuit(n_qubits)
     ucc_singles(circuit, noa, nob, nva, nvb, theta_list)
     return circuit
 
 
-def set_circuit_ghfZ(n_qubit, no, nv, theta_list):
+def set_circuit_ghfZ(n_qubits, no, nv, theta_list):
     """Function:
     Construct circuit for GHF with one ancilla
 
     Author(s): Takashi Tsuchimochi
     """
-    circuit = QuantumCircuit(n_qubit)
+    circuit = QuantumCircuit(n_qubits)
     ucc_singles_g(circuit, no, nv, theta_list)
     return circuit
 
 
-def set_circuit_Ug(circuit, n_qubit_system, beta):
+def set_circuit_Ug(circuit, n_qubits_system, beta):
     """Function:
     Construct circuit for Ug in spin-projection (only exp[-i beta Sy])
 
     Author(s): Takashi Tsuchimochi
     """
     ### Ug
-    for i in range(n_qubit_system):
+    for i in range(n_qubits_system):
         if i % 2 == 0:
             #
             circuit.add_H_gate(i)
@@ -219,19 +219,19 @@ def set_circuit_Ug(circuit, n_qubit_system, beta):
             circuit.add_RX_gate(i, -np.pi / 2)
 
 
-def set_circuit_ExpSy(circuit, n_qubit_system, angle):
+def set_circuit_ExpSy(circuit, n_qubits_system, angle):
     """Function
     Construct circuit Exp[ -i angle Sy ]
 
     Author(s): Takashi Tsuchimochi
     """
 
-    for i in range(n_qubit_system):
+    for i in range(n_qubits_system):
         if i % 2 == 0:
             single_ope_Pauli(i + 1, i, circuit, angle / 2, approx=False)
 
 
-def set_circuit_ExpSz(circuit, n_qubit_system, angle):
+def set_circuit_ExpSz(circuit, n_qubits_system, angle):
     """Function
     Construct circuit Exp[ -i angle Sz ]
     (20210205) Bug fixed
@@ -240,13 +240,13 @@ def set_circuit_ExpSz(circuit, n_qubit_system, angle):
     Author(s): Takashi Tsuchimochi
     """
 
-    for i in range(n_qubit_system):
+    for i in range(n_qubits_system):
         if i % 2 == 0:
             circuit.add_RZ_gate(i, angle / 2)
         else:
             circuit.add_RZ_gate(i, -angle / 2)
 
-def set_circuit_ExpNa(circuit, n_qubit_system, angle):
+def set_circuit_ExpNa(circuit, n_qubits_system, angle):
     """Function
     Construct circuit Exp[ -i angle Na ] Exp[ i angle M/2]
     Na = Number operator for alpha spin
@@ -257,11 +257,11 @@ def set_circuit_ExpNa(circuit, n_qubit_system, angle):
     Author(s): Takashi Tsuchimochi
     """
 
-    for i in range(n_qubit_system):
+    for i in range(n_qubits_system):
         if i % 2 == 0:
             circuit.add_RZ_gate(i, angle)
             
-def set_circuit_ExpNb(circuit, n_qubit_system, angle):
+def set_circuit_ExpNb(circuit, n_qubits_system, angle):
     """Function
     Construct circuit Exp[ -i angle Nb ] Exp[ i angle M/2]
       Nb = Number operator for beta spin
@@ -272,29 +272,29 @@ def set_circuit_ExpNb(circuit, n_qubit_system, angle):
     Author(s): Takashi Tsuchimochi
     """
 
-    for i in range(n_qubit_system):
+    for i in range(n_qubits_system):
         if i % 2 == 1:
             circuit.add_RZ_gate(i, angle)
 
-def set_circuit_Rg(circuit, n_qubit_system, alpha, beta, gamma):
+def set_circuit_Rg(circuit, n_qubits_system, alpha, beta, gamma):
     """Function
     Construct circuit Rg for complete spin-projection
 
     Author(s): Takashi Tsuchimochi
     """
-    set_circuit_ExpSz(circuit, n_qubit_system, gamma)
-    set_circuit_ExpSy(circuit, n_qubit_system, beta)
-    set_circuit_ExpSz(circuit, n_qubit_system, alpha)
+    set_circuit_ExpSz(circuit, n_qubits_system, gamma)
+    set_circuit_ExpSy(circuit, n_qubits_system, beta)
+    set_circuit_ExpSz(circuit, n_qubits_system, alpha)
 
 
-def controlled_Ug_gen(circuit, n_qubit, anc, alph, beta, gamm):
+def controlled_Ug_gen(circuit, n_qubits, anc, alph, beta, gamm):
     """Function:
     Construct circuit for controlled-Ug in general spin-projection
 
     Args:
         circuit (QuantumCircuit): Circuit to be updated in return
-        n_qubit (int): Total number of qubits (including ancilla)
-        anc (int): The index number of ancilla (= n_qubit - 1)
+        n_qubits (int): Total number of qubits (including ancilla)
+        anc (int): The index number of ancilla (= n_qubits - 1)
         alph (float): alpha angle for spin-rotation
         beta (float): beta angle for spin-rotation
         gamm (float): gamma angle for spin-rotation
@@ -303,7 +303,7 @@ def controlled_Ug_gen(circuit, n_qubit, anc, alph, beta, gamm):
     """
     ### Controlled Ug(alph,beta,gamm)
     if gamm > 1e-6:
-        for i in range(n_qubit - 1):
+        for i in range(n_qubits - 1):
             if i % 2 == 0:
                 circuit.add_RZ_gate(i, gamm / 4)
                 circuit.add_CNOT_gate(anc, i)
@@ -315,7 +315,7 @@ def controlled_Ug_gen(circuit, n_qubit, anc, alph, beta, gamm):
                 circuit.add_RZ_gate(i, gamm / 4)
                 circuit.add_CNOT_gate(anc, i)
 
-    for i in range(n_qubit - 1):
+    for i in range(n_qubits - 1):
         if i % 2 == 0:
             circuit.add_H_gate(i)
             circuit.add_RX_gate(i + 1, np.pi / 2)
@@ -340,7 +340,7 @@ def controlled_Ug_gen(circuit, n_qubit, anc, alph, beta, gamm):
             circuit.add_RX_gate(i, -np.pi / 2)
 
     if alph > 1e-6:
-        for i in range(n_qubit - 1):
+        for i in range(n_qubits - 1):
             if i % 2 == 0:
                 circuit.add_RZ_gate(i, alph / 4)
                 circuit.add_CNOT_gate(anc, i)
@@ -353,14 +353,14 @@ def controlled_Ug_gen(circuit, n_qubit, anc, alph, beta, gamm):
                 circuit.add_CNOT_gate(anc, i)
 
 
-def controlled_Ug(circuit, n_qubit, anc, beta):
+def controlled_Ug(circuit, n_qubits, anc, beta):
     """Function:
     Construct circuit for controlled-Ug in spin-projection
 
     Author(s): Takashi Tsuchimochi
     """
     ### Controlled Ug
-    for i in range(n_qubit - 1):
+    for i in range(n_qubits - 1):
         if i % 2 == 0:
             circuit.add_H_gate(i)
             circuit.add_RX_gate(i + 1, np.pi / 2)
@@ -406,12 +406,12 @@ def cost_proj(
     nob = Quket.nob
     nva = Quket.nva
     nvb = Quket.nvb
-    n_electron = Quket.n_electron
+    n_electrons = Quket.n_electrons
     rho = Quket.rho
     DS = Quket.DS
     anc = Quket.anc
-    n_qubit_system = Quket.n_qubit
-    n_qubit = n_qubit_system + 1
+    n_qubits_system = Quket.n_qubits
+    n_qubits = n_qubits_system + 1
     ndim1 = noa * nva + nob * nvb
     ndim2aa = int(noa * (noa - 1) * nva * (nva - 1) / 4)
     ndim2ab = int(noa * nob * nva * nvb)
@@ -420,40 +420,40 @@ def cost_proj(
     ref = Quket.ansatz
 
 
-    state = QuantumState(n_qubit)
+    state = QuantumState(n_qubits)
     if noa == nob:
-        circuit_rhf = set_circuit_rhfZ(n_qubit, n_electron)
+        circuit_rhf = set_circuit_rhfZ(n_qubits, n_electrons)
     else:
-        circuit_rhf = set_circuit_rohfZ(n_qubit, noa, nob)
+        circuit_rhf = set_circuit_rohfZ(n_qubits, noa, nob)
     circuit_rhf.update_quantum_state(state)
     if ref == "phf":
-        circuit_uhf = set_circuit_uhfZ(n_qubit, noa, nob, nva, nvb, kappa_list)
+        circuit_uhf = set_circuit_uhfZ(n_qubits, noa, nob, nva, nvb, kappa_list)
         circuit_uhf.update_quantum_state(state)
         if print_level > 0:
             SaveTheta(ndim1, kappa_list, cf.tmp)
     elif ref == "sghf":
-        circuit_ghf = set_circuit_ghfZ(n_qubit, noa + nob, nva + nvb, kappa_list)
+        circuit_ghf = set_circuit_ghfZ(n_qubits, noa + nob, nva + nvb, kappa_list)
         circuit_ghf.update_quantum_state(state)
         if print_level > 0:
             SaveTheta(ndim1, kappa_list, cf.tmp)
     elif ref == "puccsd":
         # First prepare UHF determinant
-        circuit_uhf = set_circuit_uhfZ(n_qubit, noa, nob, nva, nvb, kappa_list)
+        circuit_uhf = set_circuit_uhfZ(n_qubits, noa, nob, nva, nvb, kappa_list)
         circuit_uhf.update_quantum_state(state)
         # Then prepare UCCSD
         theta_list_rho = theta_list / rho
-        circuit = set_circuit_uccsd(n_qubit, noa, nob, nva, nvb, 0, theta_list_rho)
+        circuit = set_circuit_uccsd(n_qubits, noa, nob, nva, nvb, 0, theta_list_rho)
         for i in range(rho):
             circuit.update_quantum_state(state)
         if print_level > 0:
             SaveTheta(ndim1 + ndim2, theta_list, cf.tmp)
     elif ref == "puccd":
         # First prepare UHF determinant
-        circuit_uhf = set_circuit_uhfZ(n_qubit, noa, nob, nva, nvb, kappa_list)
+        circuit_uhf = set_circuit_uhfZ(n_qubits, noa, nob, nva, nvb, kappa_list)
         circuit_uhf.update_quantum_state(state)
         # Then prepare UCCD
         theta_list_rho = theta_list / rho
-        circuit = set_circuit_uccd(n_qubit, noa, nob, nva, nvb, theta_list_rho)
+        circuit = set_circuit_uccd(n_qubits, noa, nob, nva, nvb, theta_list_rho)
         for i in range(rho):
             circuit.update_quantum_state(state)
         if print_level > 0:
@@ -461,36 +461,36 @@ def cost_proj(
     elif ref == "opt_puccd":
         if DS:
             # First prepare UHF determinant
-            circuit_uhf = set_circuit_uhfZ(n_qubit, noa, nob, nva, nvb, theta_list)
+            circuit_uhf = set_circuit_uhfZ(n_qubits, noa, nob, nva, nvb, theta_list)
             circuit_uhf.update_quantum_state(state)
             # Then prepare UCCD
             theta_list_rho = theta_list[ndim1 : ndim1 + ndim2] / rho
-            circuit = set_circuit_uccd(n_qubit, noa, nob, nva, nvb, theta_list_rho)
+            circuit = set_circuit_uccd(n_qubits, noa, nob, nva, nvb, theta_list_rho)
             for i in range(rho):
                 circuit.update_quantum_state(state)
         else:
             # First prepare UCCD
             theta_list_rho = theta_list[ndim1 : ndim1 + ndim2] / rho
-            circuit = set_circuit_uccd(n_qubit, noa, nob, nva, nvb, theta_list_rho)
+            circuit = set_circuit_uccd(n_qubits, noa, nob, nva, nvb, theta_list_rho)
             for i in range(rho):
                 circuit.update_quantum_state(state)
             # then rotate
-            circuit_uhf = set_circuit_uhfZ(n_qubit, noa, nob, nva, nvb, theta_list)
+            circuit_uhf = set_circuit_uhfZ(n_qubits, noa, nob, nva, nvb, theta_list)
             circuit_uhf.update_quantum_state(state)
 
         if print_level > 0:
             SaveTheta(ndim1 + ndim2, theta_list, cf.tmp)
     elif ref == "opt_psauccd":
         theta_list_rho = theta_list[ndim1 : ndim1 + ndim2] / rho
-        circuit = set_circuit_sauccd(n_qubit, noa, nva, theta_list_rho)
+        circuit = set_circuit_sauccd(n_qubits, noa, nva, theta_list_rho)
         for i in range(rho):
             circuit.update_quantum_state(state)
-        circuit_uhf = set_circuit_uhfZ(n_qubit, noa, nob, nva, nvb, theta_list)
+        circuit_uhf = set_circuit_uhfZ(n_qubits, noa, nob, nva, nvb, theta_list)
         circuit_uhf.update_quantum_state(state)
 
     if print_level > 1:
         prints("State before projection")
-        print_state(state, n_qubit=n_qubit_system)
+        print_state(state, n_qubits=n_qubits_system)
         if ref == "puccsd" or ref == "opt_puccd":
             print_amplitudes(theta_list, noa, nob, nva, nvb, threshold)
     #    '''
@@ -518,15 +518,15 @@ def cost_proj(
                 gamm_coef = Quket.projection.sp_weight[2][igamm]
 
                 ### Copy quantum state of UHF (cannot be done in real device) ###
-                state_g = QuantumState(n_qubit)
+                state_g = QuantumState(n_qubits)
                 state_g.load(state)
                 ### Construct Ug test
-                circuit_ug = QuantumCircuit(n_qubit)
+                circuit_ug = QuantumCircuit(n_qubits)
                 ### Hadamard on anc
                 circuit_ug.add_H_gate(anc)
                 # circuit_ug.add_X_gate(anc)
-                # controlled_Ug(circuit_ug, n_qubit, anc, beta)
-                controlled_Ug_gen(circuit_ug, n_qubit, anc, alph, beta, gamm)
+                # controlled_Ug(circuit_ug, n_qubits, anc, beta)
+                controlled_Ug_gen(circuit_ug, n_qubits, anc, alph, beta, gamm)
                 # circuit_ug.add_X_gate(anc)
                 circuit_ug.add_H_gate(anc)
                 circuit_ug.update_quantum_state(state_g)
@@ -585,7 +585,7 @@ def cost_proj(
             "% 17.15f" % S2,
             "  rho = %d" % rho,
         )
-        print_state(state, n_qubit=n_qubit - 1)
+        print_state(state, n_qubits=n_qubits - 1)
         if ref == "puccsd" or ref == "opt_puccd":
             print_amplitudes(theta_list, noa, nob, nva, nvb)
         prints("HUg", HUg)
@@ -615,8 +615,8 @@ def S2Proj(Quket,Q):
     s = (spin - 1) / 2
     Ms = Quket.projection.Ms / 2   
 
-    n_qubit = Q.get_qubit_count()
-    state_P = QuantumState(n_qubit)
+    n_qubits = Q.get_qubit_count()
+    state_P = QuantumState(n_qubits)
     state_P.multiply_coef(0)
     nalpha = max(Quket.projection.euler_ngrids[0], 1)
     nbeta = max(Quket.projection.euler_ngrids[1], 1)
@@ -633,10 +633,10 @@ def S2Proj(Quket,Q):
                 # Total Weight
                 coef = (2 * s + 1) / (8 * np.pi) * (alpha_coef * beta_coef * gamma_coef)
 
-                state_g = QuantumState(n_qubit)
+                state_g = QuantumState(n_qubits)
                 state_g.load(Q)
-                circuit_Rg = QuantumCircuit(n_qubit)
-                set_circuit_Rg(circuit_Rg, n_qubit, alpha, beta, gamma)
+                circuit_Rg = QuantumCircuit(n_qubits)
+                set_circuit_Rg(circuit_Rg, n_qubits, alpha, beta, gamma)
                 circuit_Rg.update_quantum_state(state_g)
                 state_g.multiply_coef(coef)
 
@@ -669,18 +669,18 @@ def NProj(Quket,Q):
 
     Author(s): Takashi Tsuchimochi
     """
-    n_qubit = Q.get_qubit_count()
-    state_P = QuantumState(n_qubit)
+    n_qubits = Q.get_qubit_count()
+    state_P = QuantumState(n_qubits)
     state_P.multiply_coef(0)
-    state_g = QuantumState(n_qubit)
+    state_g = QuantumState(n_qubits)
     nphi = max(Quket.projection.number_ngrids, 1)
     #print_state(Q)
     for iphi in range(nphi):
         coef = Quket.projection.np_weight[iphi] * np.exp(1j * Quket.projection.np_angle[iphi] * (Quket.projection.n_active_electrons - Quket.projection.n_active_orbitals))
         state_g= Q.copy()
-        circuit = QuantumCircuit(n_qubit)
-        set_circuit_ExpNa(circuit,n_qubit,Quket.projection.np_angle[iphi])
-        set_circuit_ExpNb(circuit,n_qubit,Quket.projection.np_angle[iphi])
+        circuit = QuantumCircuit(n_qubits)
+        set_circuit_ExpNa(circuit,n_qubits,Quket.projection.np_angle[iphi])
+        set_circuit_ExpNb(circuit,n_qubits,Quket.projection.np_angle[iphi])
         circuit.update_quantum_state(state_g)
         state_g.multiply_coef(coef)
         state_P.add_state(state_g)       

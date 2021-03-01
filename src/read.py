@@ -138,9 +138,9 @@ def read_input(Quket, job_no):
             elif words[0].lower() == "ansatz":
                 Quket.ansatz = words[1]
             elif words[0].lower() == "n_electrons":
-                Quket.n_electron = int(words[1])
+                Quket.n_electrons = int(words[1])
             elif words[0].lower() == "n_orbitals":
-                Quket.n_orbital = int(words[1])
+                Quket.n_orbitals = int(words[1])
             elif words[0].lower() == "multiplicity":
                 Quket.multiplicity = int(words[1])
             elif words[0].lower() == "charge":

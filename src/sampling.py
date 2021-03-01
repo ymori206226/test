@@ -35,10 +35,10 @@ def sample_observable(state, obs, n_sample):
     Author(s): Takashi Tsuchimochi
     """
     n_term = obs.get_term_count()
-    n_qubit = obs.get_qubit_count()
+    n_qubits = obs.get_qubit_count()
 
     exp = 0
-    buf_state = QuantumState(n_qubit)
+    buf_state = QuantumState(n_qubits)
     for i in range(n_term):
         pauli_term = obs.get_term(i)
         coef = pauli_term.get_coef()
@@ -48,9 +48,9 @@ def sample_observable(state, obs, n_sample):
             exp += coef
             continue
         buf_state.load(state)
-        measurement_circuit = QuantumCircuit(n_qubit)
+        measurement_circuit = QuantumCircuit(n_qubits)
         mask = "".join(
-            ["1" if n_qubit - 1 - k in pauli_index else "0" for k in range(n_qubit)]
+            ["1" if n_qubits - 1 - k in pauli_index else "0" for k in range(n_qubits)]
         )
         for single_pauli, index in zip(pauli_id, pauli_index):
             if single_pauli == 1:
@@ -80,10 +80,10 @@ def adaptive_sample_observable(state, obs, n_sample):
         :float: sampled expectation value of the observable
     """
     n_term = obs.get_term_count()
-    n_qubit = obs.get_qubit_count()
+    n_qubits = obs.get_qubit_count()
 
     exp = 0
-    buf_state = QuantumState(n_qubit)
+    buf_state = QuantumState(n_qubits)
     ### check the coefficients for each term...
     coef_list = []
     sum_coef = 0
@@ -119,9 +119,9 @@ def adaptive_sample_observable(state, obs, n_sample):
             exp += coef
             continue
         buf_state.load(state)
-        measurement_circuit = QuantumCircuit(n_qubit)
+        measurement_circuit = QuantumCircuit(n_qubits)
         mask = "".join(
-            ["1" if n_qubit - 1 - k in pauli_index else "0" for k in range(n_qubit)]
+            ["1" if n_qubits - 1 - k in pauli_index else "0" for k in range(n_qubits)]
         )
         for single_pauli, index in zip(pauli_id, pauli_index):
             if single_pauli == 1:
@@ -143,11 +143,11 @@ def adaptive_sample_observable(state, obs, n_sample):
 def test_observable(state, obs, obsZ, n_sample):
     """Function
     Args:
-        state (qulacs.QuantumState): This includes entangled ancilla (n_qubit = n_qubit_system + 1)
-        obs (qulacs.Observable): This does not include ancilla Z (n_qubit_system)
+        state (qulacs.QuantumState): This includes entangled ancilla (n_qubits = n_qubits_system + 1)
+        obs (qulacs.Observable): This does not include ancilla Z (n_qubits_system)
         obsZ (qulacs.Observable): Single Pauli Z for ancilla (1)
-        poststate0 (qulacs.QuantumState): post-measurement state when ancilla = 0 (n_qubit_system)
-        poststate1 (qulacs.QuantumState): post-measurement state when ancilla = 1 (n_qubit_system)
+        poststate0 (qulacs.QuantumState): post-measurement state when ancilla = 0 (n_qubits_system)
+        poststate1 (qulacs.QuantumState): post-measurement state when ancilla = 1 (n_qubits_system)
         n_sample (int):  number of samples for each observable
     Return:
         :float: sampled expectation value of the observable
@@ -155,15 +155,15 @@ def test_observable(state, obs, obsZ, n_sample):
     Author(s): Takashi Tsuchimochi
     """
     n_term = obs.get_term_count()
-    n_qubit = obs.get_qubit_count()
-    p0 = state.get_zero_probability(n_qubit)
+    n_qubits = obs.get_qubit_count()
+    p0 = state.get_zero_probability(n_qubits)
     p1 = 1 - p0
-    opt = "0" + str(n_qubit) + "b"
+    opt = "0" + str(n_qubits) + "b"
 
     expH = 0
     exp = []
     coef = []
-    buf_state = QuantumState(n_qubit)
+    buf_state = QuantumState(n_qubits)
     for i in range(n_term):
         pauli_term = obs.get_term(i)
         coef.append(pauli_term.get_coef().real)
@@ -173,9 +173,9 @@ def test_observable(state, obs, obsZ, n_sample):
             exp += coef
             continue
         buf_state.load(state)
-        measurement_circuit = QuantumCircuit(n_qubit)
+        measurement_circuit = QuantumCircuit(n_qubits)
         mask = "".join(
-            ["1" if n_qubit - 1 - k in pauli_index else "0" for k in range(n_qubit)]
+            ["1" if n_qubits - 1 - k in pauli_index else "0" for k in range(n_qubits)]
         )
 
         measure_observable = QubitOperator((), 1)
@@ -212,7 +212,7 @@ def test_observable(state, obs, obsZ, n_sample):
             sum(list(map(lambda x: (-1) ** (bin(x & mask).count("1")), samples)))
             / n_sample
         )
-        measure_list = list(map(int, np.ones(n_qubit) * 2))
+        measure_list = list(map(int, np.ones(n_qubits) * 2))
         for j in pauli_index:
             measure_list[j] = 1
         print(qulacs_measure_observable.get_expectation_value(state))
@@ -252,19 +252,19 @@ def test_transition_observable(state, obs, poststate0, poststate1, n_sample):
 
     """
     Args:
-        state (qulacs.QuantumState): This includes entangled ancilla (n_qubit = n_qubit_system + 1)
-        obs (qulacs.Observable): This does not include ancilla Z (n_qubit_system)
-        poststate0 (qulacs.QuantumState): post-measurement state when ancilla = 0 (n_qubit_system)
-        poststate1 (qulacs.QuantumState): post-measurement state when ancilla = 1 (n_qubit_system)
+        state (qulacs.QuantumState): This includes entangled ancilla (n_qubits = n_qubits_system + 1)
+        obs (qulacs.Observable): This does not include ancilla Z (n_qubits_system)
+        poststate0 (qulacs.QuantumState): post-measurement state when ancilla = 0 (n_qubits_system)
+        poststate1 (qulacs.QuantumState): post-measurement state when ancilla = 1 (n_qubits_system)
         n_sample (int):  number of samples for each observable
     Return:
         :float: sampled expectation value of the observable
     """
     n_term = obs.get_term_count()
-    n_qubit = obs.get_qubit_count()
-    p0 = state.get_zero_probability(n_qubit - 1)
+    n_qubits = obs.get_qubit_count()
+    p0 = state.get_zero_probability(n_qubits - 1)
     p1 = 1 - p0
-    opt = "0" + str(n_qubit) + "b"
+    opt = "0" + str(n_qubits) + "b"
     prints("p0:", p0, "  p1:", p1)
     print_state(poststate0, name="post(0)")
     prints("post(1)")
@@ -273,7 +273,7 @@ def test_transition_observable(state, obs, poststate0, poststate1, n_sample):
     expH = 0
     exp = []
     coef = []
-    buf_state = QuantumState(n_qubit)
+    buf_state = QuantumState(n_qubits)
     for i in range(n_term):
         pauli_term = obs.get_term(i)
         coef.append(pauli_term.get_coef().real)
@@ -283,13 +283,13 @@ def test_transition_observable(state, obs, poststate0, poststate1, n_sample):
             exp += coef
             continue
         buf_state.load(state)
-        measurement_circuit = QuantumCircuit(n_qubit)
+        measurement_circuit = QuantumCircuit(n_qubits)
         mask = "".join(
-            ["1" if n_qubit - 1 - k in pauli_index else "0" for k in range(n_qubit)]
+            ["1" if n_qubits - 1 - k in pauli_index else "0" for k in range(n_qubits)]
         )
 
         measure_observable = QubitOperator((), 1)
-        # measure_observable = QubitOperator('Z%d' % n_qubit)
+        # measure_observable = QubitOperator('Z%d' % n_qubits)
         for single_pauli, index in zip(pauli_id, pauli_index):
             if single_pauli == 1:
                 ###  X
@@ -329,7 +329,7 @@ def test_transition_observable(state, obs, poststate0, poststate1, n_sample):
         # mask = int(mask, 2)
         # prob = sum(list(map(lambda x: (-1) **
         #                             (bin(x & mask).count('1')), samples)))/n_sample
-        # measure_list = list(map(int,np.ones(n_qubit)*2))
+        # measure_list = list(map(int,np.ones(n_qubits)*2))
         # for j in pauli_index:
         #    measure_list[j] = 1
         # print(qulacs_measure_observable.get_expectation_value(state))
@@ -366,8 +366,8 @@ def sample_observable_noisy_circuit(
 
 def cost_phf_sample(
     print_level,
-    n_qubit,
-    n_electron,
+    n_qubits,
+    n_electrons,
     noa,
     nob,
     nva,
@@ -397,29 +397,29 @@ def cost_phf_sample(
     import pprint
 
     t1 = time.time()
-    n_qubit_system = n_qubit - 1
-    state = QuantumState(n_qubit)
-    circuit_rhf = set_circuit_rhfZ(n_qubit, n_electron)
+    n_qubits_system = n_qubits - 1
+    state = QuantumState(n_qubits)
+    circuit_rhf = set_circuit_rhfZ(n_qubits, n_electrons)
     circuit_rhf.update_quantum_state(state)
     if ref == "phf":
-        circuit_uhf = set_circuit_uhfZ(n_qubit, noa, nob, nva, nvb, theta_list)
+        circuit_uhf = set_circuit_uhfZ(n_qubits, noa, nob, nva, nvb, theta_list)
         circuit_uhf.update_quantum_state(state)
         print("pHF")
     elif ref == "puccsd":
-        circuit = set_circuit_uccsd(n_qubit, noa, nob, nva, nvb, theta_list)
+        circuit = set_circuit_uccsd(n_qubits, noa, nob, nva, nvb, theta_list)
         for i in range(rho):
             circuit.update_quantum_state(state)
         print("UCCSD")
 
     if print_level > -1:
         print("State before projection")
-        utils.print_state(state, n_qubit_system)
+        utils.print_state(state, n_qubits_system)
     """
     ### Set post-measurement states ####
     poststate0 = state.copy()
     poststate1 = state.copy()
-    circuit0 = QuantumCircuit(n_qubit)
-    circuit1 = QuantumCircuit(n_qubit)
+    circuit0 = QuantumCircuit(n_qubits)
+    circuit1 = QuantumCircuit(n_qubits)
     ### Projection to anc = 0 or anc = 1 ###
     circuit0.add_gate(P0(0))
     circuit1.add_gate(P1(0))
@@ -447,7 +447,7 @@ def cost_phf_sample(
     wg = [0.5, 0.5]
     ### a list to compute the probability to observe 0 in ancilla qubit
     p0_list = []
-    for j in range(n_qubit - 1):
+    for j in range(n_qubits - 1):
         p0_list.append(2)
     p0_list.append(0)
     ### Array for <HUg>, <S2Ug>, <Ug>
@@ -498,21 +498,21 @@ def cost_phf_sample(
             Norm = 0
             for i in range(Ng):
                 ### Copy quantum state of UHF (cannot be done in real device) ###
-                state_g = QuantumState(n_qubit)
+                state_g = QuantumState(n_qubits)
                 state_g.load(state)
                 ### Construct Ug test
-                circuit_ug = QuantumCircuit(n_qubit)
+                circuit_ug = QuantumCircuit(n_qubits)
                 ### Hadamard on anc
                 circuit_ug.add_H_gate(anc)
-                controlled_Ug(circuit_ug, n_qubit, anc, np.arccos(beta[i]))
+                controlled_Ug(circuit_ug, n_qubits, anc, np.arccos(beta[i]))
                 circuit_ug.add_H_gate(anc)
                 circuit_ug.update_quantum_state(state_g)
 
                 ### Set post-measurement states ####
                 poststate0 = state_g.copy()
                 poststate1 = state_g.copy()
-                circuit0 = QuantumCircuit(n_qubit)
-                circuit1 = QuantumCircuit(n_qubit)
+                circuit0 = QuantumCircuit(n_qubits)
+                circuit1 = QuantumCircuit(n_qubits)
                 ### Projection to anc = 0 or anc = 1 ###
                 circuit0.add_gate(P0(anc))
                 circuit1.add_gate(P1(anc))
@@ -524,7 +524,7 @@ def cost_phf_sample(
                 poststate0.normalize(norm0)
                 poststate1.normalize(norm1)
                 ### Set ancilla qubit of poststate1 to zero (so that it won't be used) ###
-                circuit_anc = QuantumCircuit(n_qubit)
+                circuit_anc = QuantumCircuit(n_qubits)
                 circuit_anc.add_X_gate(anc)
                 circuit_anc.update_quantum_state(poststate1)
                 print(
@@ -631,8 +631,8 @@ def cost_phf_sample(
 
 def cost_uhf_sample(
     print_level,
-    n_qubit_system,
-    n_electron,
+    n_qubits_system,
+    n_electrons,
     noa,
     nob,
     nva,
@@ -667,11 +667,11 @@ def cost_uhf_sample(
                 ")",
                 filepath="./log.txt",
             )
-            opt = "0" + str(n_qubit_system) + "b"
-            state = QuantumState(n_qubit_system)
-            circuit_rhf = set_circuit_rhf(n_qubit_system, n_electron)
+            opt = "0" + str(n_qubits_system) + "b"
+            state = QuantumState(n_qubits_system)
+            circuit_rhf = set_circuit_rhf(n_qubits_system, n_electrons)
             circuit_rhf.update_quantum_state(state)
-            circuit = set_circuit_uhf(n_qubit_system, noa, nob, nva, nvb, kappa_list)
+            circuit = set_circuit_uhf(n_qubits_system, noa, nob, nva, nvb, kappa_list)
             circuit.update_quantum_state(state)
             Euhf = sample_observable(state, qulacs_hamiltonian, i_sample).real
             # S2 = sample_observable(state, qulacs_s2, i_sample).real
@@ -691,8 +691,8 @@ def cost_uhf_sample(
 
 def cost_phf_sample_oneshot(
     print_level,
-    n_qubit,
-    n_electron,
+    n_qubits,
+    n_electrons,
     noa,
     nob,
     nva,
@@ -716,17 +716,17 @@ def cost_phf_sample_oneshot(
     import pprint
 
     t1 = time.time()
-    state = QuantumState(n_qubit)
-    circuit_rhf = set_circuit_rhfZ(n_qubit, n_electron)
+    state = QuantumState(n_qubits)
+    circuit_rhf = set_circuit_rhfZ(n_qubits, n_electrons)
     circuit_rhf.update_quantum_state(state)
-    circuit_uhf = set_circuit_uhfZ(n_qubit, noa, nob, nva, nvb, kappa_list)
+    circuit_uhf = set_circuit_uhfZ(n_qubits, noa, nob, nva, nvb, kappa_list)
     circuit_uhf.update_quantum_state(state)
 
     ### Set post-measurement states ####
     poststate0 = state.copy()
     poststate1 = state.copy()
-    circuit0 = QuantumCircuit(n_qubit)
-    circuit1 = QuantumCircuit(n_qubit)
+    circuit0 = QuantumCircuit(n_qubits)
+    circuit1 = QuantumCircuit(n_qubits)
     ### Projection to anc = 0 or anc = 1 ###
     circuit0.add_gate(P0(0))
     circuit1.add_gate(P1(0))
@@ -750,7 +750,7 @@ def cost_phf_sample_oneshot(
     wg = [0.173927422568724, 0.326072577431273, 0.326072577431273, 0.173927422568724]
     ### a list to compute the probability to observe 0 in ancilla qubit
     p0_list = []
-    for j in range(n_qubit - 1):
+    for j in range(n_qubits - 1):
         p0_list.append(2)
     p0_list.append(0)
     ### Array for <HUg>, <S2Ug>, <Ug>
@@ -780,14 +780,14 @@ def cost_phf_sample_oneshot(
             Norm = 0
             for i in range(Ng):
                 ### Copy quantum state of UHF (cannot be done in real device) ###
-                state_g = QuantumState(n_qubit)
+                state_g = QuantumState(n_qubits)
                 circuit_rhf.update_quantum_state(state_g)
                 circuit_uhf.update_quantum_state(state_g)
                 ### Construct Ug test
-                circuit_ug = QuantumCircuit(n_qubit)
+                circuit_ug = QuantumCircuit(n_qubits)
                 ### Hadamard on anc
                 circuit_ug.add_H_gate(anc)
-                controlled_Ug(circuit_ug, n_qubit, anc, np.arccos(beta[i]))
+                controlled_Ug(circuit_ug, n_qubits, anc, np.arccos(beta[i]))
                 circuit_ug.add_H_gate(anc)
                 circuit_ug.update_quantum_state(state_g)
 

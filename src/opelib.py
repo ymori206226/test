@@ -69,7 +69,7 @@ def create_1body_operator(mo_coeff, XA, XB=None, const=0, ao=False, n_active_orb
     return Operator
 
 
-def single_operator_gradient(p, q, jordan_wigner_hamiltonian, state, n_qubit):
+def single_operator_gradient(p, q, jordan_wigner_hamiltonian, state, n_qubits):
     """Function
     Compute gradient d<H>/dXpq
 
@@ -77,7 +77,7 @@ def single_operator_gradient(p, q, jordan_wigner_hamiltonian, state, n_qubit):
     """
     # 与えられたpqからフェルミ演算子a_p!q-a_q!pを生成する
     # ダミーを作って後で引く
-    dummy = FermionOperator(str(n_qubit - 1) + "^ " + str(n_qubit - 1), 1.0)
+    dummy = FermionOperator(str(n_qubits - 1) + "^ " + str(n_qubits - 1), 1.0)
     fermi = FermionOperator(str(p) + "^ " + str(q), 1.0) + FermionOperator(
         str(q) + "^ " + str(p), -1.0
     )
@@ -101,28 +101,28 @@ def single_operator_gradient(p, q, jordan_wigner_hamiltonian, state, n_qubit):
     return gradient
 
 
-def FermionOperator_to_Observable(operator, n_qubit):
+def FermionOperator_to_Observable(operator, n_qubits):
     """Function
     Create qulacs observable from OpenFermion FermionOperator `operator`.
 
     Author(s): Masaki Taii, Takashi Tsuchimochi
     """
     str_jw = str(jordan_wigner(operator))
-    string = "(0.0000000000000000+0j) [Z" + str(n_qubit - 1) + "]"
+    string = "(0.0000000000000000+0j) [Z" + str(n_qubits - 1) + "]"
     if str_jw == "0":
         str_jw = string
     else:
         str_jw += " + \n" + string
     return create_observable_from_openfermion_text(str_jw)
 
-def QubitOperator_to_Observable(operator, n_qubit):
+def QubitOperator_to_Observable(operator, n_qubits):
     """Function
     Create qulacs observable from OpenFermion QubitOperator `operator`.
 
     Author(s): Takashi Tsuchimochi
     """
     str_jw = str(operator)
-    string = "(0.0000000000000000+0j) [Z" + str(n_qubit - 1) + "]"
+    string = "(0.0000000000000000+0j) [Z" + str(n_qubits - 1) + "]"
     if str_jw == "0":
         str_jw = string
     else:
@@ -130,14 +130,14 @@ def QubitOperator_to_Observable(operator, n_qubit):
     return create_observable_from_openfermion_text(str_jw)
 
 
-def FermionOperator_to_Operator(operator, n_qubit):
+def FermionOperator_to_Operator(operator, n_qubits):
     """Function
     Create qulacs general operator from OpenFermion FermionOperator `operator`.
 
     Author(s): Masaki Taii, Takashi Tsuchimochi
     """
     str_jw = str(jordan_wigner(operator))
-    string = "(0.0000000000000000+0j) [Z" + str(n_qubit - 1) + "]"
+    string = "(0.0000000000000000+0j) [Z" + str(n_qubits - 1) + "]"
     if str_jw == "0":
         str_jw = string
     else:

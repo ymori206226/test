@@ -627,36 +627,36 @@ def ucc_doubles(circuit, noa, nob, nva, nvb, theta_list, ndim1=0):
                     double_ope_Pauli(b2, a2, j2, i2, circuit, theta_list[ijab])
                     ijab = ijab + 1
 
-def set_circuit_occrot(n_qubit_system, noa, nob, nva, nvb, theta1):
+def set_circuit_occrot(n_qubits_system, noa, nob, nva, nvb, theta1):
     """Function:
     Construct new circuit for occ-occ rotation,  prod_ij exp[theta (i!j - j!i )]
 
     Author(s): Takashi Tsuchimochi
     """
-    circuit = QuantumCircuit(n_qubit_system)
+    circuit = QuantumCircuit(n_qubits_system)
     ucc_occrot(circuit, noa, nob, nva, nvb, theta1)
     return circuit
 
 
-def set_circuit_GS(n_qubit_system, noa, nob, nva, nvb, theta1):
+def set_circuit_GS(n_qubits_system, noa, nob, nva, nvb, theta1):
     """Function:
     Construct new circuit for generalized singles,  prod_pq exp[theta (p!q - q!p )]
 
     Author(s): Takashi Tsuchimochi
     """
-    circuit = QuantumCircuit(n_qubit_system)
+    circuit = QuantumCircuit(n_qubits_system)
     ucc_Gsingles(circuit, norbs, theta1)
     return circuit
 
 
-def set_circuit_uccsd(n_qubit, noa, nob, nva, nvb, DS, theta_list):
+def set_circuit_uccsd(n_qubits, noa, nob, nva, nvb, DS, theta_list):
     """Function:
     Construct new circuit for UCCSD
 
     Author(s): Yuto Mori, Takashi Tsuchimochi
     """
     ndim1 = noa * nva + nob * nvb
-    circuit = QuantumCircuit(n_qubit)
+    circuit = QuantumCircuit(n_qubits)
     if DS:
         ucc_singles(circuit, noa, nob, nva, nvb, theta_list, 0)
         ucc_doubles(circuit, noa, nob, nva, nvb, theta_list, ndim1)
@@ -666,14 +666,14 @@ def set_circuit_uccsd(n_qubit, noa, nob, nva, nvb, DS, theta_list):
     return circuit
 
 
-def set_circuit_sauccsd(n_qubit, no, nv, DS, theta_list):
+def set_circuit_sauccsd(n_qubits, no, nv, DS, theta_list):
     """Function:
     Construct new circuit for spin-adapted UCCSD
 
     Author(s): Takashi Tsuchimochi
     """
     ndim1 = no * nv
-    circuit = QuantumCircuit(n_qubit)
+    circuit = QuantumCircuit(n_qubits)
     if DS:
         ucc_singles_spinfree(circuit, no, nv, theta_list, 0)
         ucc_doubles_spinfree1(circuit, no, no, nv, nv, theta_list, ndim1)
@@ -683,24 +683,24 @@ def set_circuit_sauccsd(n_qubit, no, nv, DS, theta_list):
     return circuit
 
 
-def set_circuit_sauccd(n_qubit, no, nv, theta_list):
+def set_circuit_sauccd(n_qubits, no, nv, theta_list):
     """Function:
     Construct new circuit for spin-adapted UCCD
 
     Author(s): Takashi Tsuchimochi
     """
-    circuit = QuantumCircuit(n_qubit)
+    circuit = QuantumCircuit(n_qubits)
     ucc_doubles_spinfree1(circuit, no, no, nv, nv, theta_list, 0)
     return circuit
 
 
-def set_circuit_uccd(n_qubit, noa, nob, nva, nvb, theta_list):
+def set_circuit_uccd(n_qubits, noa, nob, nva, nvb, theta_list):
     """Function:
     Construct new circuit for UCCD
 
     Author(s): Takashi Tsuchimochi
     """
-    circuit = QuantumCircuit(n_qubit)
+    circuit = QuantumCircuit(n_qubits)
     ucc_doubles(circuit, noa, nob, nva, nvb, theta_list)
     return circuit
 
@@ -722,19 +722,19 @@ def cost_uccd(
     from .hflib import set_circuit_rhf
 
     t1 = time.time()
-    n_qubit = Quket.n_qubit
-    n_electron = Quket.n_electron
+    n_qubits = Quket.n_qubits
+    n_electrons = Quket.n_electrons
     rho = Quket.rho
     noa = Quket.noa
     nob = Quket.nob
     nva = Quket.nva
     nvb = Quket.nvb
 
-    state = QuantumState(n_qubit)
-    set_circuit = set_circuit_rhf(n_qubit, n_electron)
+    state = QuantumState(n_qubits)
+    set_circuit = set_circuit_rhf(n_qubits, n_electrons)
     set_circuit.update_quantum_state(state)
 
-    circuit = set_circuit_uccd(n_qubit, noa, nob, nva, nvb, theta_list)
+    circuit = set_circuit_uccd(n_qubits, noa, nob, nva, nvb, theta_list)
     for i in range(rho):
         circuit.update_quantum_state(state)
     Euccd = Quket.qulacs.Hamiltonian.get_expectation_value(state)
@@ -878,7 +878,7 @@ def cost_uccsdX(
     t1 = time.time()
 
     det = Quket.current_det
-    n_qubit_system = Quket.n_qubit
+    n_qubits_system = Quket.n_qubits
     noa = Quket.noa
     nob = Quket.nob
     nva = Quket.nva
@@ -886,7 +886,7 @@ def cost_uccsdX(
     rho = Quket.rho
     DS = Quket.DS
     if Quket.ansatz == "sauccsd":
-        state = create_sauccsd_state(n_qubit_system, noa, nva, rho, DS, theta_list, det)
+        state = create_sauccsd_state(n_qubits_system, noa, nva, rho, DS, theta_list, det)
     else:
         state = create_uccsd_state(
             Quket,
@@ -970,7 +970,7 @@ def set_circuit_uccsdX(
     Author(s):  Yuto Mori
     """
     ndim1 = Quket.noa * Quket.nva + Quket.nob * Quket.nvb
-    circuit = QuantumCircuit(Quket.n_qubit)
+    circuit = QuantumCircuit(Quket.n_qubits)
     if Quket.DS:
         ucc_singlesX(circuit, theta_list, occ_list, vir_list, 0)
         ucc_doublesX(circuit, theta_list, occ_list, vir_list, ndim1)
@@ -1057,9 +1057,9 @@ def create_uccsd_state(
     """
     ### Form RHF bits
 
-    state = QuantumState(Quket.n_qubit)
+    state = QuantumState(Quket.n_qubits)
     state.set_computational_basis(det)
-    occ_list, vir_list = get_occvir_lists(Quket.n_qubit, det)
+    occ_list, vir_list = get_occvir_lists(Quket.n_qubits, det)
 
     theta_list_rho = theta_list / Quket.rho
     circuit = set_circuit_uccsdX(
@@ -1076,7 +1076,7 @@ def create_uccsd_state(
         return state
 
 
-def create_sauccsd_state(n_qubit_system, noa, nva, rho, DS, theta_list, det):
+def create_sauccsd_state(n_qubits_system, noa, nva, rho, DS, theta_list, det):
     """Function
     Prepare a UCC state based on theta_list.
     The initial determinant 'det' contains the base-10 integer specifying the bit string for occupied orbitals.
@@ -1085,10 +1085,10 @@ def create_sauccsd_state(n_qubit_system, noa, nva, rho, DS, theta_list, det):
     """
     ### Form RHF bits
 
-    state = QuantumState(n_qubit_system)
+    state = QuantumState(n_qubits_system)
     state.set_computational_basis(det)
     theta_list_rho = theta_list / rho
-    circuit = set_circuit_sauccsd(n_qubit_system, noa, nva, DS, theta_list_rho)
+    circuit = set_circuit_sauccsd(n_qubits_system, noa, nva, DS, theta_list_rho)
     for i in range(rho):
         circuit.update_quantum_state(state)
     return state
