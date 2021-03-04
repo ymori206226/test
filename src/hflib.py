@@ -8,73 +8,105 @@ hflib.py
 Functions related to initial qubit states (HF,UHF,etc.).
 
 """
+import time
+#from functiontools import singledispatch
 
 import numpy as np
-import time
 from qulacs import QuantumState
 from qulacs import QuantumCircuit
-from .ucclib import ucc_singles, single_ope_Pauli
+
 from . import config as cf
+#from .init import QuketData
+from .ucclib import ucc_singles, single_ope_Pauli
 from .fileio import prints, SaveTheta, print_state
 
 
-def set_circuit_rhf(n_qubits_system, n_electrons):
+#@singledispatch
+def set_circuit_rhf(n_qubit_system, n_electrons):
     """Function:
     Construct circuit for RHF |0000...1111>
 
     Author(s): Yuto Mori
     """
-    circuit = QuantumCircuit(n_qubits_system)
+    circuit = QuantumCircuit(n_qubit_system)
     for i in range(n_electrons):
         circuit.add_X_gate(i)
     return circuit
 
 
-def set_circuit_rohf(n_qubits_system, noa, nob):
+#@set_circuit_rhf.register(QuketData)
+#def _(Quket):
+#    circuit = QuantumCircuit(Quket.n_qubits)
+#    for i in range(Quket.n_active_electrons):
+#        circuit.add_X_gate(i)
+#    return circuit
+
+
+#@singledispatch
+def set_circuit_rohf(n_qubit_system, noa, nob):
     """Function:
     Construct circuit for ROHF |0000...10101111>
 
     Author(s): Yuto Mori, Takashi Tsuchimochi
     """
-    circuit = QuantumCircuit(n_qubits_system)
+    circuit = QuantumCircuit(n_qubit_system)
     for i in range(noa):
-        circuit.add_X_gate(2 * i)
+        circuit.add_X_gate(2*i)
     for i in range(nob):
-        circuit.add_X_gate(2 * i + 1)
+        circuit.add_X_gate(2*i + 1)
     return circuit
 
 
-def set_circuit_uhf(n_qubits_system, noa, nob, nva, nvb, kappa_list):
+#@set_circuit_rohf.register(QuketData)
+#def _(Quket):
+#    circuit = QuantumCircuit(Quket.n_qubits)
+#    for i in range(Quket.noa):
+#        circuit.add_X_gate(2*i)
+#    for i in range(Quket.nob):
+#        circuit.add_X_gate(2*i + 1)
+#    return circuit
+
+
+#@singledispatch
+def set_circuit_uhf(n_qubit_system, noa, nob, nva, nvb, kappa_list):
     """Function:
     Construct circuit for UHF by orbital rotation
 
     Author(s):  Takashi Tsuchimochi
     """
-    circuit = QuantumCircuit(n_qubits_system)
+    circuit = QuantumCircuit(n_qubit_system)
     ucc_singles(circuit, noa, nob, nva, nvb, kappa_list)
     return circuit
 
 
-def set_circuit_ghf(n_qubits_system, kappa_list):
+#@set_circuit_uhf.register(QuketData)
+#def set_circuit_uhf(QuketData, kappa_list):
+#    """Function:
+#    Construct circuit for UHF by orbital rotation
+#
+#    Author(s):  Takashi Tsuchimochi
+#    """
+#    circuit = QuantumCircuit(Quket.n_qubits)
+#    ucc_singles(circuit, Quket, kappa_list)
+#    return circuit
+
+
+def set_circuit_ghf(n_qubit_system, kappa_list):
     """Function:
     Construct circuit for GHF by general spin orbital rotation
 
     Author(s):  Takashi Tsuchimochi
     """
-    circuit = QuantumCircuit(n_qubits_system)
+    circuit = QuantumCircuit(n_qubit_system)
     pq = 0
-    for p in range(n_qubits_system):
+    for p in range(n_qubit_system):
         for q in range(p):
             single_ope_Pauli(p, q, circuit, kappa_list[pq])
             pq += 1
     return circuit
 
 
-def cost_uhf(
-    Quket,
-    print_level,
-    kappa_list,
-):
+def cost_uhf(Quket, print_level, kappa_list):
     """Function:
     Energy functional of UHF
 
@@ -88,9 +120,9 @@ def cost_uhf(
     n_qubits = Quket.n_qubits
 
     t1 = time.time()
-    state = QuantumState(n_qubits)
+    state = QuantumState(Quket.n_qubits)
     if noa == nob:
-        circuit_rhf = set_circuit_rhf(n_qubits, n_electrons)
+        circuit_rhf = set_circuit_rhf(Quket)
     else:
         circuit_rhf = set_circuit_rohf(n_qubits, noa, nob)
     circuit_rhf.update_quantum_state(state)

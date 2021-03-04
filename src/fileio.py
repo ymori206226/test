@@ -9,7 +9,10 @@ File reading/writing utilities.
 
 """
 import os
+import datetime
+
 import numpy as np
+
 from . import config as cf
 from . import mpilib as mpi
 
@@ -29,117 +32,137 @@ def prints(*args, filepath=cf.log, opentype="a", end=None):
     """
     if mpi.main_rank:
         if filepath is None:
-            print("".join(map(str, args)), end=end)
+            print(*args, end=end)
         else:
             with open(filepath, opentype) as f:
-                print("".join(map(str, args)), file=f, end=end)
+                print(*args, file=f, end=end)
 
 
 def print_geom(geometry):
     """Function:
-        Print geometry in the cartesian coordinates.
+    Print geometry in the cartesian coordinates.
 
     Author(s): Takashi Tsuchimochi
     """
-    prints("\n *** Geometry **************************")
+    prints("\n*** Geometry **************************")
     for iatom in range(len(geometry)):
-        prints(
-            "  {:2s}    {:8.4f}   {:8.4f}   {:8.4f}".format(
-                geometry[iatom][0],
-                geometry[iatom][1][0],
-                geometry[iatom][1][1],
-                geometry[iatom][1][2],
-            )
-        )
-    prints(" ***************************************\n")
+        prints(f"  {geometry[iatom][0]:2s}  "
+               f"  {geometry[iatom][1][0]:8.4f}  "
+               f"  {geometry[iatom][1][1]:8.4f}  "
+               f"  {geometry[iatom][1][2]:8.4f}")
+    prints("***************************************\n")
 
 
-def openfermion_print_state(state, n_qubits, j_state):
+def openfermion_print_state(state, n_qubits, j_state,
+                            threshold=1e-2, digit=4, filepath=cf.log):
     """Function
     print out jth wave function in state
 
     Author(s): Takashi Tsuchimochi
     """
-    opt = "0" + str(n_qubits) + "b"
-    for i in range(2 ** n_qubits):
+    opt = f"0{n_qubits}b"
+    qubit_len = n_qubits + 4 - len("Basis")
+    coef_len = 2*digit + 8
+    prints(" "*(qubit_len//2), "Basis",
+           " "*(qubit_len//2 + coef_len//2 - 1), "Coef")
+    for i in range(2**n_qubits):
         v = state[i][j_state]
-        if abs(v) ** 2 > 0.01:
-            prints(
-                "|", format(i, opt), "> : ", "{a.real:+.4f} {a.imag:+.4f}i".format(a=v)
-            )
+        if abs(v)**2 > threshold:
+            formstr = "{a.real:+." + str(digit) + "f} " \
+                    + "{a.imag:+." + str(digit) + "f}i"
+            prints("|", format(i, opt), "> :", formstr.format(a=v),
+                   filepath=filepath)
 
 
-def SaveTheta(ndim, theta, filepath, opentype="w"):
-    """Function
-    Save theta(0:ndim-1) to filepath (overwritten)
+#def SaveTheta(ndim, theta, filepath, opentype="w"):
+#    """Function
+#    Save theta(0:ndim-1) to filepath (overwritten)
+#
+#    Author(s): Takashi Tsuchimochi
+#    """
+#    if mpi.main_rank:
+#        with open(filepath, opentype) as f:
+#            for i in range(ndim):
+#                print(theta[i], file=f)
+#
+#
+#def LoadTheta(ndim, filepath):
+#    """Function
+#    Read theta(0:ndim-1) from filepath
+#
+#    Author(s): Takashi Tsuchimochi
+#    """
+#    if os.path.isfile(filepath):
+#        f = open(filepath)
+#        line = f.readlines()
+#        f.close
+#        if len(line) != ndim:
+#            error("File length incorrect: {}".format(filepath))
+#        if mpi.main_rank:
+#            theta = []
+#            for i in range(ndim):
+#                theta.append(float(line[i]))
+#        else:
+#            theta = None
+#    else:
+#        error("No theta file! ")
+#
+#    theta = mpi.comm.bcast(theta, root=0)
+#    return theta
 
-    Author(s): Takashi Tsuchimochi
-    """
+
+# SaveTheta関数とLoadTheta関数こっちでどうでしょう？
+def SaveTheta(theta, filepath, ndim=None):
     if mpi.main_rank:
-        with open(filepath, opentype) as f:
-            for i in range(ndim):
-                print(theta[i], file=f)
-
-
-def LoadTheta(ndim, filepath):
-    """Function
-    Read theta(0:ndim-1) from filepath
-
-    Author(s): Takashi Tsuchimochi
-    """
-    if os.path.isfile(filepath):
-        f = open(filepath)
-        line = f.readlines()
-        f.close
-        if len(line) != ndim:
-            error("File length incorrect: {}".format(filepath))
-        if mpi.main_rank:
-            theta = []
-            for i in range(ndim):
-                theta.append(float(line[i]))
+        if ndim:
+            np.savetxt(filepath, theta[:ndim].reshape(-1, 1))
         else:
-            theta = None
-    else:
-        error("No theta file! ")
+            np.savetxt(filepath, theta.reshape(-1, 1))
 
+
+def LoatTheta(filepath, ndim=None):
+    theta = np.loadtxt(filepath).reshape(-1)
+    if ndim:
+        theta = theta[:ndim]
     theta = mpi.comm.bcast(theta, root=0)
     return theta
 
 
 def error(*message):
-    import datetime
-
     prints("\n", *message, "\n")
     prints("Error termination of quket.")
     prints(datetime.datetime.now())
     exit()
 
 
-def print_state(state, n_qubits=None, filepath=cf.log, threshold=0.01, name=None):
+def print_state(state, n_qubits=None, filepath=cf.log,
+                threshold=0.01, name=None, digit=4):
     """Function
     print out quantum state as qubits
 
     Author(s): Takashi Tsuchimochi
     """
-    if type(name) == str:
+    if isinstance(name, str):
         prints(name)
     if n_qubits is None:
         n_qubits = state.get_qubit_count()
-    opt = "0" + str(n_qubits) + "b"
-    prints(" Basis       Coef", filepath=filepath)
-    for i in range(2 ** n_qubits):
+
+    opt = f"0{n_qubits}b"
+    qubit_len = n_qubits + 4 - len("Basis")
+    coef_len = 2*digit + 8
+    prints(" "*(qubit_len//2), "Basis",
+           " "*(qubit_len//2 + coef_len//2 - 1), "Coef")
+    for i in range(2**n_qubits):
         v = state.get_vector()[i]
-        if abs(v) ** 2 > threshold:
-            prints(
-                "|",
-                format(i, opt),
-                "> : ",
-                "{a.real:+.4f} {a.imag:+.4f}j".format(a=v),
-                filepath=filepath,
-            )
+        if abs(v)**2 > threshold:
+            formstr = "{a.real:+." + str(digit) + "f} " \
+                    + "{a.imag:+." + str(digit) + "f}i"
+            prints("|", format(i, opt), "> :", formstr.format(a=v),
+                   filepath=filepath)
 
 
-def print_amplitudes(theta_list, noa, nob, nva, nvb, threshold=0.01, filepath=cf.log):
+def print_amplitudes(theta_list, noa, nob, nva, nvb,
+                     threshold=1e-2, filepath=cf.log):
     """Function
     Print out amplitudes of CCSD
 
@@ -154,29 +177,17 @@ def print_amplitudes(theta_list, noa, nob, nva, nvb, threshold=0.01, filepath=cf
         for i in range(noa):
             ii = i + 1
             if abs(theta_list[ia]) > threshold:
-                prints(
-                    ii,
-                    "a -> ",
-                    aa,
-                    "a  : ",
-                    "%2.10f" % theta_list[ia],
-                    filepath=filepath,
-                )
-            ia = ia + 1
+                prints(f"{ii}a -> {aa}a : {theta_list[ia]:2.10f}",
+                       filepath=filepath)
+            ia += 1
     for a in range(nvb):
         aa = a + 1 + nob
         for i in range(nob):
             ii = i + 1
             if abs(theta_list[ia]) > threshold:
-                prints(
-                    ii,
-                    "b -> ",
-                    aa,
-                    "b  : ",
-                    "%2.10f" % theta_list[ia],
-                    filepath=filepath,
-                )
-            ia = ia + 1
+                prints(f"{ii}b -> {aa}b : {theta_list[ia]:2.10f}"
+                       filepath=filepath)
+            ia += 1
     ### print doubles amplitudes ###
     ijab = ia
     for b in range(nva):
@@ -187,101 +198,56 @@ def print_amplitudes(theta_list, noa, nob, nva, nvb, threshold=0.01, filepath=cf
                 jj = j + 1
                 for i in range(j):
                     ii = i + 1
-
                     if abs(theta_list[ijab]) > threshold:
-                        prints(
-                            ii,
-                            "a",
-                            jj,
-                            "a -> ",
-                            aa,
-                            "a",
-                            bb,
-                            "a  : ",
-                            "%2.10f" % theta_list[ijab],
-                            filepath=filepath,
-                        )
-                    ijab = ijab + 1
+                        prints(f"{ii}a {jj}a -> {aa}a {bb}a : "
+                               f"{theta_list[ijab]:2.10f}"
+                               filepath=filepath)
+                    ijab += 1
 
     ### ab -> ab ###
     for b in range(nvb):
         bb = b + 1 + nob
-        for a in range(min(b + 1, nva)):
+        for a in range(min(b+1, nva)):
             aa = a + 1 + noa
             for j in range(nob):
                 jj = j + 1
-                for i in range(j + 1):
+                for i in range(j+1):
                     ii = i + 1
                     # b > a, j > i
                     if abs(theta_list[ijab]) > threshold:
-                        prints(
-                            ii,
-                            "a",
-                            jj,
-                            "b -> ",
-                            aa,
-                            "a",
-                            bb,
-                            "b  : ",
-                            "%2.10f" % (theta_list[ijab]),
-                            filepath=filepath,
-                        )
-                    ijab = ijab + 1
-                for i in range(j + 1, noa):
+                        prints(f"{ii}a {jj}b -> {aa}a {bb}b : "
+                               f"{theta_list[ijab]:2.10f}"
+                               filepath=filepath)
+                    ijab += 1
+                for i in range(j+1, noa):
                     ii = i + 1
                     # b > a, i > j
                     if abs(theta_list[ijab]) > threshold:
-                        prints(
-                            ii,
-                            "a",
-                            jj,
-                            "b -> ",
-                            aa,
-                            "a",
-                            bb,
-                            "b  : ",
-                            "%2.10f" % (theta_list[ijab]),
-                            filepath=filepath,
-                        )
-                    ijab = ijab + 1
-        for a in range(min(b + 1, nva), nva):
+                        prints(f"{ii}a {jj}b -> {aa}a {bb}b : "
+                               f"{theta_list[ijab]:2.10f}"
+                               filepath=filepath)
+                    ijab += 1
+        for a in range(min(b+1, nva), nva):
             aa = a + 1 + noa
             for j in range(nob):
                 jj = j + 1
-                for i in range(j + 1):
+                for i in range(j+1):
                     ii = i + 1
                     # a > b, j > i
                     if abs(theta_list[ijab]) > threshold:
-                        prints(
-                            ii,
-                            "a",
-                            jj,
-                            "b -> ",
-                            aa,
-                            "a",
-                            bb,
-                            "b  : ",
-                            "%2.10f" % (theta_list[ijab]),
-                            filepath=filepath,
-                        )
-                    ijab = ijab + 1
-                for i in range(j + 1, noa):
+                        prints(f"{ii}a {jj}b -> {aa}a {bb}b : "
+                               f"{theta_list[ijab]:2.10f}"
+                               filepath=filepath)
+                    ijab += 1
+                for i in range(j+1, noa):
                     ii = i + 1
                     # a > b, i > j
                     if abs(theta_list[ijab]) > threshold:
-                        prints(
-                            ii,
-                            "a",
-                            jj,
-                            "b -> ",
-                            aa,
-                            "a",
-                            bb,
-                            "b  : ",
-                            "%2.10f" % (theta_list[ijab]),
-                            filepath=filepath,
-                        )
-                    ijab = ijab + 1
+                        prints(f"{ii}a {jj}b -> {aa}a {bb}b : "
+                               f"{theta_list[ijab]:2.10f}"
+                               filepath=filepath)
+                    ijab += 1
+
     ### bb -> bb ###
     for b in range(nvb):
         bb = b + 1 + nob
@@ -292,24 +258,16 @@ def print_amplitudes(theta_list, noa, nob, nva, nvb, threshold=0.01, filepath=cf
                 for i in range(j):
                     ii = i + 1
                     if abs(theta_list[ijab]) > threshold:
-                        prints(
-                            ii,
-                            "b",
-                            jj,
-                            "b -> ",
-                            aa,
-                            "b",
-                            bb,
-                            "b  : ",
-                            "%2.10f" % (theta_list[ijab]),
-                            filepath=filepath,
-                        )
-                    ijab = ijab + 1
+                        prints(f"{ii}b {jj}b -> {aa}b {bb}b : "
+                               f"{theta_list[ijab]:2.10f}"
+                               filepath=filepath)
+                    ijab += 1
 
     prints("------------------")
 
 
-def print_amplitudes_spinfree(theta_list, no, nv, threshold=0.01, filepath=cf.log):
+def print_amplitudes_spinfree(theta_list, no, nv,
+                              threshold=0.01, filepath=cf.log):
     """Function:
     Print out amplitudes of spin-free CCSD
 
@@ -326,10 +284,9 @@ def print_amplitudes_spinfree(theta_list, no, nv, threshold=0.01, filepath=cf.lo
         for i in range(no):
             ii = i + 1
             if abs(theta_list[ia]) > threshold:
-                prints(
-                    ii, " -> ", aa, "  : ", "%2.10f" % theta_list[ia], filepath=filepath
-                )
+                prints(f"{ii} -> {aa} : {theta_list[ia]}", filepath=filepath)
             ia += 1
+
     ### print doubles amplitudes ###
     for b in range(nv):
         bb = b + 1 + no
@@ -343,110 +300,54 @@ def print_amplitudes_spinfree(theta_list, no, nv, threshold=0.01, filepath=cf.lo
                     abji = get_baji(a, b, j, i, no) + ia
                     theta = theta_list[baji] + theta_list[abji]
                     if abs(theta) > threshold:
-                        prints(
-                            ii,
-                            "a",
-                            jj,
-                            "a -> ",
-                            aa,
-                            "a",
-                            bb,
-                            "a  : ",
-                            "%2.10f" % theta,
-                            filepath=filepath,
-                        )
-                        prints(
-                            ii,
-                            "b",
-                            jj,
-                            "b -> ",
-                            aa,
-                            "b",
-                            bb,
-                            "b  : ",
-                            "%2.10f" % theta,
-                            filepath=filepath,
-                        )
+                        prints(f"{ii}a {jj}a -> {aa}a {bb}a : {theta:2.10f}"
+                               filepath=filepath)
+                        prints(f"{ii}b {jj}b -> {aa}b {bb}b : {theta:2.10f}"
+                               filepath=filepath)
 
     ### ab -> ab ###
     for b in range(nv):
         bb = b + 1 + no
-        for a in range(min(b + 1, nv)):
+        for a in range(min(b+1, nv)):
             aa = a + 1 + no
             for j in range(no):
                 jj = j + 1
-                for i in range(j + 1):
+                for i in range(j+1):
                     ii = i + 1
                     # b > a, j > i
                     baji = get_baji(b, a, j, i, no) + ia
                     if abs(theta_list[baji]) > threshold:
-                        prints(
-                            ii,
-                            "a",
-                            jj,
-                            "b -> ",
-                            aa,
-                            "a",
-                            bb,
-                            "b  : ",
-                            "%2.10f" % (theta_list[baji]),
-                            filepath=filepath,
-                        )
-                for i in range(j + 1, no):
+                        prints(f"{ii}a {jj}b -> {aa}a {bb}b : "
+                               f"{theta_list[baji]}",
+                               filepath=filepath)
+                for i in range(j+1, no):
                     ii = i + 1
                     # b > a, i > j
                     baji = get_baji(b, a, j, i, no) + ia
                     if abs(theta_list[baji]) > threshold:
-                        prints(
-                            ii,
-                            "a",
-                            jj,
-                            "b -> ",
-                            aa,
-                            "a",
-                            bb,
-                            "b  : ",
-                            "%2.10f" % (theta_list[baji]),
-                            filepath=filepath,
-                        )
-        for a in range(b + 1, nv):
+                        prints(f"{ii}a {jj}b -> {aa}a {bb}b : "
+                               f"{theta_list[baji]:2.10f}"
+                               filepath=filepath)
+        for a in range(b+1, nv):
             aa = a + 1 + no
             for j in range(no):
                 jj = j + 1
-                for i in range(j + 1):
+                for i in range(j+1):
                     ii = i + 1
                     # a > b, j > i
                     baji = get_baji(b, a, j, i, no) + ia
                     if abs(theta_list[baji]) > threshold:
-                        prints(
-                            ii,
-                            "a",
-                            jj,
-                            "b -> ",
-                            aa,
-                            "a",
-                            bb,
-                            "b  : ",
-                            "%2.10f" % (theta_list[baji]),
-                            filepath=filepath,
-                        )
-                for i in range(j + 1, no):
+                        prints(f"{ii}a {jj}b -> {aa}a {bb}b : "
+                               f"{theta_list[baji]:2.10f}"
+                               filepath=filepath)
+                for i in range(j+1, no):
                     ii = i + 1
                     # a > b, i > j
                     baji = get_baji(b, a, j, i, no) + ia
                     if abs(theta_list[baji]) > threshold:
-                        prints(
-                            ii,
-                            "a",
-                            jj,
-                            "b -> ",
-                            aa,
-                            "a",
-                            bb,
-                            "b  : ",
-                            "%2.10f" % (theta_list[baji]),
-                            filepath=filepath,
-                        )
+                        prints(f"{ii}a {jj}b -> {aa}a {bb}b : "
+                               f"{theta_list[baji]:2.10f}"
+                               filepath=filepath)
 
     prints("------------------")
 
@@ -459,14 +360,14 @@ def printmat(A, mmax=10, filepath=cf.log, name=None, n=None, m=None):
         filepath  :  file to be printed
         mmax      :  maxixmum number of columns to print for each block
         name      :  Name to be printed
-        n,m       :  Need to be specified if A is a matrix, but loaded as a 1D array
-
+        n,m       :  Need to be specified if A is a matrix,
+                     but loaded as a 1D array
 
     Author(s): Takashi Tsuchimochi
     """
-    if type(A) is list:
+    if isinstance(A, list):
         dimension = 1
-    elif type(A) is np.ndarray:
+    elif isinstance(A, np.ndarray):
         dimension = A.ndim
     if dimension == 0 or dimension > 2:
         error("Neither scalar nor tensor is printable with printmat.")
@@ -485,22 +386,20 @@ def printmat(A, mmax=10, filepath=cf.log, name=None, n=None, m=None):
                 imax = m
             prints(" ", filepath=filepath)
             prints("           ", end="", filepath=filepath)
-            for i in range(imin - 1, imax):
-                prints("  {I:4}          ".format(I=i), end="", filepath=filepath)
+            for i in range(imin-1, imax):
+                prints(f"  {i:4d}          ", end="", filepath=filepath)
             prints("", filepath=filepath)
             for j in range(n):
-                prints(" {J:4}  ".format(J=j), end="", filepath=filepath)
-                for i in range(imin - 1, imax):
-                    prints(
-                        "  {v: 12.7f}  ".format(v=A[j][i]), end="", filepath=filepath
-                    )
+                prints(f" {j:4d}  ", end="", filepath=filepath)
+                for i in range(imin-1, imax):
+                    prints(f"  {A[j][i]:12.7f}  ", end="", filepath=filepath)
                 prints("", filepath=filepath)
     elif dimension == 1:
-        if n or m is None:
-            if type(A) is list:
+        if n is None or m is None:
+            if isinstance(A, list):
                 n = len(A)
                 m = 1
-            elif type(A) is np.ndarray:
+            elif isinstance(A, np.ndarray):
                 n = A.size
                 m = 1
         imax = 0
@@ -511,15 +410,11 @@ def printmat(A, mmax=10, filepath=cf.log, name=None, n=None, m=None):
                 imax = m
             prints(" ", filepath=filepath)
             prints("           ", end="", filepath=filepath)
-            for i in range(imin - 1, imax):
-                prints("  {I:4}          ".format(I=i), end="", filepath=filepath)
+            for i in range(imin-1, imax):
+                prints(f"  {i:4d}          ", end="", filepath=filepath)
             prints("", filepath=filepath)
             for j in range(n):
-                prints(" {J:4}  ".format(J=j), end="", filepath=filepath)
-                for i in range(imin - 1, imax):
-                    prints(
-                        "  {v: 12.7f}  ".format(v=A[j + i * n]),
-                        end="",
-                        filepath=filepath,
-                    )
+                prints(f" {j:4d}  ", end="", filepath=filepath)
+                for i in range(imin-1, imax):
+                    prints(f"  {A[j + i*n]:12.7f}  ", end="", filepath=filepath)
                 prints("", filepath=filepath)

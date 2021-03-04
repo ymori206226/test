@@ -112,8 +112,11 @@ def generate_molecular_hamiltonian_mod(guess, geometry, basis, multiplicity,
     """
 
     # Run electronic structure calculations
-    molecule = run_pyscf_mod(guess, n_active_orbitals, n_active_electrons,
-                             MolecularData(geometry, basis, multiplicity, charge))
+    molecule, pyscf_mol \
+            = run_pyscf_mod(guess, n_active_orbitals, n_active_electrons,
+                            MolecularData(geometry, basis, multiplicity, charge,
+                                          data_directory=cf.input_dir))
+
     # Freeze core orbitals and truncate to active space
     if n_active_electrons is None:
         n_core_orbitals = 0
@@ -174,7 +177,6 @@ def run_pyscf_mod(guess, n_active_orbitals, n_active_electrons, molecule,
     molecule.canonical_orbitals = pyscf_scf.mo_coeff.astype(float)
     molecule.orbital_energies = pyscf_scf.mo_energy.astype(float)
 
-
     # Get integrals.
     one_body_integrals, two_body_integrals = compute_integrals_mod(
         pyscf_molecule, pyscf_scf
@@ -200,10 +202,11 @@ def run_pyscf_mod(guess, n_active_orbitals, n_active_electrons, molecule,
     molecule.fci_energy = fci[0]
     #cf.fci_coeff = fci[2]
     #fci2qubit(n_active_orbitals,n_active_electrons,pyscf_molecule.spin,fci[2])
+
     # Return updated molecule instance.
-    pyscf_molecular_data = PyscfMolecularData.__new__(PyscfMolecularData)
-    pyscf_molecular_data.__dict__.update(molecule.__dict__)
-    pyscf_molecular_data.save()
+#    pyscf_molecular_data = PyscfMolecularData.__new__(PyscfMolecularData)
+#    pyscf_molecular_data.__dict__.update(molecule.__dict__)
+#    pyscf_molecular_data.save()
 
     ##   Keep molecular data in config.py
     #cf.hf_energy = pyscf_molecular_data.hf_energy
@@ -218,7 +221,8 @@ def run_pyscf_mod(guess, n_active_orbitals, n_active_electrons, molecule,
 
     #cf.rint = pyscf_molecule.intor("int1e_r")
 
-    return pyscf_molecular_data, pyscf_molecule
+#    return pyscf_molecular_data, pyscf_molecule
+    return molecule, pyscf_molecule
 
 
 @dataclass

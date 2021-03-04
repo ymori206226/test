@@ -192,14 +192,14 @@ def set_circuit_ghfZ(n_qubits, no, nv, theta_list):
     return circuit
 
 
-def set_circuit_Ug(circuit, n_qubits_system, beta):
+def set_circuit_Ug(circuit, n_qubit_system, beta):
     """Function:
     Construct circuit for Ug in spin-projection (only exp[-i beta Sy])
 
     Author(s): Takashi Tsuchimochi
     """
     ### Ug
-    for i in range(n_qubits_system):
+    for i in range(n_qubit_system):
         if i % 2 == 0:
             #
             circuit.add_H_gate(i)
@@ -219,19 +219,19 @@ def set_circuit_Ug(circuit, n_qubits_system, beta):
             circuit.add_RX_gate(i, -np.pi / 2)
 
 
-def set_circuit_ExpSy(circuit, n_qubits_system, angle):
+def set_circuit_ExpSy(circuit, n_qubit_system, angle):
     """Function
     Construct circuit Exp[ -i angle Sy ]
 
     Author(s): Takashi Tsuchimochi
     """
 
-    for i in range(n_qubits_system):
+    for i in range(n_qubit_system):
         if i % 2 == 0:
             single_ope_Pauli(i + 1, i, circuit, angle / 2, approx=False)
 
 
-def set_circuit_ExpSz(circuit, n_qubits_system, angle):
+def set_circuit_ExpSz(circuit, n_qubit_system, angle):
     """Function
     Construct circuit Exp[ -i angle Sz ]
     (20210205) Bug fixed
@@ -240,13 +240,13 @@ def set_circuit_ExpSz(circuit, n_qubits_system, angle):
     Author(s): Takashi Tsuchimochi
     """
 
-    for i in range(n_qubits_system):
+    for i in range(n_qubit_system):
         if i % 2 == 0:
             circuit.add_RZ_gate(i, angle / 2)
         else:
             circuit.add_RZ_gate(i, -angle / 2)
 
-def set_circuit_ExpNa(circuit, n_qubits_system, angle):
+def set_circuit_ExpNa(circuit, n_qubit_system, angle):
     """Function
     Construct circuit Exp[ -i angle Na ] Exp[ i angle M/2]
     Na = Number operator for alpha spin
@@ -257,11 +257,11 @@ def set_circuit_ExpNa(circuit, n_qubits_system, angle):
     Author(s): Takashi Tsuchimochi
     """
 
-    for i in range(n_qubits_system):
+    for i in range(n_qubit_system):
         if i % 2 == 0:
             circuit.add_RZ_gate(i, angle)
             
-def set_circuit_ExpNb(circuit, n_qubits_system, angle):
+def set_circuit_ExpNb(circuit, n_qubit_system, angle):
     """Function
     Construct circuit Exp[ -i angle Nb ] Exp[ i angle M/2]
       Nb = Number operator for beta spin
@@ -272,19 +272,19 @@ def set_circuit_ExpNb(circuit, n_qubits_system, angle):
     Author(s): Takashi Tsuchimochi
     """
 
-    for i in range(n_qubits_system):
+    for i in range(n_qubit_system):
         if i % 2 == 1:
             circuit.add_RZ_gate(i, angle)
 
-def set_circuit_Rg(circuit, n_qubits_system, alpha, beta, gamma):
+def set_circuit_Rg(circuit, n_qubit_system, alpha, beta, gamma):
     """Function
     Construct circuit Rg for complete spin-projection
 
     Author(s): Takashi Tsuchimochi
     """
-    set_circuit_ExpSz(circuit, n_qubits_system, gamma)
-    set_circuit_ExpSy(circuit, n_qubits_system, beta)
-    set_circuit_ExpSz(circuit, n_qubits_system, alpha)
+    set_circuit_ExpSz(circuit, n_qubit_system, gamma)
+    set_circuit_ExpSy(circuit, n_qubit_system, beta)
+    set_circuit_ExpSz(circuit, n_qubit_system, alpha)
 
 
 def controlled_Ug_gen(circuit, n_qubits, anc, alph, beta, gamm):
@@ -410,8 +410,8 @@ def cost_proj(
     rho = Quket.rho
     DS = Quket.DS
     anc = Quket.anc
-    n_qubits_system = Quket.n_qubits
-    n_qubits = n_qubits_system + 1
+    n_qubit_system = Quket.n_qubits
+    n_qubits = n_qubit_system + 1
     ndim1 = noa * nva + nob * nvb
     ndim2aa = int(noa * (noa - 1) * nva * (nva - 1) / 4)
     ndim2ab = int(noa * nob * nva * nvb)
@@ -490,7 +490,7 @@ def cost_proj(
 
     if print_level > 1:
         prints("State before projection")
-        print_state(state, n_qubits=n_qubits_system)
+        print_state(state, n_qubits=n_qubit_system)
         if ref == "puccsd" or ref == "opt_puccd":
             print_amplitudes(theta_list, noa, nob, nva, nvb, threshold)
     #    '''

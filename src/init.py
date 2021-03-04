@@ -17,17 +17,202 @@ from qulacs.state import inner_product
 from qulacs.observable import create_observable_from_openfermion_text
 from qulacs.quantum_operator import create_quantum_operator_from_openfermion_text
 from openfermion.ops import InteractionOperator, QubitOperator
-from openfermion.utils import number_operator, s_squared_operator, commutator
+from openfermion.utils import (number_operator, s_squared_operator, commutator,
+                               QubitDavidson)
 from openfermion.transforms import jordan_wigner
-from openfermion.hamiltonians import MolecularData
+from openfermion.hamiltonians import MolecularData, fermi_hubbard
 
 from . import mpilib as mpi
 from . import config as cf
-from .mod import run_pyscf_mod
+from .mod import run_pyscf_mod, prepare_pyscf_molecule_mod
 from .fileio import error, prints, openfermion_print_state, print_geom
 from .opelib import create_1body_operator
 from .phflib import weightspin, trapezoidal, simpson
 from .icmrucc import calc_num_ic_theta
+
+
+@dataclass
+class Operators():
+    """
+    Operator sections.
+
+    Attributes:
+        Hamiltonian (InteractionOperator): Hamiltonian operator.
+        S2 (InteractionOperator): S2 operator.
+        Number (InteractionOperator): Number operator.
+        jw_Hamiltonian (QubitOperator): JW transformed hamiltonian.
+        jw_S2 (QubitOperator): JW transformed S2.
+        jw_Number (QubitOperator): JW transformed number.
+        Dipole (list): Dipole moment.
+    """
+    Hamiltonian: InteractionOperator = None
+    S2: InteractionOperator = None
+    Number: InteractionOperator = None
+    Dipole: np.ndarray = None
+
+    jw_Hamiltonian: QubitOperator = field(init=False, default=None)
+    jw_S2: QubitOperator = field(init=False, default=None)
+    jw_Number: QubitOperator = field(init=False, default=None)
+
+    def __post_init__(self, *args, **kwds):
+        if self.Hamiltonian:
+            self.jw_Hamiltonian = jordan_wigner(self.Hamiltonian)
+        if self.S2:
+            self.jw_S2 = jordan_wigner(self.S2)
+        if self.Number:
+            self.jw_Number = jordan_wigner(self.Number)
+
+
+@dataclass
+class Qulacs():
+    """
+    Qulacs section.
+
+    Attributes:
+        Hamiltonian (Observable): Quantum hamiltonian.
+        S2 (Observable): Quansum S2.
+    """
+    jw_Hamiltonian: InitVar[QubitOperator] = None
+    jw_S2: InitVar[QubitOperator] = None
+    jw_Number: InitVar[QubitOperator] = None
+
+    Hamiltonian: Observable = None
+    S2: Observable = None
+    Number: Observable = None
+
+    def __post_init__(self, jw_Hamiltonian, jw_S2, *args, **kwds):
+        if jw_Hamiltonian is not None:
+            self.Hamiltonian = create_observable_from_openfermion_text(
+                    str(jw_Hamiltonian))
+        if jw_S2 is not None:
+            self.S2 = create_observable_from_openfermion_text(str(jw_S2))
+        if jw_Number is not None:
+            self.Number = create_observable_from_openfermion_text(
+                    str(jw_Number))
+
+
+@dataclass
+class Projection():
+    """
+    Symmetry-Projection section.
+
+    Attributes:
+        SpinProj (bool): Spin projection.
+        NumberProj (bool): Number projection.
+        spin (int): Target spin for spin projection.
+        Ms (int): Same as multiplicity; multiplicity - 1.
+        euler_ngrids (list): Grid points for spin projection.
+        number_ngrids (int): Grid points for number projection.
+    """
+    ansatz: InitVar[str] = None
+
+    Ms: int = None
+    spin: int = None
+    SpinProj: bool = False
+    NumberProj: bool = False
+    number_ngrids: int = 0
+    euler_ngrids: List[int] = field(default_factory=lambda :[0, -1, 0])
+
+    def __post_init__(self, ansatz, *args, **kwds):
+        if ansatz is not None:
+            if ansatz in ["phf", "suhf", "sghf", "opt_puccsd", "opt_pucccd"]:
+                self.SpinProj = True
+
+    def set_projection(self, trap=True):
+        if self.SpinProj:
+            prints(f"Projecting to spin space : "
+                   f"s = {(self.spin-1)/2:.1f}    "
+                   f"Ms = {self.Ms} ")
+            prints(f"             Grid points :  "
+                   f"(alpha,beta,gamma) = ({self.euler_ngrids[0]}, "
+                                         f"{self.euler_ngrids[1]}, "
+                                         f"{self.euler_ngrids[2]})")
+            self.sp_angle = []
+            self.sp_weight = []
+            # Alpha
+            if self.euler_ngrids[0] > 1:
+                if trap:
+                    alpha, wg_alpha = trapezoidal(0, 2*np.pi,
+                                                  self.euler_ngrids[0])
+                else:
+                    alpha, wg_alpha = simpson(0, 2*np.pi, self.euler_ngrids[0])
+            else:
+                alpha = [0]
+                wg_alpha = [1]
+            self.sp_angle.append(alpha)
+            self.sp_weight.append(wg_alpha)
+
+            # Beta
+            if self.euler_ngrids[1] > 1:
+                beta, wg_beta \
+                        = np.polynomial.legendre.leggauss(self.euler_ngrids[1])
+                beta = np.arccos(beta)
+                beta = beta.tolist()
+                self.dmm = weightspin(self.euler_ngrids[1], self.spin,
+                                      self.Ms, self.Ms, beta)
+            else:
+                beta = [0]
+                wg_beta = [1]
+                self.dmm = [1]
+            self.sp_angle.append(beta)
+            self.sp_weight.append(wg_beta)
+
+            # Gamma
+            if self.euler_ngrids[2] > 1:
+                if trap:
+                    gamma, wg_gamma = trapezoidal(0, 2*np.pi,
+                                                  self.euler_ngrids[2])
+                else:
+                    gamma, wg_gamma = simpson(0, 2*np.pi, self.euler_ngrids[2])
+            else:
+                gamma = [0]
+                wg_gamma = [1]
+            self.sp_angle.append(gamma)
+            self.sp_weight.append(wg_gamma)
+
+            self.sp_angle = np.array(self.sp_angle)
+            self.sp_weight = np.array(self.sp_weight)
+
+        if self.NumberProj:
+            prints(f"Projecting to number space :  "
+                   f"N = {self.number_ngrids}")
+
+            self.np_angle = []
+            self.np_weight = []
+
+            # phi
+            if self.number_ngrids > 1:
+                if trap:
+                    phi, wg_phi = trapezoidal(0, 2*np.pi, self.number_ngrids)
+                else:
+                    gamma, wg_gamma = simpson(0, 2*np.pi, self.number_ngrids)
+            else:
+                phi = [0]
+                wg_phi = [1]
+            self.np_angle = phi
+            self.np_weight = wg_phi
+
+
+@dataclass
+class Multi():
+    """
+    Multi/Excited-State calculation section.
+
+    Attributes:
+        act2act_ops (bool): ??
+        states (list): Initial determinants (bits)
+                       for multi-state calculations; JM-UCC or ic-MRUCC.
+        weights (list): Weight for state-average calculations;
+                        usually 1 for all.
+    """
+    act2act_ops: bool
+    states: List = field(default_factory=list)
+    weights: List = field(default_factory=list)
+
+    nstates: int = field(init=False)
+
+    def __post_init__(self, *args, **kwds):
+        self.nstates = len(self.weights) if self.weights else 0
 
 
 @dataclass
@@ -41,9 +226,6 @@ class QuketData(MolecularData):
         model (str): Computation model; 'chemical', 'hubbard' or 'heisenberg'.
         ansatz (str): VQE or QITE ansatz; 'uccsd' and so on.
         det (int): A decimal value of the determinant of the quantum state.
-        hubbard_u (??): ??
-        hubbard_nx (int): Number of hubbard sites for x-axis.
-        hubbard_ny (int): Number of hubbard sites for y-axis.
         run_fci (bool): Whether run FCI or not.
         rho (int): Trotter number for related ansatz.
         DS (int): If 0/1, the operation order is;
@@ -59,22 +241,11 @@ class QuketData(MolecularData):
 
     Author(s): Takashi Tsuchimochi, Yuma Shimomoto
     """
-    #----------For MolecularData----------
-    geometry: List = None
-    basis: str = None
-    multiplicity: int = None
-    charge: int = 0
-    description: str = ""
-    filename: str = ""
-    data_directory: str = None
     #----------For QuketData----------
     method: str = "vqe"
     model: str = None
     ansatz: str = None
     det: int = None
-    hubbard_u: Any = None   # ??
-    hubbard_nx: int = -1
-    hubbard_ny: int = None
     run_fci: bool = True
     rho: int = 1
     DS: int = 0
@@ -86,111 +257,101 @@ class QuketData(MolecularData):
     truncate: float = 0.
     excited_states: List = field(default_factory=list)
 
-    operators: self.Operators = None
-    qulacs: self.Qulacs = None
-    projection: self.Projection = None
-    multi: self.Multi = None
-
-    @dataclass
-    class Operators():
-        """
-        Operator sections.
-
-        Attributes:
-            Hamiltonian (InteractionOperator): Hamiltonian operator.
-            S2 (InteractionOperator): S2 operator.
-            Number (InteractionOperator): Number operator.
-            jw_Hamiltonian (QubitOperator): JW transformed hamiltonian.
-            jw_S2 (QubitOperator): JW transformed S2.
-            jw_Number (QubitOperator): JW transformed number.
-            Dipole (list): Dipole moment.
-        """
-        Hamiltonian: InteractionOperator = None
-        S2: InteractionOperator = None
-        Number: InteractionOperator = None
-        jw_Hamiltonian: QubitOperator = None
-        jw_S2: QubitOperator = None
-        jw_Number: QubitOperator = None
-        Dipole: List[float] = field(default_factory=list)
-
-    @dataclass
-    class Qulacs():
-        """
-        Qulacs section.
-
-        Attributes:
-            Hamiltonian (Observable): Quantum hamiltonian.
-            S2 (Observable): Quansum S2.
-        """
-        Hamiltonian: Observable = None
-        S2: Observable = None
-
-    @dataclass
-    class Projection():
-        """
-        Projection section.
-
-        Attributes:
-            SpinProj (bool): Spin projection.
-            NumberProj (bool): Number projection.
-            spin (int): Target spin for spin projection.
-            Ms (int): Same as multiplicity; multiplicity - 1.
-            euler_ngrids (list): Grid points for spin projection.
-            number_ngrids (int): Grid points for number projection.
-        """
-        SpinProj: bool = False
-        NumberProj: bool = False
-        spin: int = None
-        Ms: int = None
-        euler_ngrids: List[int] = [0, -1, 0]
-        number_ngrids: int = 0
-
-    @dataclass
-    class Multi():
-        """
-        Multi section.
-
-        Attributes:
-            states (list): Initial determinants (bits)
-                           for multi-state calculations; JM-UCC or ic-MRUCC.
-            weights (list): Weight for state-average calculations;
-                            usually 1 for all.
-        """
-        states: List = field(default=list)
-        weights: List = field(default=list)
+    operators: self.Operators = field(init=False, default=None)
+    qulacs: self.Qulacs = field(init=False, default=None)
+    projection: self.Projection = field(init=False, default=None)
+    multi: self.Multi = field(init=False, default=None)
 
     def __post_init__(self, *args, **kwds):
-        # Set each variables of MolecularData.
-        super().__init__(geometry=self.geometry, basis=self.basis,
-                         multiplicity=self.multiplicity, charge=self.charge,
-                         description=self.description, filename=self.filename,
-                         data_directory=self.data_directory)
-        self.operators = self.Operators()
-        self.qulacs = self.Qulacs()
-        self.projection = self.Projection()
-        self.multi = self.Multi()
+        # Set some initialization.
+        pass
 
-    def initialize(self, pyscf_guess="minao"):
+    def initialize(self, *, pyscf_guess="minao", **kwds):
         """Function
         Run PySCF and initialize parameters.
+
+        Args:
+            pyscf_guess (str): PySCF guess.
         """
+        ##################
+        # Set Subclasses #
+        ##################
+        # Projection
+        init_dict = get_func_kwds(Projection.__init__, kwds)
+        self.projection = Projection(**init_dict)
+        # Multi
+        init_dict = get_func_kwds(Multi.__init__, kwds)
+        self.multi = Multi(**init_dict)
+
+        #############
+        # Set model #
+        #############
         if self.basis == "hubbard":
             self.model = "hubbard"
         elif "heisenberg" in self.basis:
             self.model = "heisenberg"
         else:
             self.model = "chemical"
-            if self.basis is None or self.geometry is None:
-                raise ValueError("Basis and geometry have to be specified"
-                                 "for chemical Hamiltonian")
-        if self.n_electrons is None and self.model in ("hubbard", "chemical"):
-            raise ValueError("No electron number")
 
+        #######################
+        # Create parent class #
+        #######################
         if self.model == "hubbard":
-            if self.hubbard_u is None or self.hubbard_nx is None:
-                raise ValueError("For hubbard, hubbard_u and hubbard_nx"
-                                 "have to be given")
-            self.n_orbitals = self.hubbard_nx * self.hubbard_ny
+            from .hubbard import Hubbard
+
+            init_dict = get_func_kwds(Hubbard.__init__, kwds)
+            obj = Hubbard(**init_dict)
+        elif self.model == "heisenberg":
+            from .heisenberg import Heisenberg
+
+            init_dict = get_func_kwds(Heisenberg.__init__, kwds)
+            obj = Heisenberg(**init_dict)
+            if self.det is None:
+                self.det = 1
+            self.current_det = self.det
+        elif self.model == "chemical":
+            init_dict = get_func_kwds(MolecularData.__init__, kwds)
+            obj = MolecularData(**init_dict)
+# 全部の軌道と電子を使う？
+            obj, pyscf_mol = run_pyscf_mod(pyscf_guess, obj.n_orbitals,
+                                           self.n_electrons, obj,
+                                           run_fci=self.run_fci)
+
+            if "n_electrons" in kwds:
+                obj.n_active_electrons = kwds["n_electrons"]
+            else:
+                obj.n_active_electrons = obj.n_electrons
+            if "n_orbitals" not in kwds:
+                obj.n_active_orbitals = kwds["n_orbitals"]
+            else:
+                obj.n_active_orbitals = obj.n_orbitals
+
+        #######################################
+        # Inherit parent class                #
+        #   MAGIC: DYNAMIC CLASS INHERITANCE. #
+        #######################################
+        # Add attributes to myself
+        for k, v in obj.__dict__.items():
+            if k not in self.__dict__:
+                self.__dict__[k] = v
+        # Keep them under the control of dataclass and rename my class name.
+        my_fields = []
+        for k, v in self.__dict__.items():
+            if isinstance(v, (dict, list, set)):
+                my_fields.append((k, type(v), field(default_factory=v)))
+            else:
+                my_fields.append((k, type(v), v))
+        self.__class__ = make_dataclass(f"{obj.__class__.__name__}QuketData",
+                                        my_fields, bases=(QuketData,))
+        # Add funcgtions and properties to myself.
+        for k in dir(obj):
+            if k not in dir(self):
+                setattr(self, k, getattr(mol, k))
+
+        #################
+        # Get Operators #
+        #################
+        if self.model == "hubbard":
             # self.jw_Hamiltonian, self.jw_S2 = get_hubbard(
             #    hubbard_u,
             #    hubbard_nx,
@@ -199,58 +360,41 @@ class QuketData(MolecularData):
             #    run_fci,
             # )
             self.get_operators()
-            self.operators.jw_Hamiltonian \
-                    = jordan_wigner(self.operators.Hamiltonian)
-            self.operators.jw_S2 = jordan_wigner(self.operators.S2)
-            self.operators.jw_Number = jordan_wigner(self.operators.Number)
-            self.operators.Dipole = None
-
-            # Initializing parameters
-            prints(f"Hubbard model: nx = {self.hubbard_nx}"
-                   f"ny = {self.hubbard_ny}"
-                   f"U = {self.hubbard_u:2.2f}")
         elif self.model == "heisenberg":
-            nspin = self.n_orbitals
-            sx = [QubitOperator(f"X{i}") for i in range(nspin)]
-            sy = [QubitOperator(f"Y{i}") for i in range(nspin)]
-            sz = [QubitOperator(f"Z{i}") for i in range(nspin)]
+            sx = sy = sz = []
+            for i in range(self.nspin):
+                sx.append(QubitOperator(f"X{i}"))
+                sy.append(QubitOperator(f"Y{i}"))
+                sz.append(QubitOperator(f"Z{i}"))
+
             jw_Hamiltonian = 0 * QubitOperator("")
             if "lr" in self.basis:
-                for i in range(nspin):
-                    j = (i+1)%nspin
+                for i in range(self.nspin):
+                    j = (i+1)%self.nspin
                     jw_Hamiltonian += 0.5*(sx[i]*sx[j]
                                            + sy[i]*sy[j]
                                            + sz[i]*sz[j])
                 for i in range(2):
                     j = i+2
-                    jw_Hamiltonian += 0.333333333333*(sx[i]*sx[j]
-                                                      + sy[i]*sy[j]
-                                                      + sz[i]*sz[j])
+                    jw_Hamiltonian += 1./3.*(sx[i]*sx[j]
+                                             + sy[i]*sy[j]
+                                             + sz[i]*sz[j])
             else:
-                for i in range(nspin):
-                    j = (i+1)%nspin
+                for i in range(self.nspin):
+                    j = (i+1)%self.nspin
                     jw_Hamiltonian += sx[i]*sx[j] + sy[i]*sy[j] + sz[i]*sz[j]
+            self.operators = Operators()
             self.operators.jw_Hamiltonian = jw_Hamiltonian
-
-            self.n_qubits = self.n_orbitals
-            if self.det is None:
-                self.det = 1
-            self.current_det = self.det
-
             return
         elif self.model == "chemical":
             if cf._geom_update:
                 # New geometry found. Run PySCF and get operators.
-                self.get_operators(guess=pyscf_guess)
-                # Set Jordan-Wigner Hamiltonian and S2 operators using PySCF and Open-Fermion
-                self.operators.jw_Hamiltonian \
-                        = jordan_wigner(self.operators.Hamiltonian)
-                self.operators.jw_S2 = jordan_wigner(self.operators.S2)
-                self.operators.jw_Number = jordan_wigner(self.operators.Number)
+                self.get_operators(guess=pyscf_guess, pyscf_mol=pyscf_mol)
                 cf._geom_update = False
 
         # Initializing parameters
         self.n_qubits = self.n_orbitals * 2
+#hubbardにmultiplicityないのでは？
         self.projection.Ms = self.multiplicity - 1
         self.n_qubits_anc = self.n_qubits + 1
         self.anc = self.n_qubits
@@ -268,13 +412,14 @@ class QuketData(MolecularData):
             prints(f"Incorrect specification for "
                    f"n_electrons = {self.n_electrons} "
                    f"and multiplicity = {self.multiplicity}")
-        # Number of occupied orbitals of alpha
+
+        # NOA; Number of Occupied orbitals of Alpha.
         self.noa = (self.n_electrons+self.multiplicity-1)//2
-        # Number of occupied orbitals of beta
+        # NOB; Number of Occupied orbitals of Beta.
         self.nob = self.n_electrons - self.noa
-        # Number of virtual orbitals of alpha
+        # NVA; Number of Virtual orbitals of Alpha.
         self.nva = self.n_orbitals - self.noa
-        # Number of virtual orbitals of beta
+        # NVB; Number of Virtual orbitals of Beta.
         self.nvb = self.n_orbitals - self.nob
 
         # Check initial determinant
@@ -282,51 +427,38 @@ class QuketData(MolecularData):
             # Initial determinant is RHF or ROHF
             self.det = set_initial_det(self.noa, self.nob)
         self.current_det = self.det
-        if self.ansatz in ("phf", "suhf", "sghf", "opt_puccsd", "opt_puccd"):
-            self.projection.SpinProj = True
 
         # Excited states (orthogonally-constraint)
-        self.nexcited = len(self.excited_states)
+        self.nexcited = len(self.excited_states) if self.excited_states else 0
         self.lower_states = []
 
-        # Multi states
-        self.multi.nstates = len(self.multi.weights)
-
-    def get_operators(self, guess="minao"):
+    def get_operators(self, guess="minao", pyscf_mol=None):
         if self.model == "chemical":
             if mpi.main_rank:
                 # Run electronic structure calculations
-                molecule, pyscf_molecule \
-                        = run_pyscf_mod(guess, self.n_orbitals,
-                                        self.n_electrons, self,
-                                        run_fci=self.run_fci)
-                # Freeze core orbitals and truncate to active space
-                if self.n_electrons is None:
-                    n_core_orbitals = 0
-                    occupied_indices = None
-                else:
-                    n_core_orbitals = (molecule.n_electrons-self.n_electrons)//2
-                    occupied_indices = list(range(n_core_orbitals))
+                if pyscf_mol is None:
+                    self, pyscf_mol = run_pyscf_mod(guess, self.n_orbitals,
+                                                    self.n_electrons, self,
+                                                    run_fci=self.run_fci)
 
-                if self.n_orbitals is None:
-                    active_indices = None
-                else:
-                    active_indices = list(
-                            range(n_core_orbitals,
-                                  n_core_orbitals+self.n_orbitals))
+                # 'n_electrons' and 'n_orbitals' must not be 'None'.
+                n_core_orbitals = (molecule.n_electrons-self.n_electrons)//2
+                occupied_indices = list(range(n_core_orbitals))
+                active_indices = list(range(n_core_orbitals,
+                                            n_core_orbitals+self.n_orbitals))
 
-                hf_energy = molecule.hf_energy
-                fci_energy = molecule.fci_energy
+                hf_energy = self.hf_energy
+                fci_energy = self.fci_energy
 
-                mo_coeff = molecule.canonical_orbitals.astype(float)
-                natom = pyscf_molecule.natm
-                atom_charges = pyscf_molecule.atom_charges().reshape(-1, 1)
-                atom_coords = pyscf_molecule.atom_coords()
-                rint = pyscf_molecule.intor("int1e_r")
+                mo_coeff = self.canonical_orbitals.astype(float)
+                natom = pyscf_mol.natm
+                atom_charges = pyscf_mol.atom_charges().reshape(-1, 1)
+                atom_coords = pyscf_mol.atom_coords()
+                rint = pyscf_mol.intor("int1e_r")
 
-                Hamiltonian = molecule.get_molecular_hamiltonian(
-                    occupied_indices=occupied_indices,
-                    active_indices=active_indices)
+                Hamiltonian = self.get_molecular_hamiltonian(
+                        occupied_indices=occupied_indices,
+                        active_indices=active_indices)
 
                 # Dipole operators from dipole integrals (AO)
                 rx = create_1body_operator(mo_coeff, rint[0], ao=True,
@@ -357,8 +489,6 @@ class QuketData(MolecularData):
             atom_coords = mpi.comm.bcast(atom_coords, root=0)
 
             # Put values in self
-            self.operators.Hamiltonian = Hamiltonian
-            self.operators.Dipole = Dipole
             self.hf_energy = hf_energy
             self.fci_energy = fci_energy
             self.mo_coeff = mo_coeff
@@ -372,27 +502,19 @@ class QuketData(MolecularData):
             prints("E[HF]  = ", hf_energy)
             prints("")
         elif self.model == "hubbard":
-            from openfermion.utils import QubitDavidson
-            from openfermion.transforms import jordan_wigner
-            from openfermion.hamiltonians import fermi_hubbard
-
-            self.operators.Hamiltonian = fermi_hubbard(self.hubbard_nx,
-                                                       self.hubbard_ny,
-                                                       1, self.hubbard_u)
-            self.operators.jw_Hamiltonian \
-                    = jordan_wigner(self.operators.Hamiltonian)
+            Hamiltonian = fermi_hubbard(self.hubbard_nx, self.hubbard_ny,
+                                        1, self.hubbard_u)
+            Dipole = None
 
             self.hf_energy = None
             self.fci_energy = None
-
             if self.run_fci:
-                n_qubits = self.hubbard_nx * self.hubbard_ny * 2
                 self.operators.jw_Hamiltonian.compress()
                 qubit_eigen = QubitDavidson(self.operators.jw_Hamiltonian,
-                                            n_qubits)
+                                            self.n_qubits)
                 # Initial guess :  | 0000...00111111>
                 #                             ~~~~~~ = n_electrons
-                guess = np.zeros((2**n_qubits, 1))
+                guess = np.zeros((2**self.n_qubits, 1))
                 guess[2**self.n_electrons - 1][0] = 1.0
                 n_state = 1
                 results = qubit_eigen.get_lowest_n(n_state, guess)
@@ -402,34 +524,19 @@ class QuketData(MolecularData):
                 #prints("Wave function          : ")
                 #openfermion_print_state(results[2], n_qubits, 0)
 
-            self.mo_coeff = None
-            self.natom = self.hubbard_nx * self.hubbard_ny
-            self.atom_charges = None
-            self.atom_coords = None
+        S2 = s_squared_operator(self.n_orbitals)
+        Number = number_operator(self.n_orbitals)
 
-        self.operators.S2 = s_squared_operator(self.n_orbitals)
-        self.operators.Number = number_operator(self.n_orbitals)
+        # Create 'self.Operators'
+        self.operators = Operators(Hamiltonian=Hamiltonian, S2=S2,
+                                   Number=Number, Dipole=Dipole)
 
     def jw_to_qulacs(self):
-        if self.operators.jw_Hamiltonian is not None:
-            self.qulacs.Hamiltonian = create_observable_from_openfermion_text(
-                    str(self.operators.jw_Hamiltonian))
-        else:
-            self.qulacs.Hamiltonian = None
+        self.qulacs = Qulacs(jw_Hamiltonian=self.operators.jw_Hamiltonian,
+                             jw_S2=self.operators.jw_S2,
+                             jw_Number=self.operators.jw_Number)
 
-        if self.operators.jw_S2 is not None:
-            self.qulacs.S2 = create_observable_from_openfermion_text(
-                    str(self.operators.jw_S2))
-        else:
-            self.qulacs.S2 = None
-
-        if self.operators.jw_Number is not None:
-            self.qulacs.Number = create_observable_from_openfermion_text(
-                    str(self.operators.jw_Number))
-        else:
-            self.qulacs.Number = None
-
-    def set_projection(self, euler_ngrids=None, number_ngrids=None):
+    def set_projection(self, euler_ngrids=None, number_ngrids=None, trap=True):
         """Function
         Set the angles and weights for integration of
         spin-projection and number-projection.
@@ -453,96 +560,12 @@ class QuketData(MolecularData):
             # No spin or number symmetry in the model
             return
 
-        trap = True
         if euler_ngrids is not None:
             self.projection.euler_ngrids = euler_ngrids
         if number_ngrids is not None:
             self.projection.number_ngrids = number_ngrids
-        if self.projection.SpinProj:
-            prints(f"Projecting to spin space : "
-                   f"s = {(self.projection.spin-1)/2:.1f}    "
-                   f"Ms = {self.projection.Ms} ")
-            prints(f"             Grid points :  "
-                   f"(alpha,beta,gamma) = ({self.projection.euler_ngrids[0]}, "
-                                         f"{self.projection.euler_ngrids[1]}, "
-                                         f"{self.projection.euler_ngrids[2]})")
-            self.projection.sp_angle = []
-            self.projection.sp_weight = []
 
-            # Alpha
-            if self.projection.euler_ngrids[0] > 1:
-                if trap:
-                    alpha, wg_alpha \
-                            = trapezoidal(0, 2*np.pi,
-                                          self.projection.euler_ngrids[0])
-                else:
-                    alpha, wg_alpha \
-                            = simpson(0, 2*np.pi,
-                                      self.projection.euler_ngrids[0])
-            else:
-                alpha = [0]
-                wg_alpha = [1]
-            self.projection.sp_angle.append(alpha)
-            self.projection.sp_weight.append(wg_alpha)
-
-            # Beta
-            if self.projection.euler_ngrids[1] > 1:
-                beta, wg_beta = np.polynomial.legendre.leggauss(
-                        self.projection.euler_ngrids[1])
-                beta = np.arccos(beta)
-                beta = beta.tolist()
-                self.projection.dmm = weightspin(
-                        self.projection.euler_ngrids[1],
-                        self.projection.spin,
-                        self.projection.Ms,
-                        self.projection.Ms,
-                        beta)
-            else:
-                beta = [0]
-                wg_beta = [1]
-                self.projection.dmm = [1]
-            self.projection.sp_angle.append(beta)
-            self.projection.sp_weight.append(wg_beta)
-
-            # Gamma
-            if self.projection.euler_ngrids[2] > 1:
-                if trap:
-                    gamma, wg_gamma \
-                            = trapezoidal(0, 2*np.pi,
-                                          self.projection.euler_ngrids[2])
-                else:
-                    gamma, wg_gamma \
-                            = simpson(0, 2*np.pi,
-                                      self.projection.euler_ngrids[2])
-            else:
-                gamma = [0]
-                wg_gamma = [1]
-            self.projection.sp_angle.append(gamma)
-            self.projection.sp_weight.append(wg_gamma)
-
-        if self.projection.NumberProj:
-            self.projection.number_ngrids = number_ngrids
-            prints(f"Projecting to number space :  "
-                   f"N = {self.projection.number_ngrids}")
-
-            self.projection.np_angle = []
-            self.projection.np_weight = []
-
-            # phi
-            if self.projection.number_ngrids > 1:
-                if trap:
-                    phi, wg_phi \
-                            = trapezoidal(0, 2*np.pi,
-                                          self.projection.number_ngrids)
-                else:
-                    gamma, wg_gamma \
-                            = simpson(0, 2*np.pi,
-                                      self.projection.number_ngrids)
-            else:
-                phi = [0]
-                wg_phi = [1]
-            self.projection.np_angle = phi
-            self.projection.np_weight = wg_phi
+        self.projection.set_projection(trap=trap)
 
     def get_ic_ndim(self):
         core_num = self.n_qubits
@@ -561,54 +584,101 @@ class QuketData(MolecularData):
         self.multi.core_num = core_num
         self.multi.act_num = act_num
         self.multi.vir_num = vir_num
-        ndim1, ndim2 = calc_num_ic_theta(n_qubits_system, vir_num,
+        ndim1, ndim2 = calc_num_ic_theta(n_qubit_system, vir_num,
                                          act_num, core_num)
 
     def print(self):
         if mpi.main_rank:
             formatstr = f"0{self.n_qubits}b"
-            print(f"method       : {self.method}")
-            print(f"model        : {self.model}")
-            print(f"ansatz       : {self.ansatz}")
-            print(f"n_electrons  : {self.n_electrons}")
-            print(f"n_orbitals   : {self.n_orbitals}")
-            print(f"n_qubits     : {self.n_qubits}")
-            print(f"spin         : {self.spin}")
-            print(f"multiplicity : {self.multiplicity}")
-            print(f"noa          : {self.noa}")
-            print(f"nob          : {self.nob}")
-            print(f"nva          : {self.nva}")
-            print(f"nvb          : {self.nvb}")
-            print(f"det          : |{format(self.det, formatstr)}>")
+            max_len = max(map(len, list(self.__dict__.keys())))
+            for k, v in self.__dict__.items():
+                if callable(v):
+                    continue
+                if k == "det":
+                    print(f"{k.ljust(max_len)} : {format(v, formatstr)}")
+                else:
+                    print(f"{k.ljust(max_len)} : {v}")
+
+
+#def set_initial_det(noa, nob):
+#    """Function
+#    Set the initial wave function to RHF/ROHF determinant.
+#
+#    Author(s): Takashi Tsuchimochi
+#    """
+#    det = 0
+#    for i in range(noa):
+#        det = det^(1 << 2*i)
+#    for i in range(nob):
+#        det = det^(1 << 2*i + 1)
+#    return det
 
 
 def set_initial_det(noa, nob):
-    """Function
+    """ Function
     Set the initial wave function to RHF/ROHF determinant.
 
     Author(s): Takashi Tsuchimochi
     """
-    det = 0
-    for i in range(noa):
-        det = det^(1 << 2*i)
-    for i in range(nob):
-        det = det^(1 << 2*i + 1)
-    return det
+    # Note: r'~~' means that it is a regular expression.
+    # a: Number of Alpha spin electrons
+    # b: Number of Beta spin electrons
+    if noa >= nob:
+        # Here calculate 'a_ab' as follow;
+        # |r'(01){a-b}(11){b}'> wrote by regular expression.
+        # e.g.)
+        #   a=1, b=1: |11> = |3>
+        #   a=3, b=1: |0101 11> = |23> = |3 + 5/2*2^3>
+        # r'(01){a-b}' = (1 + 4 + 16 + ... + 4^(a-b-1))/2
+        #              = (4^(a-b) - 1)/3
+        # That is, it is the sum of the first term '1'
+        # and the geometric progression of the common ratio '4'
+        # up to the 'a-b' term.
+        base = nob*2
+        a_ab = (4**(noa-nob) - 1)//3
+    elif noa < nob:
+        # Here calculate 'a_ab' as follow;
+        # |r'(10){b-a}(11){a}'> wrote by regular expression.
+        # e.g.)
+        #   a=1, b=1: |11> = |3>
+        #   a=1, b=3: |1010 11> = |43> = |3 + 5*2^3>
+        # r'(10){b-a}' = 2 + 8 + 32 + ... + 2*4^(b-a-1)
+        #              = 2 * (4^(b-a) - 1)/3
+        # That is, it is the sum of the first term '2'
+        # and the geometric progression of the common ratio '4'
+        # up to the 'a-b' term.
+        base = noa*2
+        a_ab = 2*(4**(nob-noa) - 1)//3
+    return 2**base-1 + (a_ab<<base)
+
+
+#def int2occ(state_int):
+#    """Function
+#    Given an (base-10) integer, find the index for 1 in base-2 (occ_list)
+#
+#    Author(s): Takashi Tsuchimochi
+#    """
+#    occ_list = []
+#    k = 0
+#    while k < state_int:
+#        kk = 1 << k
+#        if kk & state_int > 0:
+#            occ_list.append(k)
+#        k += 1
+#    return occ_list
 
 
 def int2occ(state_int):
-    """Function
+    """ Function
     Given an (base-10) integer, find the index for 1 in base-2 (occ_list)
 
     Author(s): Takashi Tsuchimochi
     """
-    occ_list = []
-    k = 0
-    while k < state_int:
-        kk = 1 << k
-        if kk & state_int > 0:
-            occ_list.append(k)
-        k += 1
+    # Note: bin(23) = '0b010111'
+    #       bin(23)[-1:1:-1] = '111010'
+    # Same as; bin(23)[2:][::-1]
+    # Occupied orbitals denotes '1'.
+    occ_list = [i for i, k in enumerate(bin(state_int)[-1:1:-1]) if k == "1"]
     return occ_list
 
 
@@ -621,3 +691,11 @@ def get_occvir_lists(n_qubits, det):
     occ_list = int2occ(det)
     vir_list = [i for i in range(n_qubits) if i not in occ_list]
     return occ_list, vir_list
+
+
+def get_func_kwds(func, kwds):
+    import inspect
+
+    sig = inspect.signature(func)
+    init_dict = {s: kwds[s] for s in sig if s in kwds}
+    return init_dict

@@ -143,11 +143,11 @@ def adaptive_sample_observable(state, obs, n_sample):
 def test_observable(state, obs, obsZ, n_sample):
     """Function
     Args:
-        state (qulacs.QuantumState): This includes entangled ancilla (n_qubits = n_qubits_system + 1)
-        obs (qulacs.Observable): This does not include ancilla Z (n_qubits_system)
+        state (qulacs.QuantumState): This includes entangled ancilla (n_qubits = n_qubit_system + 1)
+        obs (qulacs.Observable): This does not include ancilla Z (n_qubit_system)
         obsZ (qulacs.Observable): Single Pauli Z for ancilla (1)
-        poststate0 (qulacs.QuantumState): post-measurement state when ancilla = 0 (n_qubits_system)
-        poststate1 (qulacs.QuantumState): post-measurement state when ancilla = 1 (n_qubits_system)
+        poststate0 (qulacs.QuantumState): post-measurement state when ancilla = 0 (n_qubit_system)
+        poststate1 (qulacs.QuantumState): post-measurement state when ancilla = 1 (n_qubit_system)
         n_sample (int):  number of samples for each observable
     Return:
         :float: sampled expectation value of the observable
@@ -252,10 +252,10 @@ def test_transition_observable(state, obs, poststate0, poststate1, n_sample):
 
     """
     Args:
-        state (qulacs.QuantumState): This includes entangled ancilla (n_qubits = n_qubits_system + 1)
-        obs (qulacs.Observable): This does not include ancilla Z (n_qubits_system)
-        poststate0 (qulacs.QuantumState): post-measurement state when ancilla = 0 (n_qubits_system)
-        poststate1 (qulacs.QuantumState): post-measurement state when ancilla = 1 (n_qubits_system)
+        state (qulacs.QuantumState): This includes entangled ancilla (n_qubits = n_qubit_system + 1)
+        obs (qulacs.Observable): This does not include ancilla Z (n_qubit_system)
+        poststate0 (qulacs.QuantumState): post-measurement state when ancilla = 0 (n_qubit_system)
+        poststate1 (qulacs.QuantumState): post-measurement state when ancilla = 1 (n_qubit_system)
         n_sample (int):  number of samples for each observable
     Return:
         :float: sampled expectation value of the observable
@@ -397,7 +397,7 @@ def cost_phf_sample(
     import pprint
 
     t1 = time.time()
-    n_qubits_system = n_qubits - 1
+    n_qubit_system = n_qubits - 1
     state = QuantumState(n_qubits)
     circuit_rhf = set_circuit_rhfZ(n_qubits, n_electrons)
     circuit_rhf.update_quantum_state(state)
@@ -413,7 +413,7 @@ def cost_phf_sample(
 
     if print_level > -1:
         print("State before projection")
-        utils.print_state(state, n_qubits_system)
+        utils.print_state(state, n_qubit_system)
     """
     ### Set post-measurement states ####
     poststate0 = state.copy()
@@ -631,7 +631,7 @@ def cost_phf_sample(
 
 def cost_uhf_sample(
     print_level,
-    n_qubits_system,
+    n_qubit_system,
     n_electrons,
     noa,
     nob,
@@ -667,11 +667,11 @@ def cost_uhf_sample(
                 ")",
                 filepath="./log.txt",
             )
-            opt = "0" + str(n_qubits_system) + "b"
-            state = QuantumState(n_qubits_system)
-            circuit_rhf = set_circuit_rhf(n_qubits_system, n_electrons)
+            opt = "0" + str(n_qubit_system) + "b"
+            state = QuantumState(n_qubit_system)
+            circuit_rhf = set_circuit_rhf(n_qubit_system, n_electrons)
             circuit_rhf.update_quantum_state(state)
-            circuit = set_circuit_uhf(n_qubits_system, noa, nob, nva, nvb, kappa_list)
+            circuit = set_circuit_uhf(n_qubit_system, noa, nob, nva, nvb, kappa_list)
             circuit.update_quantum_state(state)
             Euhf = sample_observable(state, qulacs_hamiltonian, i_sample).real
             # S2 = sample_observable(state, qulacs_s2, i_sample).real

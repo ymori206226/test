@@ -1,4 +1,5 @@
 import os
+import inspect
 
 import datetime
 
@@ -8,7 +9,7 @@ from src.vqe import VQE_driver
 from src.qite.qite import QITE_driver
 from src.fileio import error, prints
 from src.read import read_input
-from src.init import QuketData
+from src.init import QuketData, get_func_kwds
 
 prints("///////////////////////////////////////////////////////////////////////////////////", opentype="w")
 prints("///                                                                             ///")
@@ -38,10 +39,26 @@ Finish = False
 job_no = 0
 cf.geom_update = False
 while Finish is False:
-    Quket = QuketData()
     job_no += 1
-    Finish = read_input(Quket, job_no)
-    # Finish = read_input(job_no)
+    Finish, kwds = read_input(job_no)
+
+    init_dict = get_func_kwds(QuketData.__init__, kwds)
+    Quket = QuketData(**init_dict)
+
+    if cf.pyscf_guess == "read":
+        cf.pyscf_guess = "chkfile"
+
+    #############################
+    #                           #
+    #    Construct QuketData    #
+    #                           #
+    #############################
+    Quket.initialize(pyscf_guess=cf.pyscf_guess, **kwds)
+    # Transform Jordan-Wigner Operators to Qulacs Format
+    Quket.jw_to_qulacs()
+    # Set projection parameters
+    Quket.set_projection()
+
     if Quket.n_electrons == 0:
         error("# electrons = 0 !")
     if Quket.basis != "hubbard":
@@ -65,9 +82,6 @@ while Finish is False:
                        "gtol": Quket.gtol,
                        "eps": cf.eps}
 
-    if cf.pyscf_guess == "read":
-        cf.pyscf_guess = "chkfile"
-
     prints("+-------------+")
     prints("|  Job # %3d  |" % job_no)
     prints("+-------------+")
@@ -80,17 +94,6 @@ while Finish is False:
         model = "heisenberg"
     else:
         model = "chemical"
-
-    #############################
-    #                           #
-    #    Construct QuketData    #
-    #                           #
-    #############################
-    Quket.initialize(pyscf_guess=cf.pyscf_guess)
-    # Transform Jordan-Wigner Operators to Qulacs Format
-    Quket.jw_to_qulacs()
-    # Set projection parameters
-    Quket.set_projection()
 
     if Quket.ansatz is None or Quket.maxiter == 0:
         continue

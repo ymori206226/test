@@ -60,13 +60,13 @@ def ucc_Gdoubles_listversion(circuit,b_list,a_list,j_list,i_list,theta_list,thet
                 theta_index = theta_index + 1
     return circuit, theta_index
 
-def icmr_ucc_singles(circuit,n_qubits_system,v_n,a_n,c_n,theta_list,ndim2=0):
+def icmr_ucc_singles(circuit,n_qubit_system,v_n,a_n,c_n,theta_list,ndim2=0):
     """ Function
     Author(s): Yuto Mori
     """
     theta_index = ndim2
-    vir_list_a  = [i for i in range(c_n+a_n,n_qubits_system) if i%2 == 0]
-    # vir_list_b  = [i for i in range(c_n+a_n,n_qubits_system) if i%2 == 1]
+    vir_list_a  = [i for i in range(c_n+a_n,n_qubit_system) if i%2 == 0]
+    # vir_list_b  = [i for i in range(c_n+a_n,n_qubit_system) if i%2 == 1]
     act_list_a  = [i for i in range(c_n,c_n+a_n) if i%2 == 0]
     # act_list_b  = [i for i in range(c_n,c_n+a_n) if i%2 == 1]
     core_list_a = [i for i in range(c_n) if i%2 == 0]
@@ -77,13 +77,13 @@ def icmr_ucc_singles(circuit,n_qubits_system,v_n,a_n,c_n,theta_list,ndim2=0):
     circuit, theta_index = ucc_Gsingles_listversion(circuit,act_list_a,act_list_a,theta_list,theta_index)
     circuit, theta_index = ucc_Gsingles_listversion(circuit,vir_list_a,act_list_a,theta_list,theta_index)
 
-def icmr_ucc_doubles(circuit,n_qubits_system,v_n,a_n,c_n,theta_list,ndim1=0):
+def icmr_ucc_doubles(circuit,n_qubit_system,v_n,a_n,c_n,theta_list,ndim1=0):
     """ Function
     Author(s): Yuto Mori
     """
     theta_index = ndim1
-    vir_list_a  = [i for i in range(c_n+a_n,n_qubits_system) if i%2 == 0]
-    vir_list_b  = [i for i in range(c_n+a_n,n_qubits_system) if i%2 == 1]
+    vir_list_a  = [i for i in range(c_n+a_n,n_qubit_system) if i%2 == 0]
+    vir_list_b  = [i for i in range(c_n+a_n,n_qubit_system) if i%2 == 1]
     act_list_a  = [i for i in range(c_n,c_n+a_n) if i%2 == 0]
     act_list_b  = [i for i in range(c_n,c_n+a_n) if i%2 == 1]
     core_list_a = [i for i in range(c_n) if i%2 == 0]
@@ -135,29 +135,29 @@ def icmr_ucc_doubles(circuit,n_qubits_system,v_n,a_n,c_n,theta_list,ndim1=0):
 
 
     
-def set_circuit_ic_mrucc(n_qubits_system,v_n,a_n,c_n,DS,theta_list,ndim1):
+def set_circuit_ic_mrucc(n_qubit_system,v_n,a_n,c_n,DS,theta_list,ndim1):
     """ Function
     Author(s): Yuto Mori
     """
-    circuit = QuantumCircuit(n_qubits_system)
+    circuit = QuantumCircuit(n_qubit_system)
 
     if DS:
-        icmr_ucc_singles(circuit,n_qubits_system,v_n,a_n,c_n,theta_list,0)
-        icmr_ucc_doubles(circuit,n_qubits_system,v_n,a_n,c_n,theta_list,ndim1)
+        icmr_ucc_singles(circuit,n_qubit_system,v_n,a_n,c_n,theta_list,0)
+        icmr_ucc_doubles(circuit,n_qubit_system,v_n,a_n,c_n,theta_list,ndim1)
     else:
-        icmr_ucc_doubles(circuit,n_qubits_system,v_n,a_n,c_n,theta_list,ndim1)
-        icmr_ucc_singles(circuit,n_qubits_system,v_n,a_n,c_n,theta_list,0)
+        icmr_ucc_doubles(circuit,n_qubit_system,v_n,a_n,c_n,theta_list,ndim1)
+        icmr_ucc_singles(circuit,n_qubit_system,v_n,a_n,c_n,theta_list,0)
     return circuit
 
-def create_icmr_uccsd_state(n_qubits_system,v_n,a_n,c_n,rho,DS,theta_list,det,ndim1):
+def create_icmr_uccsd_state(n_qubit_system,v_n,a_n,c_n,rho,DS,theta_list,det,ndim1):
     """ Function
     Author(s): Yuto Mori
     """
-    state = QuantumState(n_qubits_system)
+    state = QuantumState(n_qubit_system)
     state.set_computational_basis(det)
 
     theta_list_rho = theta_list/rho
-    circuit = set_circuit_ic_mrucc(n_qubits_system,v_n,a_n,c_n,DS,theta_list_rho,ndim1)
+    circuit = set_circuit_ic_mrucc(n_qubit_system,v_n,a_n,c_n,DS,theta_list_rho,ndim1)
     for i in range(rho):
         circuit.update_quantum_state(state)
 
@@ -168,7 +168,7 @@ def create_icmr_uccsd_state(n_qubits_system,v_n,a_n,c_n,rho,DS,theta_list,det,nd
     else:
         return state
 
-def calc_num_ic_theta(n_qubits_system,vir_num,act_num,core_num):
+def calc_num_ic_theta(n_qubit_system,vir_num,act_num,core_num):
     """ Function
     Calc number of ndim1,ndim2 for icmr_uccsd
     Author(s): Yuto Mori
@@ -190,14 +190,14 @@ def calc_num_ic_theta(n_qubits_system,vir_num,act_num,core_num):
     ndim2 = ndim2ab + ndim2aa*2
     return int(ndim1),int(ndim2)
 
-def cost_ic_mrucc(print_level,n_qubits_system,n_electrons,vir_num,act_num,core_num,rho,DS,qulacs_hamiltonian,qulacs_s2,theta_list,threshold):
+def cost_ic_mrucc(print_level,n_qubit_system,n_electrons,vir_num,act_num,core_num,rho,DS,qulacs_hamiltonian,qulacs_s2,theta_list,threshold):
     """ Function
     Author(s): Yuto Mori
     """
     import copy
     t1 = time.time()
     nstates = len(cf.multi_weights)
-    # core_num = n_qubits_system
+    # core_num = n_qubit_system
     # vir_index = 0
     # for istate in range(nstates):
     #     ### Read state integer and extract occupied/virtual info
@@ -207,15 +207,15 @@ def cost_ic_mrucc(print_level,n_qubits_system,n_electrons,vir_num,act_num,core_n
     #         if ii == occ_list_tmp[ii]: core_tmp = ii + 1
     #     vir_index = max(vir_index,vir_tmp)
     #     core_num = min(core_num,core_tmp)
-    # vir_num = n_qubits_system - vir_index
-    # act_num = n_qubits_system - core_num - vir_num
+    # vir_num = n_qubit_system - vir_index
+    # act_num = n_qubit_system - core_num - vir_num
 
-    ndim1, ndim2 = calc_num_ic_theta(n_qubits_system,vir_num,act_num,core_num)
+    ndim1, ndim2 = calc_num_ic_theta(n_qubit_system,vir_num,act_num,core_num)
 
     states = []
     for istate in range(nstates):
         det = cf.multi_states[istate]
-        state = create_icmr_uccsd_state(n_qubits_system,vir_num,act_num,core_num,rho,DS,theta_list,det,ndim1)
+        state = create_icmr_uccsd_state(n_qubit_system,vir_num,act_num,core_num,rho,DS,theta_list,det,ndim1)
         states.append(state)
     from .jmucc import create_HS2S
     H,S2,S = create_HS2S(qulacs_hamiltonian,qulacs_s2,states)
@@ -273,7 +273,7 @@ def cost_ic_mrucc(print_level,n_qubits_system,n_electrons,vir_num,act_num,core_n
             prints(" E            : {:.8f} ".format(en[istate]))
             prints(" <S**2>       : {:.5f} ".format(s2[istate]))
             prints(" Superposition: ")
-            spstate = QuantumState(n_qubits_system)
+            spstate = QuantumState(n_qubit_system)
             spstate.multiply_coef(0)
             for jstate in range(nstates0):
                 state = states[jstate].copy()

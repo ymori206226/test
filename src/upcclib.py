@@ -73,25 +73,25 @@ def upcc_Gdoubles(circuit, norbs, theta_list, ndim1, ndim2, i):
             ###  beta  ###
             i2b = i2 + 1
             # double_ope(max(b2,a2),min(b2,a2),max(j2,i2),min(j2,i2),circuit,theta_list[ijab])
-            Gdouble_ope(a2b,a2,i2b,i2,circuit,theta_list[ijab])
+            Gdouble_ope(a2b, a2, i2b, i2, circuit, theta_list[ijab])
             ijab = ijab + 1
 
 
-def upcc_Gsingles(circuit, norbs, theta_list, ndim1, ndim2, i):
+def upcc_Gsingles(circuit, n_orbitals, theta_list, ndim1, ndim2, i):
     """Function:
     Construct circuit for UpCC (singles part)
 
     Author(s): Takahiro Yoshikura, Takashi Tsuchimochi (spin-free)
     """
-    ia = ndim2 + i * (ndim1 + ndim2)
-    for a in range(norbs):
+    ia = ndim2 + i*(ndim1+ndim2)
+    for a in range(n_orbitals):
         a2 = 2 * a
         for i in range(a):
             i2 = 2 * i
             ### alpha ###
             single_ope_Pauli(a2, i2, circuit, theta_list[ia])
             ### beta ###
-            single_ope_Pauli(a2 + 1, i2 + 1, circuit,  theta_list[ia])
+            single_ope_Pauli(a2+1, i2+1, circuit,  theta_list[ia])
             ia = ia + 1
 
 def cost_upccgsd(
