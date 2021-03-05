@@ -36,6 +36,31 @@ def set_circuit_bcs(Quket, theta_list, k):
     return circuit
 
 
+#def set_circuit_bcs(n_qubits, n_orbitals, theta_list, k):
+#    circuit = QuantumCircuit(n_qubits)
+#    ndim1 = n_orbitals*(n_orbitals-1)//2
+#    ndim2 = n_orbitals
+#    ndim = n_orbitals + ndim1
+#    for i in range(k):
+#        ioff  = i * ndim
+#        for p in range(n_orbitals):
+#            pa = 2*p
+#            pb = 2*p + 1
+#            target_list = [2*p, 2*p+1]
+#            pauli_index = [1,2]
+#            gate = PauliRotation(target_list, pauli_index, -theta_list[p+ioff])
+#            circuit.add_gate(gate)
+#            pauli_index = [2,1]
+#            gate = PauliRotation(target_list, pauli_index, -theta_list[p+ioff])
+#            circuit.add_gate(gate)
+#            if "ebcs" in Quket.ansatz:
+#                if (p < n_orbitals-1):
+#                    circuit.add_CNOT_gate(2*p, 2*p+2)
+#                    circuit.add_CNOT_gate(2*p+1, 2*p+3)
+#        upcc_Gsingles(circuit, n_orbitals, theta_list, ndim1, n_orbitals, i)
+#    return circuit
+
+
 def cost_bcs(Quket, print_level, theta_list, k):
     """Function:
     Energy functional of kBCS

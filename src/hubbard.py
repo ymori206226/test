@@ -1,6 +1,7 @@
 from dataclasses import dataclass, field
 
 from numpy import ndarray
+from openfermion.hamiltonians import fermi_hubbard
 
 
 @dataclass
@@ -50,3 +51,30 @@ class Hubbard():
         prints(f"Hubbard model: nx = {self.hubbard_nx}"
                f"ny = {self.hubbard_ny}"
                f"U = {self.hubbard_u:2.2f}")
+
+    def get_operators(self, guess="minao"):
+        Hamiltonian = fermi_hubbard(self.hubbard_nx, self.hubbard_ny,
+                                    1, self.hubbard_u)
+        S2 = s_squared_operator(self.n_orbitals)
+        Number = number_operator(self.n_orbitals)
+
+       self.hf_energy = None
+       self.fci_energy = None
+       if self.run_fci:
+           self.operators.jw_Hamiltonian.compress()
+           qubit_eigen = QubitDavidson(self.operators.jw_Hamiltonian,
+                                       self.n_qubits)
+           # Initial guess :  | 0000...00111111>
+           #                             ~~~~~~ = n_electrons
+           guess = np.zeros((2**self.n_qubits, 1))
+           guess[2**self.n_electrons - 1][0] = 1.0
+           n_state = 1
+           results = qubit_eigen.get_lowest_n(n_state, guess)
+           prints("Convergence?           : ", results[0])
+           prints("Ground State Energy    : ", results[1][0])
+           self.fci_energy = results[1][0]
+           #prints("Wave function          : ")
+           #openfermion_print_state(results[2], n_qubits, 0)
+
+
+        return Hamiltonian, S2, Number
