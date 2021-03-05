@@ -340,7 +340,8 @@ class QuketData():
             else:
                 my_fields.append((k, type(v), v))
         self.__class__ = make_dataclass(f"{obj.__class__.__name__}QuketData",
-                                        my_fields, bases=(QuketData,))
+                                        my_fields,
+                                        bases=(QuketData, obj.__class__))
         # Add funcgtions and properties to myself.
         for k in dir(obj):
             if k not in dir(self):
