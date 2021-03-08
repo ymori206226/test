@@ -111,21 +111,19 @@ def openfermion_print_state(state, n_qubits, j_state,
 #    return theta
 
 
-# SaveTheta関数とLoadTheta関数こっちでどうでしょう？
-def SaveTheta(theta, filepath, ndim=None):
+def SaveTheta(ndim, save, filepath):
     if mpi.main_rank:
-        if ndim:
-            np.savetxt(filepath, theta[:ndim].reshape(-1, 1))
-        else:
-            np.savetxt(filepath, theta.reshape(-1, 1))
+        if save.size != ndim:
+            error(f"{save.size=} but {ndim=}")
+        np.savetxt(filepath, save.reshape(-1, 1))
 
 
-def LoatTheta(filepath, ndim=None):
-    theta = np.loadtxt(filepath).reshape(-1)
-    if ndim:
-        theta = theta[:ndim]
-    theta = mpi.comm.bcast(theta, root=0)
-    return theta
+def LoadTheta(ndim, filepath):
+    load = np.loadtxt(filepath).reshape(-1)
+    if load.size != ndim:
+        error(f"{load.size=} but {ndim=}")
+    load = mpi.comm.bcast(load, root=0)
+    return load
 
 
 def error(*message):
