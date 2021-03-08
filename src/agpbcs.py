@@ -9,56 +9,30 @@ from .upcclib import upcc_Gsingles
 from .utils import orthogonal_constraint
 
 
-def set_circuit_bcs(Quket, theta_list, k):
-    ndim1 = (Quket.n_orbitals-1)*Quket.n_orbitals//2
-    ndim2 = Quket.n_orbitals
-    ndim = ndim1 + ndim2
-    #ndim = theta_list.size
-    circuit = QuantumCircuit(Quket.n_qubits)
-
+def set_circuit_bcs(ansatz, n_qubits, n_orbitals, ndim1, ndim, theta_list, k):
+    circuit = QuantumCircuit(n_qubits)
+    target_list = pauli_index = np.empty(2)
     for i in range(k):
         ioff  = i * ndim
-        for p in range(Quket.n_orbitals):
+        for p in range(n_orbitals):
             pa = 2*p
             pb = 2*p + 1
-            target_list = [pa, pb]
-            pauli_index = [1, 2]
+            target_list = pa, pb
+
+            pauli_index = 1, 2
             gate = PauliRotation(target_list, pauli_index, -theta_list[p+ioff])
             circuit.add_gate(gate)
-            pauli_index = [2, 1]
+
+            pauli_index = 2, 1
             gate = PauliRotation(target_list, pauli_index, -theta_list[p+ioff])
             circuit.add_gate(gate)
-            if "ebcs" in Quket.ansatz:
-                if (p < Quket.n_orbitals-1):
+
+            if "ebcs" in ansatz:
+                if p < n_orbitals - 1
                     circuit.add_CNOT_gate(pa, pa+2)
                     circuit.add_CNOT_gate(pb, pb+2)
-        upcc_Gsingles(circuit, Quket.n_orbitals, theta_list, ndim1, ndim2, i)
+        upcc_Gsingles(circuit, n_orbitals, theta_list, ndim1, n_orbitals, i)
     return circuit
-
-
-#def set_circuit_bcs(n_qubits, n_orbitals, theta_list, k):
-#    circuit = QuantumCircuit(n_qubits)
-#    ndim1 = n_orbitals*(n_orbitals-1)//2
-#    ndim2 = n_orbitals
-#    ndim = n_orbitals + ndim1
-#    for i in range(k):
-#        ioff  = i * ndim
-#        for p in range(n_orbitals):
-#            pa = 2*p
-#            pb = 2*p + 1
-#            target_list = [2*p, 2*p+1]
-#            pauli_index = [1,2]
-#            gate = PauliRotation(target_list, pauli_index, -theta_list[p+ioff])
-#            circuit.add_gate(gate)
-#            pauli_index = [2,1]
-#            gate = PauliRotation(target_list, pauli_index, -theta_list[p+ioff])
-#            circuit.add_gate(gate)
-#            if "ebcs" in Quket.ansatz:
-#                if (p < n_orbitals-1):
-#                    circuit.add_CNOT_gate(2*p, 2*p+2)
-#                    circuit.add_CNOT_gate(2*p+1, 2*p+3)
-#        upcc_Gsingles(circuit, n_orbitals, theta_list, ndim1, n_orbitals, i)
-#    return circuit
 
 
 def cost_bcs(Quket, print_level, theta_list, k):
@@ -69,15 +43,19 @@ def cost_bcs(Quket, print_level, theta_list, k):
     """
     t1 = time.time()
 
-#    ndim1 = (Quket.n_orbitals-1)*Quket.n_orbitals//2
-#    ndim2 = Quket.n_orbitals
-#    ndim = ndim1 + ndim2
-    #ndim = theta_list.size
+    noa = Quket.noa
+    nob = Quket.nob
+    nva = Quket.nva
+    nvb = Quket.nvb
+    n_qubits = Quket.n_qubits
+    det = Quket.det
+    ndim1 = Quket.ndim1
+    ndim = Quket.ndim
 
-    state = QuantumState(Quket.n_qubits)
-    state.set_computational_basis(Quket.det)
-
-    circuit = set_circuit_bcs(Quket, theta_list, k)
+    state = QuantumState(n_qubits)
+    state.set_computational_basis(det)
+    circuit = set_circuit_bcs(ansatz, n_qubits, n_orbitals, ndim1, ndim,
+                              theta_list, k)
     circuit.update_quantum_state(state)
 
     if Quket.projection.SpinProj:
@@ -107,8 +85,7 @@ def cost_bcs(Quket, print_level, theta_list, k):
                f"<S**2> = {S2:17.15f}  "
                f"CPU Time = {cput:5.2f}  "
                f"({cpu1:2.2f} / step)")
-        #SaveTheta(k*(ndim1+ndim2), theta_list, cf.tmp)
-        SaveTheta(theta_list, cf.tmp)
+        SaveTheta(ndim, theta_list, cf.tmp)
     if print_level > 1:
         prints(f"Final: "
                f"E[{k}-kBCS] = {Ebcs:.12f}  "
@@ -116,6 +93,7 @@ def cost_bcs(Quket, print_level, theta_list, k):
         prints(f"\n({k}-kBCS state)")
         printmat(theta_list)
         print_state(state, threshold=Quket.print_amp_thres)
+
     # Store kBCS wave function
     Quket.state = state
     return cost, S2
