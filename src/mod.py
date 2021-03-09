@@ -9,96 +9,93 @@ Modified versions of OpenFermionPySCF routines
 to enable active space calculations.
 
 """
+# いる?
 from __future__ import absolute_import
 
-from functools import reduce
 from typing import Dict
 from dataclasses import dataclass
 
-import numpy
-import pyscf
-from pyscf import gto, ao2mo, scf, fci, mcscf
+import numpy as np
+from pyscf import gto, scf, ao2mo, ci, cc, fci, mp
 from openfermion import MolecularData
-from openfermionpyscf import PyscfMolecularData
+from openfermionpyscf import (prepare_pyscf_molecule, compute_scf,
+                              compute_integrals, PyscfMolecularData)
 
 from . import config as cf
-from .fileio import printmat, prints
-from .utils import Binomial
+from .fileio import error
 
 
-def prepare_pyscf_molecule_mod(molecule):
-    """Function
-    This function creates and saves a pyscf input file.
-    Args:
-        molecule: An instance of the MolecularData class.
-    Returns:
-        pyscf_molecule: A pyscf molecule instance.
-
-    Author(s): Takashi Tsuchimochi
-    """
-    pyscf_molecule = gto.Mole()
-    pyscf_molecule.atom = molecule.geometry
-    pyscf_molecule.basis = molecule.basis
-    pyscf_molecule.spin = molecule.multiplicity - 1
-    pyscf_molecule.charge = molecule.charge
-    pyscf_molecule.symmetry = False
-    pyscf_molecule.build()
-
-    return pyscf_molecule
-
-
-def compute_scf_mod(pyscf_molecule):
-    """Function
-    Perform a Hartree-Fock calculation.
-    Args:
-        pyscf_molecule: A pyscf molecule instance.
-    Returns:
-        pyscf_scf: A PySCF "SCF" calculation object.
-
-    Author(s): Takashi Tsuchimochi
-    """
-    if pyscf_molecule.spin:
-        pyscf_scf = scf.ROHF(pyscf_molecule)
-    else:
-        pyscf_scf = scf.RHF(pyscf_molecule)
-    return pyscf_scf
+#def prepare_pyscf_molecule_mod(molecule):
+#    """Function
+#    This function creates and saves a pyscf input file.
+#    Args:
+#        molecule: An instance of the MolecularData class.
+#    Returns:
+#        pyscf_molecule: A pyscf molecule instance.
+#
+#    Author(s): Takashi Tsuchimochi
+#    """
+#    pyscf_molecule = gto.Mole()
+#    pyscf_molecule.atom = molecule.geometry
+#    pyscf_molecule.basis = molecule.basis
+#    pyscf_molecule.spin = molecule.multiplicity - 1
+#    pyscf_molecule.charge = molecule.charge
+#    pyscf_molecule.symmetry = False
+#    pyscf_molecule.build()
+#
+#    return pyscf_molecule
 
 
-def compute_integrals_mod(pyscf_molecule, pyscf_scf):
-    """Function
-    Compute the 1-electron and 2-electron integrals.
-    Args:
-        pyscf_molecule: A pyscf molecule instance.
-        pyscf_scf: A PySCF "SCF" calculation object.
-    Returns:
-        one_electron_integrals: An N by N array storing h_{pq}
-        two_electron_integrals: An N by N by N by N array storing h_{pqrs}.
+#def compute_scf_mod(pyscf_molecule):
+#    """Function
+#    Perform a Hartree-Fock calculation.
+#    Args:
+#        pyscf_molecule: A pyscf molecule instance.
+#    Returns:
+#        pyscf_scf: A PySCF "SCF" calculation object.
+#
+#    Author(s): Takashi Tsuchimochi
+#    """
+#    if pyscf_molecule.spin:
+#        pyscf_scf = scf.ROHF(pyscf_molecule)
+#    else:
+#        pyscf_scf = scf.RHF(pyscf_molecule)
+#    return pyscf_scf
 
-    Author(s): Takashi Tsuchimochi
-    """
-    # Get one electrons integrals.
-    n_orbitals = pyscf_scf.mo_coeff.shape[1]
-    one_electron_compressed = reduce(
-        numpy.dot, (pyscf_scf.mo_coeff.T, pyscf_scf.get_hcore(), pyscf_scf.mo_coeff)
-    )
-    one_electron_integrals = one_electron_compressed.reshape(
-        n_orbitals, n_orbitals
-    ).astype(float)
 
-    # Get two electron integrals in compressed format.
-    two_electron_compressed = ao2mo.kernel(pyscf_molecule, pyscf_scf.mo_coeff)
-
-    two_electron_integrals = ao2mo.restore(
-        1, two_electron_compressed, n_orbitals  # no permutation symmetry
-    )
-    # See PQRS convention in OpenFermion.hamiltonians._molecular_data
-    # h[p,q,r,s] = (ps|qr)
-    two_electron_integrals = numpy.asarray(
-        two_electron_integrals.transpose(0, 2, 3, 1), order="C"
-    )
-
-    # Return.
-    return one_electron_integrals, two_electron_integrals
+#def compute_integrals_mod(pyscf_molecule, pyscf_scf):
+#    """Function
+#    Compute the 1-electron and 2-electron integrals.
+#    Args:
+#        pyscf_molecule: A pyscf molecule instance.
+#        pyscf_scf: A PySCF "SCF" calculation object.
+#    Returns:
+#        one_electron_integrals: An N by N array storing h_{pq}
+#        two_electron_integrals: An N by N by N by N array storing h_{pqrs}.
+#
+#    Author(s): Takashi Tsuchimochi
+#    """
+#    # Get one electrons integrals.
+#    n_orbitals = pyscf_scf.mo_coeff.shape[1]
+#    one_electron_compresses \
+#            = pyscf_scf.mo_coeff.T@pyscf_scf.get_hcore()@pyscf_scf.mo_coeff
+#    one_electron_integrals \
+#            = one_electron_compressed.reshape(n_orbitals, n_orbitals)
+#
+#    # Get two electron integrals in compressed format.
+#    two_electron_compressed = ao2mo.kernel(pyscf_molecule, pyscf_scf.mo_coeff)
+#
+#    two_electron_integrals = ao2mo.restore(
+#        1, two_electron_compressed, n_orbitals  # no permutation symmetry
+#    )
+#    # See PQRS convention in OpenFermion.hamiltonians._molecular_data
+#    # h[p,q,r,s] = (ps|qr)
+#    two_electron_integrals = np.asarray(
+#        two_electron_integrals.transpose(0, 2, 3, 1), order="C"
+#    )
+#
+#    # Return.
+#    return one_electron_integrals, two_electron_integrals
 
 
 ### modify generate_molecular_hamiltonian to be able to use chkfile
@@ -136,14 +133,13 @@ def generate_molecular_hamiltonian_mod(guess, geometry, basis, multiplicity,
 
 
 def run_pyscf_mod(guess, n_active_orbitals, n_active_electrons, molecule,
-                  spin=None, run_scf=True, run_mp2=False, run_cisd=False,
-                  run_ccsd=False, run_fci=False, verbose=False):
+                  spin=None, run_mp2=False, run_cisd=False,
+                  run_ccsd=False, run_fci=False, run_casci=True, verbose=False):
     """Function
     This function runs a pyscf calculation.
 
     Args:
         molecule: An instance of the MolecularData or PyscfMolecularData class.
-        run_scf: Optional boolean to run SCF calculation.
         run_mp2: Optional boolean to run MP2 calculation.
         run_cisd: Optional boolean to run CISD calculation.
         run_ccsd: Optional boolean to run CCSD calculation.
@@ -156,17 +152,20 @@ def run_pyscf_mod(guess, n_active_orbitals, n_active_electrons, molecule,
     Author(s): Takashi Tsuchimochi
     """
     # Prepare pyscf molecule.
-    pyscf_molecule = prepare_pyscf_molecule_mod(molecule)
+    #pyscf_molecule = prepare_pyscf_molecule_mod(molecule)
+    pyscf_molecule = prepare_pyscf_molecule(molecule)
     molecule.n_orbitals = int(pyscf_molecule.nao_nr())
-    molecule.n_qubits = 2 * molecule.n_orbitals
+    molecule.n_qubits = 2*molecule.n_orbitals
     molecule.nuclear_repulsion = float(pyscf_molecule.energy_nuc())
 
     # Run SCF.
-    pyscf_scf = compute_scf_mod(pyscf_molecule)
+    #pyscf_scf = compute_scf_mod(pyscf_molecule)
+    pyscf_scf = compute_scf(pyscf_molecule)
     pyscf_scf.verbose = 0
     pyscf_scf.run(chkfile=cf.chk, init_guess=guess,
                   conv_tol=1e-12, conv_tol_grad=1e-12)
     molecule.hf_energy = float(pyscf_scf.e_tot)
+
     # Hold pyscf data in molecule. They are required to compute density
     # matrices and other quantities.
     molecule._pyscf_data = pyscf_data = {}
@@ -178,77 +177,119 @@ def run_pyscf_mod(guess, n_active_orbitals, n_active_electrons, molecule,
     molecule.orbital_energies = pyscf_scf.mo_energy.astype(float)
 
     # Get integrals.
-    one_body_integrals, two_body_integrals = compute_integrals_mod(
-        pyscf_molecule, pyscf_scf
-    )
+    #one_body_integrals, two_body_integrals \
+    #        = compute_integrals_mod(pyscf_molecule, pyscf_scf)
+    one_body_integrals, two_body_integrals \
+            = compute_integrals(pyscf_molecule, pyscf_scf)
     molecule.one_body_integrals = one_body_integrals
     molecule.two_body_integrals = two_body_integrals
     molecule.overlap_integrals = pyscf_scf.get_ovlp()
 
+    if run_MP2:
+        if molecule.multiplicity != 1:
+            error("WARNING: RO-MP2 is not available in PySCF.")
+        else:
+            pyscf_mp2 = mp.MP2(pyscf_scf)
+            pyscf_mp2.verbose = 0
+            pyscf_mp2.run(chkfile=cf.chk, init_guess=guess,
+                          conv_tol=1e-12, conv_tol_grad=1e-12)
+            # molecule.mp2_energy = pyscf_mp2.e_tot  # pyscf-1.4.4 or higher
+            molecule.mp2_energy = pyscf_scf.e_tot + pyscf_mp2.e_corr
+            pyscf_data["mp2"] = pyscf_mp2
+            if verbose:
+                print(f"MP2 energy for {molecule.name} "
+                      f"({molecule.n_electrons} electrons) is "
+                      f"{molecule.mp2_energy}.")
+
+    # Run CISD.
+    if run_cisd:
+        pyscf_cisd = ci.CISD(pyscf_scf)
+        pyscf_cisd.verbose = 0
+        pyscf_cisd.run(chkfile=cf.chk, init_guess=guess,
+                       conv_tol=1e-12, conv_tol_grad=1e-12)
+        molecule.cisd_energy = pyscf_cisd.e_tot
+        pyscf_data["cisd"] = pyscf_cisd
+        if verbose:
+            print(f"CISD energy for {molecule.name} "
+                  f"({molecule.n_electrons} electrons) is "
+                  f"{molecule.cisd_energy}.")
+
+    # Run CCSD.
+    if run_ccsd:
+        pyscf_ccsd = cc.CCSD(pyscf_scf)
+        pyscf_ccsd.verbose = 0
+        pyscf_ccsd.run(chkfile=cf.chk, init_guess=guess,
+                       conv_tol=1e-12, conv_tol_grad=1e-12)
+        molecule.ccsd_energy = pyscf_ccsd.e_tot
+        pyscf_data["ccsd"] = pyscf_ccsd
+        if verbose:
+            print(f"CCSD energy for {molecule.name} "
+                  f"({molecule.n_electrons} electrons) is "
+                  f"{molecule.ccsd_energy}.")
+
+    # Run FCI.
+    if run_fci:
+        pyscf_fci = fci.FCI(pyscf_molecule, pyscf_scf.mo_coeff)
+        pyscf_fci.verbose = 0
+        molecule.fci_energy = pyscf_fci.kernel()[0]
+        pyscf_data["fci"] = pyscf_fci
+        if verbose:
+            print(f"FCI energy for {molecule.name} "
+                  f"({molecule.n_electrons} electrons) is "
+                  f"{molecule.fci_energy}.")
+
     # CASCI (FCI)
     ### Change the spin ... (S,Ms) = (spin, multiplicity)
-    if spin == None:
-        spin = molecule.multiplicity
-    pyscf_molecule.spin = spin-1
-    pyscf_scf = compute_scf_mod(pyscf_molecule)
-    pyscf_scf.run()
-    ### reload mo coeffictions
-    pyscf_scf.mo_coeff = molecule.canonical_orbitals
-    pyscf_scf.mo_energy = molecule.orbital_energies
+    if run_casci:
+        if spin is None:
+            spin = molecule.multiplicity
+        pyscf_molecule.spin = spin - 1
+        #pyscf_scf = compute_scf_mod(pyscf_molecule)
+        #pyscf_scf = compute_scf(pyscf_molecule)
+        #pyscf_scf.run()
+        #pyscf_scf.run(chkfile=cf.chk, init_guess=guess,
+        #              conv_tol=1e-12, conv_tol_grad=1e-12)
+        ### reload mo coeffictions
+        #pyscf_scf.mo_coeff = molecule.canonical_orbitals
+        #pyscf_scf.mo_energy = molecule.orbital_energies
+        fci = pyscf_scf.CASCI(n_active_orbitals, n_active_electrons).kernel()
+        molecule.fci_energy = fci[0]
 
-    fci = pyscf_scf.CASCI(
-        n_active_orbitals, n_active_electrons
-    ).kernel()
-    molecule.fci_energy = fci[0]
     #cf.fci_coeff = fci[2]
     #fci2qubit(n_active_orbitals,n_active_electrons,pyscf_molecule.spin,fci[2])
 
     # Return updated molecule instance.
-#    pyscf_molecular_data = PyscfMolecularData.__new__(PyscfMolecularData)
-#    pyscf_molecular_data.__dict__.update(molecule.__dict__)
-#    pyscf_molecular_data.save()
-
-    ##   Keep molecular data in config.py
-    #cf.hf_energy = pyscf_molecular_data.hf_energy
-    #cf.fci_energy = pyscf_molecular_data.fci_energy
-    #cf.mo_coeff = pyscf_scf.mo_coeff.astype(float)
-    #cf.natom = pyscf_molecule.natm
-    #cf.atom_charges = []
-    #cf.atom_coords = []
-    #for i in range(cf.natom):
-    #    cf.atom_charges.append(pyscf_molecule.atom_charges()[i])
-    #    cf.atom_coords.append(pyscf_molecule.atom_coords()[i])
-
-    #cf.rint = pyscf_molecule.intor("int1e_r")
-
-#    return pyscf_molecular_data, pyscf_molecule
+    #pyscf_molecular_data = PyscfMolecularData.__new__(PyscfMolecularData)
+    #pyscf_molecular_data.__dict__.update(molecule.__dict__)
+    #pyscf_molecular_data.save()
+    #return pyscf_molecular_data, pyscf_molecule
     return molecule, pyscf_molecule
 
 
-@dataclass
-class PyscfMolecularData(MolecularData):
-    """A derived class from openfermion.hamiltonians.MolecularData. This class
-    is created to store the PySCF method objects as well as molecule data from
-    a fixed basis set at a fixed geometry that is obtained from PySCF
-    electronic structure packages. This class provides an interface to access
-    the PySCF Hartree-Fock, MP, CI, Coupled-Cluster methods and their energies,
-    density matrices and wavefunctions.
-    Attributes:
-        _pyscf_data(dict): To store PySCF method objects temporarily.
-    """
-    #----------For MolecularData----------
-    geometry: List = None
-    basis: str = None
-    multiplicity: int = None
-    charge: int = 0
-    description: str = ""
-    filename: str = ""
-    data_directory: str = None
-    #----------For PyscfMolecularData----------
-    _pyscf_data: Dict = field(init=False, default_factory=dict)
-
-    def __post_init__(self, *args, **kwds):
-        super().__init__(geometry=self.geometry, basis=self.basis,
-                         multiplicity=self.multiplicity, charge=self.charge,
-                         description=self.description, filename=self.filename,
-                         data_directory=self.data_directory)
+#@dataclass
+#class PyscfMolecularData(MolecularData):
+#    """A derived class from openfermion.hamiltonians.MolecularData. This class
+#    is created to store the PySCF method objects as well as molecule data from
+#    a fixed basis set at a fixed geometry that is obtained from PySCF
+#    electronic structure packages. This class provides an interface to access
+#    the PySCF Hartree-Fock, MP, CI, Coupled-Cluster methods and their energies,
+#    density matrices and wavefunctions.
+#    Attributes:
+#        _pyscf_data(dict): To store PySCF method objects temporarily.
+#    """
+#    #----------For MolecularData----------
+#    geometry: List = None
+#    basis: str = None
+#    multiplicity: int = None
+#    charge: int = 0
+#    description: str = ""
+#    filename: str = ""
+#    data_directory: str = None
+#    #----------For PyscfMolecularData----------
+#    _pyscf_data: Dict = field(init=False, default_factory=dict)
+#
+#    def __post_init__(self, *args, **kwds):
+#        super().__init__(geometry=self.geometry, basis=self.basis,
+#                         multiplicity=self.multiplicity, charge=self.charge,
+#                         description=self.description, filename=self.filename,
+#                         data_directory=self.data_directory)

@@ -24,7 +24,7 @@ from openfermion.hamiltonians import MolecularData, fermi_hubbard
 
 from . import mpilib as mpi
 from . import config as cf
-from .mod import run_pyscf_mod, prepare_pyscf_molecule_mod
+from .mod import run_pyscf_mod
 from .fileio import error, prints, openfermion_print_state, print_geom
 from .opelib import create_1body_operator
 from .phflib import weightspin, trapezoidal, simpson
