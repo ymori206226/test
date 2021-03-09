@@ -20,7 +20,7 @@ from openfermion.ops import InteractionOperator, QubitOperator
 from openfermion.utils import (number_operator, s_squared_operator, commutator,
                                QubitDavidson)
 from openfermion.transforms import jordan_wigner
-from openfermion.hamiltonians import MolecularData, fermi_hubbard
+from openfermion.hamiltonians import fermi_hubbard
 
 from . import mpilib as mpi
 from . import config as cf
@@ -308,8 +308,10 @@ class QuketData():
                 self.det = 1
             self.current_det = self.det
         elif self.model == "chemical":
-            init_dict = get_func_kwds(MolecularData.__init__, kwds)
-            obj = MolecularData(**init_dict)
+            from .quket_molecule import QuketMolecule
+
+            init_dict = get_func_kwds(QuketMolecule.__init__, kwds)
+            obj = QuketMolecule(**init_dict)
 # 全部の軌道と電子を使う？
             obj, pyscf_mol = run_pyscf_mod(pyscf_guess, obj.n_orbitals,
                                            self.n_electrons, obj,
@@ -358,11 +360,11 @@ class QuketData():
             #    n_electrons,
             #    run_fci,
             # )
-            Hamiltonian, S2, Number = self.get_operators(guess=pyscf_guess)
+            Hamiltonian, S2, Number = obj.get_operators(guess=pyscf_guess)
             self.operators = Operators(Hamiltonian=Hamiltonian, S2=S2,
                                        Number=Number)
         elif self.model == "heisenberg":
-            jw_Hamiltonian = self.get_operators()
+            jw_Hamiltonian = obj.get_operators()
             self.operators = Operators()
             self.operators.jw_Hamiltonian = jw_Hamiltonian
             return
@@ -370,7 +372,7 @@ class QuketData():
             if cf._geom_update:
                 # New geometry found. Run PySCF and get operators.
                 Hamiltonian, S2, Number, Dipole \
-                        = self.get_operators(guess=pyscf_guess,
+                        = obj.get_operators(guess=pyscf_guess,
                                              pyscf_mol=pyscf_mol)
                 cf._geom_update = False
 

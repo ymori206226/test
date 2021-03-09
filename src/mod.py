@@ -12,11 +12,12 @@ to enable active space calculations.
 # いる?
 from __future__ import absolute_import
 
-from typing import Dict
-from dataclasses import dataclass
+#from typing import Dict
+#from dataclasses import dataclass
 
-import numpy as np
-from pyscf import gto, scf, ao2mo, ci, cc, fci, mp
+#import numpy as np
+#from pyscf import gto, scf, ao2mo, ci, cc, fci, mp
+from pyscf import ci, cc, fci, mp
 from openfermion import MolecularData
 from openfermionpyscf import (prepare_pyscf_molecule, compute_scf,
                               compute_integrals, PyscfMolecularData)
@@ -264,32 +265,3 @@ def run_pyscf_mod(guess, n_active_orbitals, n_active_electrons, molecule,
     #pyscf_molecular_data.save()
     #return pyscf_molecular_data, pyscf_molecule
     return molecule, pyscf_molecule
-
-
-#@dataclass
-#class PyscfMolecularData(MolecularData):
-#    """A derived class from openfermion.hamiltonians.MolecularData. This class
-#    is created to store the PySCF method objects as well as molecule data from
-#    a fixed basis set at a fixed geometry that is obtained from PySCF
-#    electronic structure packages. This class provides an interface to access
-#    the PySCF Hartree-Fock, MP, CI, Coupled-Cluster methods and their energies,
-#    density matrices and wavefunctions.
-#    Attributes:
-#        _pyscf_data(dict): To store PySCF method objects temporarily.
-#    """
-#    #----------For MolecularData----------
-#    geometry: List = None
-#    basis: str = None
-#    multiplicity: int = None
-#    charge: int = 0
-#    description: str = ""
-#    filename: str = ""
-#    data_directory: str = None
-#    #----------For PyscfMolecularData----------
-#    _pyscf_data: Dict = field(init=False, default_factory=dict)
-#
-#    def __post_init__(self, *args, **kwds):
-#        super().__init__(geometry=self.geometry, basis=self.basis,
-#                         multiplicity=self.multiplicity, charge=self.charge,
-#                         description=self.description, filename=self.filename,
-#                         data_directory=self.data_directory)
