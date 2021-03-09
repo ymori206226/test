@@ -385,7 +385,7 @@ def cost_proj(Quket, print_level, qulacs_hamiltonianZ, qulacs_s2Z,
         # Then prepare UCCSD
         theta_list_rho = theta_list/rho
         circuit = set_circuit_uccsd(n_qubits, noa, nob, nva, nvb, 0,
-                                    theta_list_rho)
+                                    theta_list_rho, ndim1)
         for i in range(rho):
             circuit.update_quantum_state(state)
     elif ref == "puccd":

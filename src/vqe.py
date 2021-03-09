@@ -82,7 +82,7 @@ def VQE_driver(Quket, kappa_guess, theta_guess, mix_level, opt_method,
         ndim2 = noa*nva*(noa*nva + 1)//2
         ndim = ndim1 + ndim2
     elif ansatz == "sauccsd":
-        ndim1 = noa * nva
+        ndim1 = noa*nva
         ndim2 = ndim1*(ndim1+1)//2
         ndim = ndim1 + ndim2
     elif "bcs" in ansatz:

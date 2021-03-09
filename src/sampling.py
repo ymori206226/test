@@ -393,6 +393,7 @@ def cost_phf_sample(Quket, print_level,
     n_qubit_system = n_qubits
     n_qubits = Quket.n_qubits + 1
     anc = n_qubit_system
+    ndim1 = Quket.ndim1
 
     state = QuantumState(n_qubits)
     circuit_rhf = set_circuit_rhfZ(n_qubits, n_electrons)
@@ -403,7 +404,8 @@ def cost_phf_sample(Quket, print_level,
         circuit_uhf.update_quantum_state(state)
         print("pHF")
     elif ref == "puccsd":
-        circuit = set_circuit_uccsd(n_qubits, noa, nob, nva, nvb, theta_list)
+        circuit = set_circuit_uccsd(n_qubits, noa, nob, nva, nvb, theta_list,
+                                    ndim1)
         for i in range(rho):
             circuit.update_quantum_state(state)
         print("UCCSD")

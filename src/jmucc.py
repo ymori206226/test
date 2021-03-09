@@ -256,9 +256,9 @@ def cost_jmucc(
     for istate in range(nstates):
         det = Quket.multi_states[istate]
         state = create_uccsd_state(
-            Quket,
+            n_qubits, rho, DS,
             theta_lists[ndim * istate : ndim * (istate + 1)],
-            Quket.det,
+            Quket.det, ndim1,
             SpinProj=Quket.projection.SpinProj,
         )
         #        prints('\n State {}?'.format(istate))
