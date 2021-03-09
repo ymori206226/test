@@ -17,7 +17,7 @@ from .qite_function import (
     conv_anti,
     anti_to_base,
 )
-from .qite_function import make_gate, make_index
+from .qite_function import make_gate
 from .qite_function import calc_delta, calc_psi_lessH, qite_s_operators
 
 
@@ -52,7 +52,7 @@ def qite_anti(Quket, id_set, size):
         len_list = len(sigma_list)
         prints("      Unique sigma list = ", len_list)
 
-    index = make_index(n)
+    index = np.arange(n)
     delta = QuantumState(n)
     firststate = QuantumState(n)
     firststate.set_computational_basis(qbit)

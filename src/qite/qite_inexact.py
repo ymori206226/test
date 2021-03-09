@@ -13,7 +13,7 @@ from .. import config as cf
 from ..fileio import prints, print_state
 from ..utils import lstsq
 from .qite_function import calc_delta, calc_psi
-from .qite_function import make_gate, make_pauli_id, make_index, make_state1, calc_inner1
+from .qite_function import make_gate, make_pauli_id, make_state1, calc_inner1
 
 def make_hamiltonian(model, nspin, nterm):
     if model == "heisenberg":
@@ -73,7 +73,7 @@ def qite_inexact(Quket, nterm, D):
     H, active, observable_full = make_hamiltonian(model, n, nterm)
 
     size = 4 ** D
-    index = make_index(n)
+    index = np.arange(n)
     delta = QuantumState(n)
     firststate = QuantumState(n)
     firststate.set_computational_basis(qbit)

@@ -7,7 +7,6 @@ from qulacs import QuantumState
 from qulacs.state import inner_product
 
 from .qite_function import (
-    make_index,
     calc_delta,
     calc_psi,
     calc_inner1,
@@ -30,7 +29,7 @@ def qite_exact(Quket):
     active_qubit = [x for x in range(0, nspin)]
     n = nspin
     size = 4 ** nspin
-    index = make_index(n)
+    index = np.arange(n)
     delta = QuantumState(n)
     firststate = QuantumState(n)
     firststate.set_computational_basis(qbit)

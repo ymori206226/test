@@ -17,6 +17,7 @@ from ..init import get_occvir_lists
 
 
 def make_gate(n, index, pauli_id):
+    """ゲートを作る関数"""
     circuit = QuantumCircuit(n)
     for i in range(len(index)):
         gate_number = index[i]
@@ -30,6 +31,9 @@ def make_gate(n, index, pauli_id):
 
 
 def multiply_Hpauli(chi_i, n, pauli, db, j):
+    """
+    |chi_i> とnとpauliとdbとjを与えられたら|chi_i>  = h[i]|chi_dash>を計算
+    """
     coef = pauli.get_coef()
     circuit = make_gate(n, pauli.get_index_list(), pauli.get_pauli_id_list())
     circuit.update_quantum_state(chi_i)
@@ -38,7 +42,51 @@ def multiply_Hpauli(chi_i, n, pauli, db, j):
     return chi_i
 
 
+def exp_iht(h, t):
+    """
+    任意のハミルトニアン項 h[i] = h_i * pauli[i]
+    （ただしh_iは実の係数、pauli[i]はパウリのテンソル積）に対して
+    量子ゲート exp[-i h[i] t] を作る
+
+    使われてない?
+    """
+    coef = h.get_coef()
+    target_list = h.get_index_list()
+    pauli_id = h.get_pauli_id_list()
+    return PauliRotation(target_list, pauli_id, -t*coef.real)
+
+
+def exp_iHt(H, t, n_qubits=None):
+    """
+    ハミルトニアンH = sum_i h[i] に対して、一次のTrotter近似
+            Exp[-iHt] ~ Prod_i  Exp[-i h[i] t]
+    を行う量子回路を生成する
+
+    使われてない?
+    """
+    nterms = H.get_term_count()
+    if n_qubits is None:
+        n_qubits = H.get_qubit_count()
+
+    circuit = QuantumCircuit(n_qubits)
+    for i in nterms:
+        h = H.get_term(i)
+        circuit.add_gate(exp_iht(h, t))
+    return circuit
+
+
 def make_pauli_id(num, n, active):
+    """
+    4ビットの場合
+    [0 0 0 0]
+    [0 0 0 1]
+    [0 0 0 2]
+    [0 0 0 3]
+    [0 0 1 0]
+    [0 0 1 1]
+    .....
+    となるように作る
+    """
     id = []
     quo = num
     for i in range(len(active)):
@@ -52,13 +100,6 @@ def make_pauli_id(num, n, active):
         full_id[active[i]] = id[j]
         j += 1
     return full_id
-
-
-def make_index(n):
-    index = []
-    for i in range(n):
-        index.append(i)
-    return index
 
 
 def calc_delta(psi, observable, n, db):
