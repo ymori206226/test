@@ -37,12 +37,12 @@ def myrange(ndim):
 
     Author(s): Takashi Tsuchimochi
     """
-    nrem = ndim % nprocs
-    nblk = int((ndim - nrem) / nprocs)
+    nrem = ndim%nprocs
+    nblk = (ndim-nrem)//nprocs
     if rank < nrem:
         my_ndim = nblk + 1
-        ipos = my_ndim * rank
+        ipos = my_ndim*rank
     else:
         my_ndim = nblk
-        ipos = my_ndim * rank + nrem
+        ipos = my_ndim*rank + nrem
     return ipos, my_ndim
