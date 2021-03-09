@@ -8,25 +8,19 @@ opelib.py
 Library for operators.
 
 """
-
-
-from . import mpilib as mpi
-from . import config as cf
 import numpy as np
-from openfermion.transforms import jordan_wigner
-from openfermion.hamiltonians import MolecularData
-from openfermion.ops import FermionOperator
-from openfermion.utils import s_squared_operator, commutator
 from qulacs.observable import create_observable_from_openfermion_text
 from qulacs.quantum_operator import create_quantum_operator_from_openfermion_text
 from qulacs.state import inner_product
+from openfermion.transforms import jordan_wigner
+from openfermion.ops import FermionOperator
+from openfermion.utils import commutator
+
+from .fileio import error
 
 
-from .fileio import error, prints, openfermion_print_state
-from .mod import run_pyscf_mod
-
-
-def create_1body_operator(mo_coeff, XA, XB=None, const=0, ao=False, n_active_orbitals=None):
+def create_1body_operator(mo_coeff, XA,
+                          XB=None, const=0, ao=False, n_active_orbitals=None):
     """Function
     Given XA (=XB) as a (n_orbitals x n_orbitals) matrix,
     return FermionOperator in OpenFermion Format.
@@ -36,68 +30,56 @@ def create_1body_operator(mo_coeff, XA, XB=None, const=0, ao=False, n_active_orb
 
     Author(s): Takashi Tsuchimochi
     """
-    mo = np.copy(XA)
+    mo = XA.copy()
     core = const
-    if n_active_orbitals == None:
+    if n_active_orbitals is None:
         n_active_orbitals = mo.shape[0]
     if ao:
         ### XA is in AO basis. Transform to MO.
         n_core_orbitals = mo.shape[0] - n_active_orbitals
-        mo = mo_coeff.T @ mo @ mo_coeff
-        core = 0
-        for i in range(n_core_orbitals):
-            core += 2 * mo[0, 0]
-            mo = np.delete(mo, 0, 0)
-            mo = np.delete(mo, 0, 1)
+        mo = mo_coeff.T@mo@mo_coeff
+        core = np.sum([2*mo[i, i] for i in range(n_core_orbitals)])
+        mo = mo[n_core_orbitals:, n_core_orbitals:]
+
     ### XA is in MO basis.
     Operator = FermionOperator("", core)
-    for i in range(2 * n_active_orbitals):
-        for j in range(2 * n_active_orbitals):
-            string = str(j) + "^ " + str(i)
-            ii = int(i / 2)
-            jj = int(j / 2)
-            if i % 2 == 0 and j % 2 == 0:  # Alpha-Alpha
-                Operator += FermionOperator(string, mo[jj][ii])
-            elif i % 2 == 1 and j % 2 == 1:  # Beta-Beta
+    for i in range(2*n_active_orbitals):
+        for j in range(2*n_active_orbitals):
+            string = f"{j}^ {i}"
+            ii = i//2
+            jj = j//2
+            if i%2 == 0 and j%2 == 0:  # Alpha-Alpha
+                Operator += FermionOperator(string, mo[jj, ii])
+            elif i%2 == 1 and j%2 == 1:  # Beta-Beta
                 if XB is None:
-                    Operator += FermionOperator(string, mo[jj][ii])
+                    Operator += FermionOperator(string, mo[jj, ii])
                 else:
-                    error(
-                        "Currently, UHF basis is not supported in create_1body_operator."
-                    )
-                    # Operator += FermionOperator(string,XB[jj][ii])
+                    error("Currently, UHF basis is not supported "
+                          "in create_1body_operator.")
+                    #Operator += FermionOperator(string, XB[jj, ii])
     return Operator
 
 
-def single_operator_gradient(p, q, jordan_wigner_hamiltonian, state, n_qubits):
+def single_operator_gradient(p, q, jw_hamiltonian, state, n_qubits):
     """Function
     Compute gradient d<H>/dXpq
 
     Author(s): Masaki Taii, Takashi Tsuchimochi
     """
-    # 与えられたpqからフェルミ演算子a_p!q-a_q!pを生成する
-    # ダミーを作って後で引く
-    dummy = FermionOperator(str(n_qubits - 1) + "^ " + str(n_qubits - 1), 1.0)
-    fermi = FermionOperator(str(p) + "^ " + str(q), 1.0) + FermionOperator(
-        str(q) + "^ " + str(p), -1.0
-    )
-    # フェルミ演算子をjordan_wigner変換する
-    jordan_wigner_fermi = jordan_wigner(fermi)
-    jordan_wigner_dummy = jordan_wigner(dummy)
-    # 交換子を用いてエネルギーの傾きを求める準備を行う
-    jordan_wigner_gradient = (
-        commutator(jordan_wigner_fermi, jordan_wigner_hamiltonian) + jordan_wigner_dummy
-    )
-    # オブザーバブルクラスに変換
-    observable_gradient = create_observable_from_openfermion_text(
-        str(jordan_wigner_gradient)
-    )
-    observable_dummy = create_observable_from_openfermion_text(str(jordan_wigner_dummy))
-    # オブザーバブルを用いてエネルギーの傾きを求める
-    gradient = observable_gradient.get_expectation_value(
-        state
-    ) - observable_dummy.get_expectation_value(state)
+    dummy = FermionOperator(f"{n_qubits-1}^ {n_qubits-1}", 1.)
+    fermi = FermionOperator(f"{p}^ {q}", 1.) + FermionOperator(f"{q}^ {p}", -1.)
 
+    jw_dummy = jordan_wigner(dummy)
+    jw_fermi = jordan_wigner(fermi)
+    jw_gradient = commutator(jw_fermi, jw_hamiltonian) + jw_dummy
+
+    observable_dummy \
+            = create_observable_from_openfermion_text(str(jw_dummy))
+    observable_gradient \
+            = create_observable_from_openfermion_text(str(jw_gradient))
+
+    gradient = (observable_gradient.get_expectation_value(state) \
+                - observable_dummy.get_expectation_value(state))
     return gradient
 
 
@@ -114,6 +96,7 @@ def FermionOperator_to_Observable(operator, n_qubits):
     else:
         str_jw += " + \n" + string
     return create_observable_from_openfermion_text(str_jw)
+
 
 def QubitOperator_to_Observable(operator, n_qubits):
     """Function
