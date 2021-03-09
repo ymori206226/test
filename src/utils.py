@@ -193,14 +193,14 @@ def T1mult(noa, nob, nva, nvb, kappa1, kappa2):
 
 def Binomial(n, r):
     """Function:
-     Given integers n and r, compute nCr 
+     Given integers n and r, compute nCr
 
      Args:
         n (int): n of nCr
         r (int): r of nCr
 
      Returns:
-        nCr 
+        nCr
     """
     from operator import mul
     from functools import reduce
@@ -208,20 +208,20 @@ def Binomial(n, r):
     numer = reduce(mul, range(n, n - r, -1), 1)
     denom = reduce(mul, range(1, r + 1), 1)
     return numer // denom
-    
 
 
-def orthogonal_constraint(QuketData, state):
+
+def orthogonal_constraint(Quket, state):
     """Function
     Compute the penalty term for excited states based on 'orthogonally-constrained VQE' scheme.
     """
     from qulacs.state import inner_product
 
-    nstates = len(QuketData.lower_states)
+    nstates = len(Quket.lower_states)
     extra_cost = 0
     for i in range(nstates):
-        Ei = QuketData.qulacs.Hamiltonian.get_expectation_value(QuketData.lower_states[i])
-        overlap = inner_product(QuketData.lower_states[i], state)
+        Ei = Quket.qulacs.Hamiltonian.get_expectation_value(Quket.lower_states[i])
+        overlap = inner_product(Quket.lower_states[i], state)
         extra_cost += -Ei * abs(overlap) ** 2
     return extra_cost
 
@@ -230,7 +230,7 @@ def fci2qubit(norbs, nalpha, nbeta, fci_coeff):
     """Function
         Perform mapping from fci coefficients to qubit representation
 
-        Args: 
+        Args:
             norbs (int): number of active orbitals
             nalpha (int): number of alpha electrons
             nbeta (int): number of beta electrons
@@ -251,7 +251,7 @@ def fci2qubit(norbs, nalpha, nbeta, fci_coeff):
         error(" Wrong dimensions fci_coeff in fci2qubit")
     listA =  list(combinations(range(norbs), nalpha))
     listB =  list(combinations(range(norbs), nbeta))
-    
+
     for isort in range(nalpha):
         listA = sorted(listA, key=itemgetter(isort))
     for isort in range(nbeta):
@@ -261,9 +261,9 @@ def fci2qubit(norbs, nalpha, nbeta, fci_coeff):
     opt = "0" + str(norbs*2) + "b"
     vec = numpy.zeros(2**n_qubits)
     for ib in range(NDetB):
-        occB = [n*2+1 for n in listB[ib]] 
+        occB = [n*2+1 for n in listB[ib]]
         for ia in range(NDetA):
-            occA = [n*2 for n in listA[ia]] 
+            occA = [n*2 for n in listA[ia]]
 #            prints("Det {} {}".format(ia,ib),  "  occA ",occA, '  occB ',occB)
             k = 0
             for i in occA:
@@ -272,7 +272,7 @@ def fci2qubit(norbs, nalpha, nbeta, fci_coeff):
                 k += 2**i
             if ia <= ib:
                 vec[k] = fci_coeff[ia,ib]
-            else:    
+            else:
                 vec[k] = -fci_coeff[ia,ib]
 #            if abs(fci_coeff[ia,ib]) > 1e-4:
 #                prints("    Det# {}: ".format(j+1), end="");
@@ -286,16 +286,16 @@ def fci2qubit(norbs, nalpha, nbeta, fci_coeff):
 def lstsq(a, b, cond=None, overwrite_a=False, overwrite_b=False, check_finite=True, lapack_driver=None):
     """Function
     Wrapper for scipy.linalg.lstsq, which is known to have some bug related to 'SVD failure'.
-    This wrapper simply tries lstsq some times until it succeeds... 
+    This wrapper simply tries lstsq some times until it succeeds...
     """
     import scipy
     i = 0
-    while i < 5: 
-        try: 
+    while i < 5:
+        try:
             i += 1
             x, res, rnk, s = scipy.linalg.lstsq(a, b, cond=cond, overwrite_a=overwrite_a, overwrite_b=overwrite_b, check_finite=check_finite, lapack_driver=lapack_driver)
-            break 
-        except: 
+            break
+        except:
             continue
     if i == 5:
         print("lstsq does not seem to converge...")
@@ -312,4 +312,4 @@ def lstsq(a, b, cond=None, overwrite_a=False, overwrite_b=False, check_finite=Tr
         res = None
         rnk = None
         s = None
-    return x, res, rnk, s    
+    return x, res, rnk, s

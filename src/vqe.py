@@ -52,6 +52,8 @@ def VQE_driver(Quket, kappa_guess, theta_guess, mix_level, opt_method,
     nob = Quket.nob
     nva = Quket.nva
     nvb = Quket.nvb
+    nca = 0 # Number of Core orbitals of Alpha
+    ncb = 0 # Number of Core orbitals of Beta
 
     t1 = time.time()
     cf.t_old = t1
@@ -79,7 +81,7 @@ def VQE_driver(Quket, kappa_guess, theta_guess, mix_level, opt_method,
         ndim = ndim1
     elif ansatz == ("uccd", "puccd"):
         ndim = ndim2
-    elif ansatz == ("uccsd", "opt_puccd", "puccsd", "ic_mrucc"):
+    elif ansatz == ("uccsd", "opt_puccd", "puccsd"):
         ndim = ndim1 + ndim2
     elif ansatz == "sghf":
         ndim1 = (noa+nob)*(nva+nvb)
@@ -121,6 +123,33 @@ def VQE_driver(Quket, kappa_guess, theta_guess, mix_level, opt_method,
         ndim = k_param*(ndim1+ndim2)
         if "epccgsd" in ansatz:
             ndim += ndim1
+    elif ansatz == "ic_mrucc":
+        # assume that noa = nob and nva = nvb
+# そういやフローズンコアに対応してないよなQuketData
+        ndim1 = (nca*noa + nca*nva + noa*(noa-1)//2 + noa*nva
+               + ncb*nob + ncb*nvb + nob*(nob-1)//2 + nob*nvb)
+        if cf.act2act_opt:
+            ndim2aa = ((nca*(nca-1)//2 + nca*noa + noa*(noa-1)//2)
+                      *(noa*(noa-1)//2 + noa*nva + nva*(nva-1)//2)
+                      - noa*(noa-1)//2)
+            ndim2ab = ((noa*noa + noa*nva*2 + nva*nva)
+                      *(nob*nob + ncb*nob*2 + ncb*ncb)
+                      - noa*nob)
+            ndim2bb = ((ncb*(ncb-1)//2 + ncb*nob + nob*(nob-1)//2)
+                      *(nob*(nob-1)//2 + nob*nvb + nvb*(nvb-1)//2)
+                      - nob*(nob-1)//2)
+        else:
+            ndim2aa = ((nca*(nca-1)//2 + nca*noa + noa*(noa-1)//2)
+                      *(noa*(noa-1)//2 + noa*nva + nva*(nva-1)//2)
+                      - noa*(noa-1)//2)
+            ndim2ab = ((noa*noa + noa*nva*2 + nva*nva)
+                      *(nob*nob + ncb*nob*2 + ncb*ncb)
+                      - noa*noa*nob*nob)
+            ndim2bb = ((ncb*(ncb-1)//2 + ncb*nob + nob*(nob-1)//2)
+                      *(nob*(nob-1)//2 + nob*nvb + nvb*(nvb-1)//2)
+                      - noa*(noa-1)*nob*(nob-1)//4)
+        ndim2 = ndim2aa + ndim2ab + ndim2bb
+        ndim = ndim1 + ndim2
     elif ansatz == "jmucc":
         if Quket.multi.nstates == 0:
             error("JM-UCC specified without state specification!")
@@ -325,32 +354,18 @@ def VQE_driver(Quket, kappa_guess, theta_guess, mix_level, opt_method,
                 )
     elif ansatz == "ic_mrucc":
         cost_wrap = lambda theta_list : cost_ic_mrucc(
+                Quket,
                 0,
-                n_qubit_system,
-                n_electrons,
-                vir_num,
-                act_num,
-                core_num,
-                rho,
-                DS,
                 qulacs_hamiltonian,
                 qulacs_s2,
                 theta_list,
-                print_amp_thres
                 )
         cost_callback = lambda theta_list, print_control: cost_ic_mrucc(
+                Quket,
                 print_control,
-                n_qubit_system,
-                n_electrons,
-                vir_num,
-                act_num,
-                core_num,
-                rho,
-                DS,
                 qulacs_hamiltonian,
                 qulacs_s2,
                 theta_list,
-                print_amp_thres
                 )
 
     fstr = f"0{n_qubit_system}b"
