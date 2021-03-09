@@ -582,6 +582,6 @@ def get_occvir_lists(n_qubits, det):
 def get_func_kwds(func, kwds):
     import inspect
 
-    sig = inspect.signature(func)
+    sig = inspect.signature(func).parameters
     init_dict = {s: kwds[s] for s in sig if s in kwds}
     return init_dict
