@@ -127,8 +127,8 @@ class Projection():
                    f"(alpha,beta,gamma) = ({self.euler_ngrids[0]}, "
                                          f"{self.euler_ngrids[1]}, "
                                          f"{self.euler_ngrids[2]})")
-            self.sp_angle = []
-            self.sp_weight = []
+
+            self.sp_angle = self.sp_weight = []
             # Alpha
             if self.euler_ngrids[0] > 1:
                 if trap:

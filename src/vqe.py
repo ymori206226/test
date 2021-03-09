@@ -8,34 +8,26 @@ vqe.py
 Main driver of VQE.
 
 """
+import time
 
-
-from . import mpilib as mpi
-from . import config as cf
 import numpy as np
 from scipy.optimize import minimize
-import time
 from qulacs.observable import create_observable_from_openfermion_text
 from openfermion.ops import QubitOperator
 
-
+from . import sampling
+from . import mpilib as mpi
+from . import config as cf
 from .hflib import cost_uhf, mix_orbitals
 from .utils import T1mult, cost_mpi, jac_mpi
 from .fileio import LoadTheta, SaveTheta, error, prints, printmat
 from .phflib import cost_proj
-from .ucclib import (
-    cost_uccd,
-    cost_uccsdX,
-)
-from .upcclib import(
-    cost_upccgsd,
-)
+from .ucclib import cost_uccd, cost_uccsdX
+from .upcclib import cost_upccgsd
 from .agpbcs import cost_bcs
 from .jmucc import cost_jmucc
 from .icmrucc import cost_ic_mrucc
 from .prop import dipole, get_1RDM
-
-from . import sampling
 
 
 def VQE_driver(Quket, kappa_guess, theta_guess, mix_level, opt_method,
