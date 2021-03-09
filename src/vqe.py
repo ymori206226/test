@@ -615,20 +615,20 @@ def VQE_driver(Quket, kappa_guess, theta_guess, mix_level, opt_method,
     #####################
     ### Sampling test ###
     #####################
-    # n_term = fermionic_hamiltonian.get_term_count()
+    #n_term = fermionic_hamiltonian.get_term_count()
     # There are n_term - 1 Pauli operators to measure (identity not counted).
-    # <HUg> = \sum_I  h_I <P_I Ug>
-    # theta_list = ([ 0.0604642 ,  0.785282  ,  1.28474901, -0.0248133 , -0.01770559,       -0.7854844 , -0.28473988,  0.02487922])
-    # sampling.cost_phf_sample(1,n_qubits,n_electrons,noa,nob,nva,nvb,anc,qulacs_hamiltonianZ,qulacs_s2Z,qulacs_ancZ,theta_list,1000000)
-    # sampling.cost_uhf_sample(1,n_qubit_system,n_electrons,noa,nob,nva,nvb,qulacs_hamiltonian,qulacs_s2,theta_list,1000)
-    # cost_uhf(1,n_qubit_system,n_electrons,noa,nob,nva,nvb,qulacs_hamiltonian,qulacs_s2,theta_list)
-    # sampling.cost_uhf_sample(1,n_qubit_system,n_electrons,noa,nob,nva,nvb,qulacs_hamiltonian,qulacs_s2,theta_list,100000)
-    #samplelist = [10, 100, 1000, 10000, 100000, 1000000, 10000000]
-    #samplelist = [10, 100, 1000, 10000]
-    # samplelist = [1]
-    # samplelist = [1000000]
-    # sampling.cost_uhf_sample(1,n_qubit_system,n_electrons,noa,nob,nva,nvb,qulacs_hamiltonian,qulacs_s2,uhf_theta_list,samplelist)
-    # sampling.cost_phf_sample(1,n_qubits,n_electrons,noa,nob,nva,nvb,rho,anc,qulacs_hamiltonian,qulacs_hamiltonianZ,qulacs_s2Z,qulacs_ancZ,coef0_H,coef0_S2,method,opt.x,samplelist)
+    #<HUg> = \sum_I  h_I <P_I Ug>
+    #theta_list = ([ 0.0604642 ,  0.785282  ,  1.28474901, -0.0248133 , -0.01770559,       -0.7854844 , -0.28473988,  0.02487922])
+    #sampling.cost_phf_sample(Quket, 1, qulacs_hamiltonianZ, qulacs_s2Z, qulacs_ancZ, theta_list, 1000000)
+    #sampling.cost_uhf_sample(Quket, 1, qulacs_hamiltonian, qulacs_s2, theta_list, 1000)
+    #cost_uhf(1,n_qubit_system,n_electrons,noa,nob,nva,nvb,qulacs_hamiltonian,qulacs_s2,theta_list)
+    #sampling.cost_uhf_sample(Quket, 1, qulacs_hamiltonian, qulacs_s2, theta_list, 100000)
+    #amplelist = [10, 100, 1000, 10000, 100000, 1000000, 10000000]
+    #amplelist = [10, 100, 1000, 10000]
+    #samplelist = [1]
+    #samplelist = [1000000]
+    #sampling.cost_uhf_sample(Quket, 1, qulacs_hamiltonian, qulacs_s2, uhf_theta_list, samplelist)
+    #sampling.cost_phf_sample(Quket, 1, qulacs_hamiltonian, qulacs_hamiltonianZ, qulacs_s2Z, qulacs_ancZ, coef0_H, coef0_S2, method, opt.x, samplelist)
 
     #####################
     ### Rotation test ###
