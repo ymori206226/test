@@ -8,6 +8,17 @@ utils.py
 Utilities.
 
 """
+import copy
+from operator import itemgetter
+from itertools import combinations
+#from operator import mul
+#from functools import reduce
+
+import numpy as np
+import scipy as sp
+from scipy.linalg import expm, logm, lstsq
+from qulacs import QuantumState
+from qulacs.state import inner_product
 
 from . import config as cf
 from . import mpilib as mpi
@@ -22,10 +33,7 @@ def cost_mpi(cost, theta):
 
     Author(s): Takashi Tsuchimochi
     """
-    if mpi.main_rank:
-        cost_bcast = cost(theta)
-    else:
-        cost_bcast = 0
+    cost_bcast = cost(theta) if mpi.main_rank else 0
     cost_bcast = mpi.comm.bcast(cost_bcast, root=0)
     return cost_bcast
 
@@ -38,22 +46,21 @@ def jac_mpi(cost, theta, stepsize=1e-8):
 
     Author(s): Takashi Tsuchimochi
     """
-    import numpy as np
-    import copy
-
     ### Just in case, broadcast theta...
     mpi.comm.Bcast(theta, root=0)
+
     ndim = theta.size
     theta_d = copy.copy(theta)
+
     E0 = cost(theta)
     grad = np.zeros(ndim)
     grad_r = np.zeros(ndim)
     ipos, my_ndim = mpi.myrange(ndim)
-    for iloop in range(ipos, ipos + my_ndim):
+    for iloop in range(ipos, ipos+my_ndim):
         theta_d[iloop] += stepsize
         Ep = cost(theta_d)
         theta_d[iloop] -= stepsize
-        grad[iloop] = (Ep - E0) / (stepsize)
+        grad[iloop] = (Ep-E0)/stepsize
     mpi.comm.Allreduce(grad, grad_r, mpi.MPI.SUM)
     return grad_r
 
@@ -69,8 +76,7 @@ def chkbool(string):
     elif string.lower() in ("false", "0"):
         return False
     else:
-        prints("Unrecognized argument `{}`".format(string))
-        error("")
+        error(f"Unrecognized argument '{string}'")
 
 
 def chkmethod(method, ansatz):
@@ -79,15 +85,17 @@ def chkmethod(method, ansatz):
 
     Author(s): Takashi Tsuchimochi
     """
-    if ansatz == None:
+    if ansatz is None:
         return True
+
     if method == "vqe":
-        if (ansatz in cf.vqe_ansatz_list) or ("pccgsd" in ansatz) or ("bcs" in ansatz):
+        if (ansatz in cf.vqe_ansatz_list) \
+        or ("pccgsd" in ansatz) or ("bcs" in ansatz):
             return True
         else:
             return False
     elif method in ("qite", "qlanczos"):
-        if (ansatz in cf.qite_ansatz_list):
+        if ansatz in cf.qite_ansatz_list:
             return True
         else:
             return False
@@ -101,113 +109,103 @@ def root_inv(A, eps=1e-8):
 
     Author(s): Takashi Tsuchimochi
     """
-    import numpy as np
-    import scipy as sp
 
     u, s, vh = np.linalg.svd(A, hermitian=True)
     mask = s >= eps
     red_u = sp.compress(mask, u, axis=1)
     # Diagonal matrix of s**-1/2
-    sinv2 = np.diag([1 / np.sqrt(i) for i in s if i > eps])
-    Sinv2 = red_u @ sinv2
+    sinv2 = np.diag([1/np.sqrt(i) for i in s if i > eps])
+    Sinv2 = red_u@sinv2
     return Sinv2
 
 
 def T1vec2mat(noa, nob, nva, nvb, kappa_list):
     """Function:
-     Expand kappa_list to ta and tb
-     [in]  kappa_list: occ-vir matrices of alpha and beta
-     [out] (occ+vir)-(occ+vir) matrices of alpha and beta
-           (zeroes substituted in occ-occ and vir-vir)
+    Expand kappa_list to ta and tb
+    [in]  kappa_list: occ-vir matrices of alpha and beta
+    [out] (occ+vir)-(occ+vir) matrices of alpha and beta
+          (zeroes substituted in occ-occ and vir-vir)
 
     Author(s): Takashi Tsuchimochi
     """
-    import numpy as np
-
-    ta = np.zeros((noa + nva, noa + nva))
-    tb = np.zeros((noa + nva, noa + nva))
+    ta = np.zeros((noa+nva, noa+nva))
+    tb = np.zeros((noa+nva, noa+nva))
     ia = 0
     for a in range(nva):
         for i in range(noa):
-            ta[a + noa, i] = kappa_list[ia]
-            ta[i, a + noa] = -kappa_list[ia]
+            ta[a+noa, i] = kappa_list[ia]
+            ta[i, a+noa] = -kappa_list[ia]
             ia += 1
     for a in range(nvb):
         for i in range(nob):
-            tb[a + nob, i] = kappa_list[ia]
-            tb[i, a + nob] = -kappa_list[ia]
+            tb[a+nob, i] = kappa_list[ia]
+            tb[i, a+nob] = -kappa_list[ia]
             ia += 1
     return ta, tb
 
 
 def T1mat2vec(noa, nob, nva, nvb, ta, tb):
     """Function:
-     Extract occ-vir block of ta and tb to make kappa_list
-     [in]  (occ+vir)-(occ+vir) matrices of alpha and beta
-           (zeroes assumed in occ-occ and vir-vir)
-     [out] kappa_list: occ-vir matrices of alpha and beta
+    Extract occ-vir block of ta and tb to make kappa_list
+    [in]  (occ+vir)-(occ+vir) matrices of alpha and beta
+          (zeroes assumed in occ-occ and vir-vir)
+    [out] kappa_list: occ-vir matrices of alpha and beta
 
     Author(s): Takashi Tsuchimochi
     """
-    import numpy as np
-
-    kappa_list = np.zeros(noa * nva + nob * nvb)
+    kappa_list = np.zeros(noa*nva + nob*nvb)
     ia = 0
     for a in range(nva):
         for i in range(noa):
-            kappa_list[ia] = ta[a + noa, i]
+            kappa_list[ia] = ta[a+noa, i]
             ia += 1
     for a in range(nvb):
         for i in range(nob):
-            kappa_list[ia] = tb[a + nob, i]
+            kappa_list[ia] = tb[a+nob, i]
             ia += 1
     return kappa_list
 
 
 def expAexpB(n, A, B):
     """Function:
-     Given n-by-n matrices A and B, do log(exp(A).exp(B))
+    Given n-by-n matrices A and B, do log(exp(A).exp(B))
 
     Author(s): Takashi Tsuchimochi
     """
-    import numpy as np
-    from scipy.linalg import expm, logm
-
-    C = logm(np.matmul(expm(A), expm(B)))
-    return C
+    return logm(np.matmul(expm(A), expm(B)))
 
 
 def T1mult(noa, nob, nva, nvb, kappa1, kappa2):
     """Function:
-     Given two kappa's, approximately combine them.
+    Given two kappa's, approximately combine them.
 
     Author(s): Takashi Tsuchimochi
     """
     t1a, t1b = T1vec2mat(noa, nob, nva, nvb, kappa1)
     t2a, t2b = T1vec2mat(noa, nob, nva, nvb, kappa2)
-    t12a = expAexpB(noa + nva, t1a, t2a)
-    t12b = expAexpB(noa + nva, t1b, t2b)
+    t12a = expAexpB(noa+nva, t1a, t2a)
+    t12b = expAexpB(noa+nva, t1b, t2b)
     kappa12 = T1mat2vec(noa, nob, nva, nvb, t12a, t12b)
     return kappa12
 
 
 def Binomial(n, r):
     """Function:
-     Given integers n and r, compute nCr
+    Given integers n and r, compute nCr
 
-     Args:
-        n (int): n of nCr
-        r (int): r of nCr
+    Args:
+       n (int): n of nCr
+       r (int): r of nCr
 
-     Returns:
-        nCr
+    Returns:
+       nCr
     """
-    from operator import mul
-    from functools import reduce
-    r = min(r, n - r)
-    numer = reduce(mul, range(n, n - r, -1), 1)
-    denom = reduce(mul, range(1, r + 1), 1)
-    return numer // denom
+# scipy.special.combの方が基本高速みたいです
+    #r = min(r, n-r)
+    #numer = reduce(mul, range(n, n-r, -1), 1)
+    #denom = reduce(mul, range(1, r+1), 1)
+    #return numer//denom
+    return sp.special.comb(n, r, exact=True)
 
 
 
@@ -215,40 +213,36 @@ def orthogonal_constraint(Quket, state):
     """Function
     Compute the penalty term for excited states based on 'orthogonally-constrained VQE' scheme.
     """
-    from qulacs.state import inner_product
 
     nstates = len(Quket.lower_states)
     extra_cost = 0
     for i in range(nstates):
-        Ei = Quket.qulacs.Hamiltonian.get_expectation_value(Quket.lower_states[i])
+        Ei = Quket.qulacs.Hamiltonian.get_expectation_value(
+                Quket.lower_states[i])
         overlap = inner_product(Quket.lower_states[i], state)
-        extra_cost += -Ei * abs(overlap) ** 2
+        extra_cost += -Ei * abs(overlap)**2
     return extra_cost
 
 
 def fci2qubit(norbs, nalpha, nbeta, fci_coeff):
     """Function
-        Perform mapping from fci coefficients to qubit representation
+    Perform mapping from fci coefficients to qubit representation
 
-        Args:
-            norbs (int): number of active orbitals
-            nalpha (int): number of alpha electrons
-            nbeta (int): number of beta electrons
-            fci_coeff (ndarray): FCI Coefficients in a (NDetA, NDetB) array
-                                 with
-                                 NDetA = Choose(norbs, nalpha)
-                                 NDetB = Choose(norbs, nbeta)
+    Args:
+        norbs (int): number of active orbitals
+        nalpha (int): number of alpha electrons
+        nbeta (int): number of beta electrons
+        fci_coeff (ndarray): FCI Coefficients in a (NDetA, NDetB) array with
+                             NDetA = Choose(norbs, nalpha)
+                             NDetB = Choose(norbs, nbeta)
     """
-    import numpy
-    from operator import itemgetter
-    from itertools import combinations
-    from qulacs import QuantumState
     #printmat(fci_coeff)
     NDetA = Binomial(norbs, nalpha)
     NDetB = Binomial(norbs, nbeta)
     if NDetA is not fci_coeff.shape[0] or NDetB is not fci_coeff.shape[1]:
-        prints("NDetA = {}  NDetB = {}   fci_coeff = {}".format(NDetA,NDetB,fci_coeff.shape))
-        error(" Wrong dimensions fci_coeff in fci2qubit")
+        error(f"NDetA = {NDetA}  NDetB = {NDetB}  "
+              f"fci_coeff = {fci_coeff.shape}"
+              f"Wrong dimensions fci_coeff in fci2qubit")
     listA =  list(combinations(range(norbs), nalpha))
     listB =  list(combinations(range(norbs), nbeta))
 
@@ -256,59 +250,62 @@ def fci2qubit(norbs, nalpha, nbeta, fci_coeff):
         listA = sorted(listA, key=itemgetter(isort))
     for isort in range(nbeta):
         listB = sorted(listB, key=itemgetter(isort))
+
     j = 0
     n_qubits = norbs*2
-    opt = "0" + str(norbs*2) + "b"
-    vec = numpy.zeros(2**n_qubits)
+    opt = f"0{n_qubits}b"
+    vec = np.zeros(2**n_qubits)
     for ib in range(NDetB):
-        occB = [n*2+1 for n in listB[ib]]
+        occB = np.array([n*2 + 1 for n in listB[ib]])
+
         for ia in range(NDetA):
-            occA = [n*2 for n in listA[ia]]
-#            prints("Det {} {}".format(ia,ib),  "  occA ",occA, '  occB ',occB)
-            k = 0
-            for i in occA:
-                k += 2**i
-            for i in occB:
-                k += 2**i
-            if ia <= ib:
-                vec[k] = fci_coeff[ia,ib]
-            else:
-                vec[k] = -fci_coeff[ia,ib]
-#            if abs(fci_coeff[ia,ib]) > 1e-4:
-#                prints("    Det# {}: ".format(j+1), end="");
-#                prints(
-#                "|", format(k, opt),"> : {}".format(fci_coeff[ia,ib]))
-#            j += 1
+            occA = np.array([n*2 for n in listA[ia]])
+            #prints("Det {} {}".format(ia,ib),  "  occA ",occA, '  occB ',occB)
+            k = np.sum(2**occA) + np.sum(2**occB)
+            vec[k] = fci_coeff[ia, ib] if ia <= ib else -fci_coeff[ia, ib]
+            #if abs(fci_coeff[ia, ib]) > 1e-4:
+            #    prints(f"    Det# {j+1}: ", end="");
+            #    prints(f"| {format(k, opt)} > : {fci_coeff[ia, ib]}")
+            #j += 1
     fci_state = QuantumState(n_qubits)
     fci_state.load(vec)
     return fci_state
 
-def lstsq(a, b, cond=None, overwrite_a=False, overwrite_b=False, check_finite=True, lapack_driver=None):
+
+def lstsq(a, b,
+          cond=None, overwrite_a=False, overwrite_b=False,
+          check_finite=True, lapack_driver=None):
     """Function
-    Wrapper for scipy.linalg.lstsq, which is known to have some bug related to 'SVD failure'.
+    Wrapper for scipy.linalg.lstsq, which is known to have some bug
+    related to 'SVD failure'.
     This wrapper simply tries lstsq some times until it succeeds...
     """
-    import scipy
-    i = 0
-    while i < 5:
+    for i in range(5):
         try:
-            i += 1
-            x, res, rnk, s = scipy.linalg.lstsq(a, b, cond=cond, overwrite_a=overwrite_a, overwrite_b=overwrite_b, check_finite=check_finite, lapack_driver=lapack_driver)
+            x, res, rnk, s = lstsq(a, b, cond=cond,
+                                   overwrite_a=overwrite_a,
+                                   overwrite_b=overwrite_b,
+                                   check_finite=check_finite,
+                                   lapack_driver=lapack_driver)
             break
         except:
             continue
+
     if i == 5:
         print("lstsq does not seem to converge...")
+
         def cost_fun(vct):
-            return LA.norm(np.dot(Amat, vct) - b_l) ** 2
+            return LA.norm(Amat@vct - b_l)**2
 
         def J_cost_fun(vct):
-            wct = np.dot(a, vct)
-            wct = np.dot(a.T, wct)
-            return 2.0 * (wct - zct)
+            wct = a.T@a@vct
+# zctが未定義
+            return 2.0*(wct-zct)
 
-        x = scipy.optimize.minimize(
-            cost_fun, method='Newton-CG', jac=J_cost_fun, tol=1e-8).x
+        x = scipy.optimize.minimize(cost_fun,
+                                    method='Newton-CG',
+                                    jac=J_cost_fun,
+                                    tol=1e-8).x
         res = None
         rnk = None
         s = None
