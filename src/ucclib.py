@@ -684,6 +684,9 @@ def cost_uccd(Quket, print_level, kappa_list, theta_list, threshold=1e-2):
     if print_level > 1:
         prints("\n(UCCD state)")
         print_state(state)
+
+    # Store UCCD wave function
+    Quket.state = state
     return Euccd, S2
 
 
@@ -887,8 +890,6 @@ def ucc_singlesX(circuit, theta_list, occ_list, vir_list, ndim2=0):
 
     Author(s):  Yuto Mori
     """
-    from .ucclib import single_ope_Pauli
-
     ia = ndim2
     occ_list_a = [i for i in occ_list if i%2 == 0]
     occ_list_b = [i for i in occ_list if i%2 == 1]
@@ -899,13 +900,13 @@ def ucc_singlesX(circuit, theta_list, occ_list, vir_list, ndim2=0):
     for a in vir_list_a:
         for i in occ_list_a:
             single_ope_Pauli(a, i, circuit, theta_list[ia])
-            ia = ia + 1
+            ia += 1
 
     ### beta ###
     for a in vir_list_b:
         for i in occ_list_b:
             single_ope_Pauli(a, i, circuit, theta_list[ia])
-            ia = ia + 1
+            ia += 1
 
 
 def ucc_doublesX(circuit, theta_list, occ_list, vir_list, ndim1=0):
@@ -915,8 +916,6 @@ def ucc_doublesX(circuit, theta_list, occ_list, vir_list, ndim1=0):
 
     Author(s):  Yuto Mori
     """
-    from .ucclib import double_ope_Pauli
-
     ijab = ndim1
     occ_list_a = [i for i in occ_list if i%2 == 0]
     occ_list_b = [i for i in occ_list if i%2 == 1]
@@ -1013,6 +1012,6 @@ def ucc_singles_g(circuit, no, nv, theta_list, ndim2=0):
     ### alpha ###
     for a in range(nv):
         for i in range(no):
-            # single_ope(a2, i2, circuit, theta_list[ia])
+            #single_ope(a2, i2, circuit, theta_list[ia])
             single_ope_Pauli(a+no, i, circuit, theta_list[ia])
             ia += 1
