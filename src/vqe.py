@@ -237,7 +237,7 @@ def VQE_driver(Quket, kappa_guess, theta_guess, mix_level, opt_method,
                 theta_list,
                 k_param,
                 )
-    elif "pccgsd" in ansatz or "pccgsd" in ansatz:
+    elif "pccgsd" in ansatz:
         ###UpCCGSD###
         cost_wrap = lambda theta_list: cost_upccgsd(
                 Quket,
