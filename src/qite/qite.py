@@ -9,7 +9,7 @@ Main driver of QITE.
 
 """
 from .qite_anti import make_antisymmetric_group, qite_anti
-from .qite_function import uccsd, uccgsd, upccgsd
+from .qite_function import uccsd_fermi, uccgsd_fermi, upccgsd_fermi
 from .qite_exact import qite_exact
 from .qite_inexact import qite_inexact
 from .. import config as cf
@@ -41,11 +41,11 @@ def QITE_driver(Quket):
             ansatz_operator = Quket.operators.Hamiltonian
             ansatz_operator *= ansatz_operator
         if ansatz == "uccsd":
-            ansatz_operator = uccsd(n_orbitals, det)
+            ansatz_operator = uccsd_fermi(n_orbitals, det)
         if ansatz == "uccgsd":
-            ansatz_operator = uccgsd(n_orbitals, det)
+            ansatz_operator = uccgsd_fermi(n_orbitals, det)
         if ansatz == "upccgsd":
-            ansatz_operator = upccgsd(n_orbitals, det)
+            ansatz_operator = upccgsd_fermi(n_orbitals, det)
         if ansatz == "cite":
             ### Classical ITE
             id_set = []
