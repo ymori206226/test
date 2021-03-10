@@ -8,58 +8,55 @@ qite.py
 Main driver of QITE.
 
 """
-
-from .. import config as cf
-import numpy as np
-from ..fileio import error, prints
-
 from .qite_anti import make_antisymmetric_group, qite_anti
 from .qite_function import uccsd, uccgsd, upccgsd
 from .qite_exact import qite_exact
 from .qite_inexact import qite_inexact
+from .. import config as cf
+from ..fileio import prints
 
 
 def QITE_driver(Quket):
-    prints("Performing QITE for {} Hamiltonian".format(Quket.model))
-    prints(
-        "Initial configuration: |",
-        format(Quket.det, "0" + str(Quket.n_qubits) + "b"),
-        ">",
-    )
-    prints("Convergence criteria:  ftol = {:1.0E} ".format(Quket.ftol))
+    model = Quket.model
+    ansatz = Quket.ansatz
+    det = Quket.det
+    n_qubits = Quket.n_qubits
+    ftol = Quket.ftol
+    truncate = Quket.truncate
 
-    if Quket.ansatz == "inexact":
-        qite_inexact(
-            Quket,
-            cf.nterm,
-            cf.dimension,
-        )
-    elif Quket.ansatz == "exact":
+    opt = f"0{n_qubits}b"
+    prints(f"Performing QITE for {model} Hamiltonian")
+    prints(f"Initial configuration: | {format(det, opt)} >")
+    prints(f"Convergence criteria: ftol = {ftol:1.0E}")
+
+    if ansatz == "inexact":
+        qite_inexact(Quket, cf.nterm, cf.dimension)
+    elif ansatz == "exact":
         qite_exact(Quket)
     else:
         ### Anti-symmetric group
-        if Quket.ansatz == "hamiltonian":
+        if ansatz == "hamiltonian":
             ansatz_operator = Quket.operators.Hamiltonian
-        if Quket.ansatz == "hamiltonian2":
+        if ansatz == "hamiltonian2":
             ansatz_operator = Quket.operators.Hamiltonian
             ansatz_operator *= ansatz_operator
-        if Quket.ansatz == "uccsd":
-            ansatz_operator = uccsd(Quket.n_orbitals, Quket.det)
-        if Quket.ansatz == "uccgsd":
-            ansatz_operator = uccgsd(Quket.n_orbitals, Quket.det)
-        if Quket.ansatz == "upccgsd":
-            ansatz_operator = upccgsd(Quket.n_orbitals, Quket.det)
-        if Quket.ansatz == "cite":
+        if ansatz == "uccsd":
+            ansatz_operator = uccsd(n_orbitals, det)
+        if ansatz == "uccgsd":
+            ansatz_operator = uccgsd(n_orbitals, det)
+        if ansatz == "upccgsd":
+            ansatz_operator = upccgsd(n_orbitals, det)
+        if ansatz == "cite":
             ### Classical ITE
             id_set = []
             size = 0
         else:
-            id_set, size = make_antisymmetric_group(
-                ansatz_operator,
-                Quket.operators.jw_Hamiltonian,
-                Quket.model,
-                Quket.n_qubits,
-                Quket.ansatz,
-                Quket.truncate,
-            )
+            id_set, size \
+                    = make_antisymmetric_group(
+                            ansatz_operator,
+                            Quket.operators.jw_Hamiltonian,
+                            model,
+                            n_qubits,
+                            ansatz,
+                            truncate)
         qite_anti(Quket, id_set, size)
