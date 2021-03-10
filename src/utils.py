@@ -288,18 +288,16 @@ def lstsq(a, b,
                                    check_finite=check_finite,
                                    lapack_driver=lapack_driver)
             break
-        except:
-            continue
-
-    if i == 5:
+    else:
+        # Come if not break
         print("lstsq does not seem to converge...")
 
+# Amat, b_l, a, zctが未定義
         def cost_fun(vct):
             return LA.norm(Amat@vct - b_l)**2
 
         def J_cost_fun(vct):
             wct = a.T@a@vct
-# zctが未定義
             return 2.0*(wct-zct)
 
         x = scipy.optimize.minimize(cost_fun,
