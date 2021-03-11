@@ -106,6 +106,7 @@ def read_input(job_no):
         line = get_line(lines[i])
         if isinstance(line, str):
             key = line.strip()
+            value = ""
         elif isinstance(line, tuple):
             key, value = line
         else:
