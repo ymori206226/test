@@ -11,7 +11,8 @@ from .utils import chkbool, chkmethod
 #############################
 
 
-def read_input(Quket, job_no):
+#def read_input(Quket, job_no):
+def read_input(job_no):
     """Function:
 
     Open ***.inp and read options.
@@ -66,7 +67,7 @@ def read_input(Quket, job_no):
 
     """
     job_k = 0
-    with open(cf.input_file):
+    with open(cf.input_file) as f:
         lines = f.readlines()
 
     # Values forced to be initialized
@@ -75,8 +76,8 @@ def read_input(Quket, job_no):
     def get_line(line):
         # Removal of certain symbols and convert multi-space to single-space.
         repstr = ":,'()"
-        line = lines[i].translate(str.marketrans(repstr, " "*len(repstr), ""))
-        line = re.sub(r" +", r" ", line)
+        line = line.translate(str.maketrans(repstr, " "*len(repstr), ""))
+        line = re.sub(r" +", r" ", line).rstrip("\n")
         if len(line) == 0:
             # Ignore blank line.
             return
@@ -99,16 +100,16 @@ def read_input(Quket, job_no):
     ######################################
     ###    Start reading input file    ###
     ######################################
+    Finish = True
     kwds = {}
     for i in range(len(lines)):
         line = get_line(lines[i])
         if isinstance(line, str):
-            key = line
+            key = line.strip()
         elif isinstance(line, tuple):
             key, value = line
         else:
             continue
-
 
         # How to write; 'option's name': 'attribute's name'
         integers = {
@@ -206,7 +207,7 @@ def read_input(Quket, job_no):
         # General #
         ###########
         elif key == "basis":
-            if len(value) == 1:
+            if len(value.split(" ")) == 1:
                 # e.g.) basis = sto-3g
                 kwds[key] = value
             else:
@@ -227,12 +228,14 @@ def read_input(Quket, job_no):
                 if not isinstance(next_line, str):
                     break
                 atom_info = next_line.split(" ")
+                if len(atom_info) != 4:
+                    break
                 atom = atom_info[0]
-                xyz = tuple(atom_info[1:4])
+                xyz = tuple(map(float, atom_info[1:4]))
                 if atom in cf.PeriodicTable:
                     geom.append((atom, xyz))
             # Set geometry and update line number.
-            kwds[key] == geom
+            kwds[key] = geom
             i = j
         elif key in ["det", "determinant"]:
             # e.g.) 000011
@@ -280,6 +283,8 @@ def read_input(Quket, job_no):
                 next_line = get_line(lines[j])
                 if not isinstance(next_line, str):
                     break
+                if len(next_line.split(" ")) != 2:
+                    break
                 state, weight = next_line.split(" ")
                 states.append(int(f"0b{state}", 2))
                 weights.append(float(weight))
@@ -316,7 +321,7 @@ def read_input(Quket, job_no):
     if "method" not in kwds or "ansatz" not in kwds:
         error(f"Unspecified method or ansatz.")
     if not chkmethod(kwds["method"], kwds["ansatz"]):
-        error(f"No methhod option {kwds['method']} "
+        error(f"No method option {kwds['method']} "
               f"with {kwds['ansatz']} available.")
 
     # Add 'data_directory' for 'chemical'.

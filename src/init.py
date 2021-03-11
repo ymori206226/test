@@ -28,7 +28,7 @@ from .mod import run_pyscf_mod
 from .fileio import error, prints, openfermion_print_state, print_geom
 from .opelib import create_1body_operator
 from .phflib import weightspin, trapezoidal, simpson
-from .icmrucc import calc_num_ic_theta
+#from .icmrucc import calc_num_ic_theta
 
 
 @dataclass
@@ -205,7 +205,8 @@ class Multi():
         weights (list): Weight for state-average calculations;
                         usually 1 for all.
     """
-    act2act_ops: bool
+    act2act_ops: bool = False
+
     states: List = field(default_factory=list)
     weights: List = field(default_factory=list)
 
@@ -255,10 +256,10 @@ class QuketData():
     truncate: float = 0.
     excited_states: List = field(default_factory=list)
 
-    operators: self.Operators = field(init=False, default=None)
-    qulacs: self.Qulacs = field(init=False, default=None)
-    projection: self.Projection = field(init=False, default=None)
-    multi: self.Multi = field(init=False, default=None)
+    operators: Operators = field(init=False, default=None)
+    qulacs: Qulacs = field(init=False, default=None)
+    projection: Projection = field(init=False, default=None)
+    multi: Multi = field(init=False, default=None)
 
     def __post_init__(self, *args, **kwds):
         # Set some initialization.
@@ -284,9 +285,9 @@ class QuketData():
         #############
         # Set model #
         #############
-        if self.basis == "hubbard":
+        if kwds["basis"] == "hubbard":
             self.model = "hubbard"
-        elif "heisenberg" in self.basis:
+        elif "heisenberg" in kwds["basis"]:
             self.model = "heisenberg"
         else:
             self.model = "chemical"
@@ -314,8 +315,8 @@ class QuketData():
             obj = QuketMolecule(**init_dict)
 # 全部の軌道と電子を使う？
             obj, pyscf_mol = run_pyscf_mod(pyscf_guess, obj.n_orbitals,
-                                           self.n_electrons, obj,
-                                           run_fci=self.run_fci)
+                                           obj.n_electrons, obj,
+                                           run_casci=self.run_fci)
 
             if "n_electrons" in kwds:
                 obj.n_active_electrons = kwds["n_electrons"]
@@ -455,25 +456,25 @@ class QuketData():
 
         self.projection.set_projection(trap=trap)
 
-    def get_ic_ndim(self):
-        core_num = self.n_qubits
-        vir_index = 0
-        for istate in range(self.multi.nstates):
-            ### Read state integer and extract occupied/virtual info
-            occ_list_tmp = int2occ(self.multi.states[istate])
-            vir_tmp = occ_list_tmp[-1] + 1
-            for ii in range(len(occ_list_tmp)):
-                if ii == occ_list_tmp[ii]:
-                    core_tmp = ii + 1
-            vir_index = max(vir_index, vir_tmp)
-            core_num = min(core_num, core_tmp)
-        vir_num = self.n_qubits - vir_index
-        act_num = self.n_qubits - core_num - vir_num
-        self.multi.core_num = core_num
-        self.multi.act_num = act_num
-        self.multi.vir_num = vir_num
-        ndim1, ndim2 = calc_num_ic_theta(n_qubit_system, vir_num,
-                                         act_num, core_num)
+#    def get_ic_ndim(self):
+#        core_num = self.n_qubits
+#        vir_index = 0
+#        for istate in range(self.multi.nstates):
+#            ### Read state integer and extract occupied/virtual info
+#            occ_list_tmp = int2occ(self.multi.states[istate])
+#            vir_tmp = occ_list_tmp[-1] + 1
+#            for ii in range(len(occ_list_tmp)):
+#                if ii == occ_list_tmp[ii]:
+#                    core_tmp = ii + 1
+#            vir_index = max(vir_index, vir_tmp)
+#            core_num = min(core_num, core_tmp)
+#        vir_num = self.n_qubits - vir_index
+#        act_num = self.n_qubits - core_num - vir_num
+#        self.multi.core_num = core_num
+#        self.multi.act_num = act_num
+#        self.multi.vir_num = vir_num
+#        ndim1, ndim2 = calc_num_ic_theta(n_qubit_system, vir_num,
+#                                         act_num, core_num)
 
     def print(self):
         if mpi.main_rank:
