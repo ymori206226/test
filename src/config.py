@@ -34,7 +34,7 @@ input_file += ext
 # Define the names of other useful files
 theta_list_file = f"{input_dir}/{input_name}.theta"
 tmp = f"{input_dir}/{input_name}.tmp"
-kappa_list_file = input_dir + input_name + ".kappa"
+kappa_list_file = f"{input_dir}/{input_name}.kappa"
 chk = f"{input_dir}/{input_name}.chk"
 
 # If second argument also exits, that will be your log file name

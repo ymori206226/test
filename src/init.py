@@ -399,14 +399,23 @@ class QuketData():
                    f"n_electrons = {self.n_electrons} "
                    f"and multiplicity = {self.multiplicity}")
 
+# フローズンコアに対応?
         # NOA; Number of Occupied orbitals of Alpha.
-        self.noa = (self.n_electrons+self.multiplicity-1)//2
+        #self.noa = (self.n_electrons+self.multiplicity-1)//2
+        self.noa = (self.n_active_electrons+self.multiplicity-1)//2
         # NOB; Number of Occupied orbitals of Beta.
-        self.nob = self.n_electrons - self.noa
+        #self.nob = self.n_electrons - self.noa
+        self.nob = self.n_active_electrons - self.noa
         # NVA; Number of Virtual orbitals of Alpha.
-        self.nva = self.n_orbitals - self.noa
+        #self.nva = self.n_orbitals - self.noa
+        self.nva = self.n_active_orbitals - self.noa
         # NVB; Number of Virtual orbitals of Beta.
-        self.nvb = self.n_orbitals - self.nob
+        #self.nvb = self.n_orbitals - self.nob
+        self.nvb = self.n_active_orbitals - self.nob
+        # NCA; Number of Core orbitals of Alpha.
+        self.nca = (self.n_electrons+self.multiplicity-1)//2 - self.noa
+        # NCB; Number of Core orbitals of Beta.
+        self.ncb = self.n_electrons - self.nca - self.noa - self.nob
 
         # Check initial determinant
         if self.det is None:

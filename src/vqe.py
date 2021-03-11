@@ -69,7 +69,7 @@ def VQE_driver(Quket, kappa_guess, theta_guess, mix_level, opt_method,
     ndim2ab = noa*nob*nva*nvb
     ndim2bb = nob*(nob-1)*nvb*(nvb-1)//4
     ndim2 = ndim2aa + ndim2ab + ndim2bb
-    if ansatz in ("uhf", "phf", "suhf", "sghf"):
+    if ansatz in ("uhf", "phf", "suhf"):
         ndim = ndim1
     elif ansatz == ("uccd", "puccd"):
         ndim = ndim2

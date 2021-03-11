@@ -29,14 +29,14 @@ def trapezoidal(x0, x1, n):
     else:
         h = (x1-x0)/(n-1)
 
-    w = [0]*n
-    x = [0]*n
-    w[0] = w[n-1] = h/2
+    w = np.empty(n)
+    x = np.empty(n)
+    w[0] = w[n-1] = h/2.
     w[1 : n-1] = h
     x[0] = x0
     x[n-1] = x1
     x[1 : n-1] = x0 + np.arange(1, n-1)*h
-    return x, w
+    return x.tolist(), w.tolist()
 
 
 def simpson(x0, x1, n):
@@ -51,15 +51,15 @@ def simpson(x0, x1, n):
     else:
         h = (x1-0)/(n-1)
 
-    w = [0]*n
-    x = [0]*n
+    w = np.empty(n)
+    x = np.empty(n)
     w[0] = w[n-1] = h/3.
-    w[1 : n-1 : 2] = 2/3*h
-    w[2 : n-1 : 2] = 4/3*h
+    w[1 : n-1 : 2] = 2./3.*h
+    w[2 : n-1 : 2] = 4./3.*h
     x[0] = x0
     x[n-1] = x1
     x[1 : n-1] = x0 + np.arange(1, n-1)*h
-    return x, w
+    return x.tolist(), w.tolist()
 
 
 def weightspin(nbeta, spin, m, n, beta):
@@ -67,8 +67,8 @@ def weightspin(nbeta, spin, m, n, beta):
     Calculae Wigner small d-matrix d^j_{mn}(beta)
     """
     j = spin - 1
-    dmm = np.array([wigner_d_matrix(j, m, n, beta[irot])*(j+1)/2
-                    for irot in range(nbeta)])
+    dmm = [wigner_d_matrix(j, m, n, beta[irot])*(j+1)/2.
+           for irot in range(nbeta)]
     return dmm
 
 
@@ -302,7 +302,7 @@ def controlled_Ug_gen(circuit, n_qubits, anc, alpha, beta, gamma,
             else:
                 circuit.add_RZ_gate(i, -alpha/4)
                 circuit.add_CNOT_gate(anc, i)
-                circuit.add_RZ_gate(i, alpha4)
+                circuit.add_RZ_gate(i, alpha/4)
                 circuit.add_CNOT_gate(anc, i)
 
 
