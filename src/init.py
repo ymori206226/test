@@ -122,12 +122,13 @@ class Projection():
             prints(f"Projecting to spin space : "
                    f"s = {(self.spin-1)/2:.1f}    "
                    f"Ms = {self.Ms} ")
-            prints(f"             Grid points :  "
-                   f"(alpha,beta,gamma) = ({self.euler_ngrids[0]}, "
-                                         f"{self.euler_ngrids[1]}, "
-                                         f"{self.euler_ngrids[2]})")
+            prints(f"             Grid points : "
+                   f"(alpha, beta, gamma) = ({self.euler_ngrids[0]}, "
+                                           f"{self.euler_ngrids[1]}, "
+                                           f"{self.euler_ngrids[2]})")
 
-            self.sp_angle = self.sp_weight = []
+            self.sp_angle = []
+            self.sp_weight = []
             # Alpha
             if self.euler_ngrids[0] > 1:
                 if trap:
@@ -168,9 +169,6 @@ class Projection():
                 wg_gamma = [1]
             self.sp_angle.append(gamma)
             self.sp_weight.append(wg_gamma)
-
-            self.sp_angle = np.array(self.sp_angle)
-            self.sp_weight = np.array(self.sp_weight)
 
         if self.NumberProj:
             prints(f"Projecting to number space :  "

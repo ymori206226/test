@@ -316,8 +316,9 @@ def read_input(job_no):
             if job_k == job_no:
                 Finish = False
                 break
-            else:
-                error(f"No option '{value}'")
+        else:
+            if value != "":
+                error(f"No option '{key}'")
 
     if "method" not in kwds or "ansatz" not in kwds:
         error(f"Unspecified method or ansatz.")

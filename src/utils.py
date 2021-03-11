@@ -307,7 +307,5 @@ def lstsq(a, b,
                                     method='Newton-CG',
                                     jac=J_cost_fun,
                                     tol=1e-8).x
-        res = None
-        rnk = None
-        s = None
+        res = rnk = s = None
     return x, res, rnk, s

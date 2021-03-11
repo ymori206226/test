@@ -165,7 +165,8 @@ def test_observable(state, obs, obsZ, n_sample):
     opt = f"0{n_qubits}b"
 
     expH = 0
-    exp = coef = []
+    exp = []
+    coef = []
     buf_state = QuantumState(n_qubits)
     for i in range(n_term):
         pauli_term = obs.get_term(i)
@@ -279,7 +280,8 @@ def test_transition_observable(state, obs, poststate0, poststate1, n_sample):
     print_state(poststate1, name="post(1)")
 
     expH = 0
-    exp = coef = []
+    exp = []
+    coef = []
     buf_state = QuantumState(n_qubits)
     for i in range(n_term):
         pauli_term = obs.get_term(i)
@@ -454,18 +456,32 @@ def cost_phf_sample(Quket, print_level,
             print("OK")
             ncyc = ncyc*10
             i_sample_x = 1000000
-        sampleHUg1 = sampleHUg2 = sampleHUg3 = sampleHUg4 = []
-        sampleS2Ug1 = sampleS2Ug2 = sampleS2Ug3 = sampleS2Ug4 = []
-        sampleUg1 = sampleUg2 = sampleUg3 = sampleUg4 = []
+        sampleHUg1 = []
+        sampleHUg2 = []
+        sampleHUg3 = []
+        sampleHUg4 = []
+        sampleS2Ug1 = []
+        sampleS2Ug2 = []
+        sampleS2Ug3 = []
+        sampleS2Ug4 = []
+        sampleUg1 = []
+        sampleUg2 = []
+        sampleUg3 = []
+        sampleUg4 = []
         # sampleEn = []
         # sampleS2 = []
-        sampleHUg = sampleS2Ug = sampleUg = np.zeros((ncyc, Ng))
-        sampleEn = sampleS2 = np.zeros((ncyc, 1))
+        sampleHUg = np.zeros((ncyc, Ng))
+        sampleS2Ug = np.zeros((ncyc, Ng))
+        sampleUg = np.zeros((ncyc, Ng))
+        sampleEn = np.zeros((ncyc, 1))
+        sampleS2 = np.zeros((ncyc, 1))
 
         for icyc in range(ncyc):
             prints(f"n_sample = {i_sample_x}  ({icyc} / {ncyc})",
                    filepath="./log2.txt")
-            HUg = S2Ug = Ug = []
+            HUg = []
+            S2Ug = []
+            Ug = []
             Ephf = S2 = Norm = 0
             for i in range(Ng):
                 ### Copy quantum state of UHF (cannot be done in real device) ###
@@ -628,7 +644,8 @@ def cost_uhf_sample(Quket, print_level, qulacs_hamiltonian, qulacs_s2,
     opt = f"0{n_qubit_system}b"
     prints("", filepath="./log.txt", opentype="w")
     for i_sample in samplelist:
-        sampleEn = sampleS2 = np.zeros((ncyc, 1))
+        sampleEn = np.zeros((ncyc, 1))
+        sampleS2 = np.zeros((ncyc, 1))
 
         for icyc in range(ncyc):
             prints(f"n_sample = {i_sample}  ({icyc:3d} / {ncyc})",
@@ -713,17 +730,20 @@ def cost_phf_sample_oneshot(print_level, qulacs_hamiltonianZ, qulacs_s2Z,
     samplelist = [5, 50, 500, 5000, 50000, 500000, 5000000]
     Ng = 4
     ncyc = 10
+
     prints("", filepath="./log.txt", opentype="w")
     for i_sample in samplelist:
-        sampleEn = sampleS2 = []
+        sampleEn = []
+        sampleS2 = []
 
         for icyc in range(ncyc):
             prints(f"n_sample : {i_sample}  ({icyc} / {ncyc})",
                    filepath="./log.txt")
 
-            HUg = S2Ug = Ug = []
+            HUg = []
+            S2Ug = []
+            Ug = []
             Ephf = S2 = Norm = 0
-
             for i in range(Ng):
                 ### Copy quantum state of UHF (cannot be done in real device) ###
                 state_g = QuantumState(n_qubits)

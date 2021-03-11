@@ -29,7 +29,8 @@ def trapezoidal(x0, x1, n):
     else:
         h = (x1-x0)/(n-1)
 
-    w = x = np.empty(n)
+    w = [0]*n
+    x = [0]*n
     w[0] = w[n-1] = h/2
     w[1 : n-1] = h
     x[0] = x0
@@ -50,7 +51,8 @@ def simpson(x0, x1, n):
     else:
         h = (x1-0)/(n-1)
 
-    w = x = np.empty(n)
+    w = [0]*n
+    x = [0]*n
     w[0] = w[n-1] = h/3.
     w[1 : n-1 : 2] = 2/3*h
     w[2 : n-1 : 2] = 4/3*h
@@ -157,20 +159,20 @@ def set_circuit_Ug(circuit, n_qubit_system, beta):
     ### Ug
     for i in range(0, n_qubit_system, 2):
         circuit.add_H_gate(i)
-        circuit.add_RX_gate(i+1, np.pi*0.5)
+        circuit.add_RX_gate(i+1, np.pi/2)
         circuit.add_CNOT_gate(i+1, i)
-        circuit.add_RZ_gate(i, -beta*0.5)
+        circuit.add_RZ_gate(i, -beta/2)
         circuit.add_CNOT_gate(i+1, i)
         circuit.add_H_gate(i)
-        circuit.add_RX_gate(i+1, -np.pi*0.5)
+        circuit.add_RX_gate(i+1, -np.pi/2)
 
         circuit.add_H_gate(i+1)
-        circuit.add_RX_gate(i, np.pi*0.5)
+        circuit.add_RX_gate(i, np.pi/2)
         circuit.add_CNOT_gate(i+1, i)
-        circuit.add_RZ_gate(i, beta*0.5)
+        circuit.add_RZ_gate(i, beta/2)
         circuit.add_CNOT_gate(i+1, i)
         circuit.add_H_gate(i+1)
-        circuit.add_RX_gate(i, -np.pi*0.5)
+        circuit.add_RX_gate(i, -np.pi/2)
 
 
 def set_circuit_ExpSy(circuit, n_qubit_system, angle):
@@ -238,7 +240,8 @@ def set_circuit_Rg(circuit, n_qubit_system, alpha, beta, gamma):
     set_circuit_ExpSz(circuit, n_qubit_system, alpha)
 
 
-def controlled_Ug_gen(circuit, n_qubits, anc, alpha, beta, gamma, threshold=1e-6):
+def controlled_Ug_gen(circuit, n_qubits, anc, alpha, beta, gamma,
+                      threshold=1e-6):
     """Function:
     Construct circuit for controlled-Ug in general spin-projection
 
@@ -253,7 +256,7 @@ def controlled_Ug_gen(circuit, n_qubits, anc, alpha, beta, gamma, threshold=1e-6
     Author(s): Takashi Tsuchimochi
     """
     ### Controlled Ug(alpha, beta, gamma)
-    if gamma > thresholg:
+    if gamma > threshold:
         for i in range(n_qubits-1):
             if i % 2 == 0:
                 circuit.add_RZ_gate(i, gamma/4)
@@ -444,26 +447,26 @@ def cost_proj(Quket, print_level, qulacs_hamiltonianZ, qulacs_s2Z,
     ### grid loop ###
     ### a list to compute the probability to observe 0 in ancilla qubit
     ### Array for <HUg>, <S2Ug>, <Ug>
-    Ep = 0
-    S2 = 0
-    Norm = 0
+    Ep = S2 = Norm = 0
     nalpha = max(Quket.projection.euler_ngrids[0], 1)
     nbeta = max(Quket.projection.euler_ngrids[1], 1)
     ngamma = max(Quket.projection.euler_ngrids[2], 1)
-    HUg = S2Ug = Ug = np.empty(nalpha*nbeta*ngamma)
+    HUg = np.empty(nalpha*nbeta*ngamma)
+    S2Ug = np.empty(nalpha*nbeta*ngamma)
+    Ug = np.empty(nalpha*nbeta*ngamma)
     ig = 0
     for ialpha in range(nalpha):
-        alpha = Quket.projection.sp_angle[0, ialpha]
-        alpha_coef = Quket.projection.sp_weight[0, ialpha]
+        alpha = Quket.projection.sp_angle[0][ialpha]
+        alpha_coef = Quket.projection.sp_weight[0][ialpha]
 
         for ibeta in range(nbeta):
-            beta = Quket.projection.sp_angle[1, ibeta]
-            beta_coef = (Quket.projection.sp_weight[1, ibeta]
+            beta = Quket.projection.sp_angle[1][ibeta]
+            beta_coef = (Quket.projection.sp_weight[1][ibeta]
                         *Quket.projection.dmm[ibeta])
 
             for igamma in range(ngamma):
-                gamma = Quket.projection.sp_angle[2, igamma]
-                gamma_coef = Quket.projection.sp_weight[2, igamma]
+                gamma = Quket.projection.sp_angle[2][igamma]
+                gamma_coef = Quket.projection.sp_weight[2][igamma]
 
                 ### Copy quantum state of UHF (cannot be done in real device) ###
                 state_g = QuantumState(n_qubits)
@@ -550,17 +553,17 @@ def S2Proj(Quket, Q, threshold=1e-8):
     nbeta = max(Quket.projection.euler_ngrids[1], 1)
     ngamma = max(Quket.projection.euler_ngrids[2], 1)
     for ialpha in range(nalpha):
-        alpha = Quket.projection.sp_angle[0, ialpha]
-        alpha_coef = Quket.projection.sp_weight[0, ialpha]*np.exp(1j*alpha*Ms)
+        alpha = Quket.projection.sp_angle[0][ialpha]
+        alpha_coef = Quket.projection.sp_weight[0][ialpha]*np.exp(1j*alpha*Ms)
 
         for ibeta in range(nbeta):
-            beta = Quket.projection.sp_angle[1, ibeta]
-            beta_coef = (Quket.projection.sp_weight[1, ibeta]
+            beta = Quket.projection.sp_angle[1][ibeta]
+            beta_coef = (Quket.projection.sp_weight[1][ibeta]
                         *Quket.projection.dmm[ibeta])
 
             for igamma in range(ngamma):
-                gamma = Quket.projection.sp_angle[2, igamma]
-                gamma_coef = (Quket.projection.sp_weight[2, igamma]
+                gamma = Quket.projection.sp_angle[2][igamma]
+                gamma_coef = (Quket.projection.sp_weight[2][igamma]
                              *np.exp(1j*gamma*Ms))
 
                 # Total Weight

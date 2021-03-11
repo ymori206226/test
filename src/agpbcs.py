@@ -11,7 +11,8 @@ from .utils import orthogonal_constraint
 
 def set_circuit_bcs(ansatz, n_qubits, n_orbitals, ndim1, ndim, theta_list, k):
     circuit = QuantumCircuit(n_qubits)
-    target_list = pauli_index = np.empty(2)
+    target_list = np.empty(2)
+    pauli_index = np.empty(2)
     for i in range(k):
         ioff  = i*ndim
         for p in range(n_orbitals):

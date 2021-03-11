@@ -180,7 +180,8 @@ def run_pyscf_mod(guess, n_active_orbitals, n_active_electrons, molecule,
 
     # Hold pyscf data in molecule. They are required to compute density
     # matrices and other quantities.
-    molecule._pyscf_data = pyscf_data = {}
+    molecule._pyscf_data = {}
+    pyscf_data = {}
     pyscf_data["mol"] = pyscf_molecule
     pyscf_data["scf"] = pyscf_scf
 

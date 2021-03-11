@@ -22,13 +22,15 @@ class Heisenberg():
         self.n_qubits = n_orbitals
 
     def get_operators(self, basis):
-        sx = sy = sz = []
+        sx = []
+        sy = []
+        sz = []
         for i in range(self.nspin):
             sx.append(QubitOperator(f"X{i}"))
             sy.append(QubitOperator(f"Y{i}"))
             sz.append(QubitOperator(f"Z{i}"))
 
-        jw_Hamiltonian = 0 * QubitOperator("")
+        jw_Hamiltonian = 0*QubitOperator("")
         if "lr" in basis:
             for i in range(self.nspin):
                 j = (i+1)%self.nspin

@@ -460,10 +460,9 @@ def cost_ic_mrucc(Quket, print_level, qulacs_hamiltonian, qulacs_s2,
                 spstate.add_state(state)
             print_state(spstate)
         prints("###############################################")
-    cost = 0
-    norm = 0
-    for istate in range(nstates0):
-        norm += cf.multi_weights[istate]
-        cost += cf.multi_weights[istate]*en[istate]
+
+    cost = norm = 0
+    norm = np.sum(Quket.multi.weights)
+    cost = np.sum(Quket.multi.weights*en)
     cost /= norm
     return cost, s2

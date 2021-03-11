@@ -67,7 +67,7 @@ while Finish is False:
     else:
         if Quket.hubbard_nx == 0:
             error("Hubbard model but hubbard_nx is not defined!")
-        Quket.n_orbitals = Quket.hubbard_nx * Quket.hubbard_ny
+        Quket.n_orbitals = Quket.hubbard_nx*Quket.hubbard_ny
 
     if cf.opt_method == "L-BFGS-B":
         opt_options = {"disp": True,
