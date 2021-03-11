@@ -17,10 +17,11 @@ from __future__ import absolute_import
 
 #import numpy as np
 #from pyscf import gto, scf, ao2mo, ci, cc, fci, mp
-from pyscf import ci, cc, fci, mp
+from pyscf import ci, cc, fci, mp, mcscf
 from openfermion import MolecularData
-from openfermionpyscf import (prepare_pyscf_molecule, compute_scf,
-                              compute_integrals, PyscfMolecularData)
+from openfermionpyscf import prepare_pyscf_molecule
+from openfermionpyscf._run_pyscf import (compute_scf, compute_integrals,
+                                         PyscfMolecularData)
 
 from . import config as cf
 from .fileio import error
@@ -43,7 +44,8 @@ from .fileio import error
 #    pyscf_molecule.charge = molecule.charge
 #    pyscf_molecule.symmetry = False
 #    pyscf_molecule.build()
-#
+#    from pprint import pprint
+#    pprint(pyscf_molecule.__dict__)
 #    return pyscf_molecule
 
 
@@ -78,7 +80,7 @@ from .fileio import error
 #    """
 #    # Get one electrons integrals.
 #    n_orbitals = pyscf_scf.mo_coeff.shape[1]
-#    one_electron_compresses \
+#    one_electron_compressed \
 #            = pyscf_scf.mo_coeff.T@pyscf_scf.get_hcore()@pyscf_scf.mo_coeff
 #    one_electron_integrals \
 #            = one_electron_compressed.reshape(n_orbitals, n_orbitals)
@@ -167,6 +169,12 @@ def run_pyscf_mod(guess, n_active_orbitals, n_active_electrons, molecule,
                   conv_tol=1e-12, conv_tol_grad=1e-12)
     molecule.hf_energy = float(pyscf_scf.e_tot)
 
+    # Set number of active electrons/orbitals.
+    if n_active_electrons is None:
+        n_active_electrons = molecule.n_electrons
+    if n_active_orbitals is None:
+        n_active_orbitals = molecule.n_orbitals
+
     # Hold pyscf data in molecule. They are required to compute density
     # matrices and other quantities.
     molecule._pyscf_data = pyscf_data = {}
@@ -186,7 +194,7 @@ def run_pyscf_mod(guess, n_active_orbitals, n_active_electrons, molecule,
     molecule.two_body_integrals = two_body_integrals
     molecule.overlap_integrals = pyscf_scf.get_ovlp()
 
-    if run_MP2:
+    if run_mp2:
         if molecule.multiplicity != 1:
             error("WARNING: RO-MP2 is not available in PySCF.")
         else:
@@ -245,16 +253,19 @@ def run_pyscf_mod(guess, n_active_orbitals, n_active_electrons, molecule,
         if spin is None:
             spin = molecule.multiplicity
         pyscf_molecule.spin = spin - 1
+        pyscf_casci = mcscf.CASCI(pyscf_scf,
+                                  n_active_orbitals, n_active_electrons)
         #pyscf_scf = compute_scf_mod(pyscf_molecule)
-        #pyscf_scf = compute_scf(pyscf_molecule)
         #pyscf_scf.run()
+        #pyscf_scf = compute_scf(pyscf_molecule)
         #pyscf_scf.run(chkfile=cf.chk, init_guess=guess,
         #              conv_tol=1e-12, conv_tol_grad=1e-12)
         ### reload mo coeffictions
         #pyscf_scf.mo_coeff = molecule.canonical_orbitals
         #pyscf_scf.mo_energy = molecule.orbital_energies
-        fci = pyscf_scf.CASCI(n_active_orbitals, n_active_electrons).kernel()
-        molecule.fci_energy = fci[0]
+        #Efci = pyscf_scf.CASCI(n_active_orbitals, n_active_electrons).kernel()
+        Efci = pyscf_casci.casci()[0]
+        molecule.fci_energy = Efci
 
     #cf.fci_coeff = fci[2]
     #fci2qubit(n_active_orbitals,n_active_electrons,pyscf_molecule.spin,fci[2])

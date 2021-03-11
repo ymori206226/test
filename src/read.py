@@ -77,7 +77,7 @@ def read_input(job_no):
         # Removal of certain symbols and convert multi-space to single-space.
         repstr = ":,'()"
         line = line.translate(str.maketrans(repstr, " "*len(repstr), ""))
-        line = re.sub(r" +", r" ", line).rstrip("\n")
+        line = re.sub(r" +", r" ", line).rstrip("\n").strip()
         if len(line) == 0:
             # Ignore blank line.
             return

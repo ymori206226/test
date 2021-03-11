@@ -9,7 +9,7 @@ Initializing state.
 
 """
 from typing import Any, List
-from dataclasses import dataclass, field, InitVar
+from dataclasses import dataclass, field, InitVar, make_dataclass
 
 import numpy as np
 from qulacs import Observable
@@ -26,7 +26,6 @@ from . import mpilib as mpi
 from . import config as cf
 from .mod import run_pyscf_mod
 from .fileio import error, prints, openfermion_print_state, print_geom
-from .opelib import create_1body_operator
 from .phflib import weightspin, trapezoidal, simpson
 #from .icmrucc import calc_num_ic_theta
 
@@ -80,7 +79,7 @@ class Qulacs():
     S2: Observable = None
     Number: Observable = None
 
-    def __post_init__(self, jw_Hamiltonian, jw_S2, *args, **kwds):
+    def __post_init__(self, jw_Hamiltonian, jw_S2, jw_Number, *args, **kwds):
         if jw_Hamiltonian is not None:
             self.Hamiltonian = create_observable_from_openfermion_text(
                     str(jw_Hamiltonian))
@@ -255,6 +254,7 @@ class QuketData():
     dt: float = 0.
     truncate: float = 0.
     excited_states: List = field(default_factory=list)
+    maxiter: int = 0
 
     operators: Operators = field(init=False, default=None)
     qulacs: Qulacs = field(init=False, default=None)
@@ -322,7 +322,7 @@ class QuketData():
                 obj.n_active_electrons = kwds["n_electrons"]
             else:
                 obj.n_active_electrons = obj.n_electrons
-            if "n_orbitals" not in kwds:
+            if "n_orbitals" in kwds:
                 obj.n_active_orbitals = kwds["n_orbitals"]
             else:
                 obj.n_active_orbitals = obj.n_orbitals

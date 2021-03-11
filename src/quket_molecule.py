@@ -1,9 +1,13 @@
 from typing import List
 from dataclasses import dataclass, field
 
+import numpy as np
+from openfermion.utils import number_operator, s_squared_operator
 from openfermion.hamiltonians import MolecularData
 
 from . import mpilib as mpi
+from .opelib import create_1body_operator
+from .fileio import prints, print_geom
 
 
 @dataclass
@@ -15,6 +19,8 @@ class QuketMolecule(MolecularData):
     description: str = ""
     filename: str = ""
     data_directory: str = None
+
+    n_qubits: int = field(init=False, default=None)
 
     def __post_init__(self, *args, **kwds):
         super().__init__(geometry=self.geometry, basis=self.basis,
@@ -28,7 +34,7 @@ class QuketMolecule(MolecularData):
             if pyscf_mol is None:
                 self, pyscf_mol = run_pyscf_mod(guess, self.n_orbitals,
                                                 self.n_electrons, self,
-                                                run_fci=self.run_fci)
+                                                run_casci=self.run_fci)
 
             # 'n_electrons' and 'n_orbitals' must not be 'None'.
             n_core_orbitals = (self.n_electrons-self.n_electrons)//2
