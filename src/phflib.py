@@ -526,6 +526,8 @@ def cost_proj(Quket, print_level, qulacs_hamiltonianZ, qulacs_s2Z,
         prints("HUg", HUg)
         prints("Ug", Ug)
 
+    # Store wave function
+    Quket.state = state
     return Ep, S2
 
 

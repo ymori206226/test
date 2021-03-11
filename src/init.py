@@ -325,29 +325,6 @@ class QuketData():
             else:
                 obj.n_active_orbitals = obj.n_orbitals
 
-        #######################################
-        # Inherit parent class                #
-        #   MAGIC: DYNAMIC CLASS INHERITANCE. #
-        #######################################
-        # Add attributes to myself
-        for k, v in obj.__dict__.items():
-            if k not in self.__dict__:
-                self.__dict__[k] = v
-        # Keep them under the control of dataclass and rename my class name.
-        my_fields = []
-        for k, v in self.__dict__.items():
-            if isinstance(v, (dict, list, set)):
-                my_fields.append((k, type(v), field(default_factory=v)))
-            else:
-                my_fields.append((k, type(v), v))
-        self.__class__ = make_dataclass(f"{obj.__class__.__name__}QuketData",
-                                        my_fields,
-                                        bases=(QuketData, obj.__class__))
-        # Add funcgtions and properties to myself.
-        for k in dir(obj):
-            if k not in dir(self):
-                setattr(self, k, getattr(mol, k))
-
         #################
         # Get Operators #
         #################
@@ -378,8 +355,31 @@ class QuketData():
                 self.operators = Operators(Hamiltonian=Hamiltonian, S2=S2,
                                            Number=Number, Dipole=Dipole)
 
+        #######################################
+        # Inherit parent class                #
+        #   MAGIC: DYNAMIC CLASS INHERITANCE. #
+        #######################################
+        # Add attributes to myself
+        for k, v in obj.__dict__.items():
+            if k not in self.__dict__:
+                self.__dict__[k] = v
+        # Keep them under the control of dataclass and rename my class name.
+        my_fields = []
+        for k, v in self.__dict__.items():
+            if isinstance(v, (dict, list, set)):
+                my_fields.append((k, type(v), field(default_factory=v)))
+            else:
+                my_fields.append((k, type(v), v))
+        self.__class__ = make_dataclass(f"{obj.__class__.__name__}QuketData",
+                                        my_fields,
+                                        bases=(QuketData, obj.__class__))
+        # Add funcgtions and properties to myself.
+        for k in dir(obj):
+            if k not in dir(self):
+                setattr(self, k, getattr(mol, k))
+
         # Initializing parameters
-        self.n_qubits = self.n_orbitals * 2
+        self.n_qubits = self.n_orbitals*2
 #hubbardにmultiplicityないのでは？
         self.projection.Ms = self.multiplicity - 1
         self.n_qubits_anc = self.n_qubits + 1

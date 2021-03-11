@@ -33,9 +33,8 @@ def cost_mpi(cost, theta):
 
     Author(s): Takashi Tsuchimochi
     """
-    cost_bcast, S2_bcast = cost(theta) if mpi.main_rank else 0, 0
+    cost_bcast = cost(theta) if mpi.main_rank else 0, 0
     cost_bcast = mpi.comm.bcast(cost_bcast, root=0)
-    S2_bcast = mpi.comm.bcast(S2_bcast, root=0)
     return cost_bcast
 
 
@@ -53,13 +52,13 @@ def jac_mpi(cost, theta, stepsize=1e-8):
     ndim = theta.size
     theta_d = copy.copy(theta)
 
-    E0, S2 = cost(theta)
+    E0 = cost(theta)
     grad = np.zeros(ndim)
     grad_r = np.zeros(ndim)
     ipos, my_ndim = mpi.myrange(ndim)
     for iloop in range(ipos, ipos+my_ndim):
         theta_d[iloop] += stepsize
-        Ep, S2 = cost(theta_d)
+        Ep = cost(theta_d)
         theta_d[iloop] -= stepsize
         grad[iloop] = (Ep-E0)/stepsize
     mpi.comm.Allreduce(grad, grad_r, mpi.MPI.SUM)

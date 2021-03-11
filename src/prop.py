@@ -17,7 +17,7 @@ from .fileio import prints, printmat, SaveTheta
 from .opelib import FermionOperator_to_Observable, FermionOperator_to_Operator
 
 
-def dipole(QuketData):
+def dipole(Quket, n_qubits):
     """Function
     Prepare the dipole operator and get expectation value.
 
@@ -26,21 +26,22 @@ def dipole(QuketData):
     # Prepare Operators for Qulacs
     qulacs_dipole_x \
             = FermionOperator_to_Observable(
-                    QuketData.operators.Dipole_operator[0],
-                    QuketData.n_qubits)
+                    Quket.operators.Dipole[0],
+                    n_qubits)
     qulacs_dipole_y \
             = FermionOperator_to_Observable(
-                    QuketData.operators.Dipole_operator[1],
-                    QuketData.n_qubits)
+                    Quket.operators.Dipole[1],
+                    n_qubits)
     qulacs_dipole_z \
             = FermionOperator_to_Observable(
-                    QuketData.operators.Dipole_operator[2],
-                    QuketData.n_qubits)
-    dx = -qulacs_dipole_x.get_expectation_value(QuketData.state)
-    dy = -qulacs_dipole_y.get_expectation_value(QuketData.state)
-    dz = -qulacs_dipole_z.get_expectation_value(QuketData.state)
+                    Quket.operators.Dipole[2],
+                    n_qubits)
+
+    dx = -qulacs_dipole_x.get_expectation_value(Quket.state)
+    dy = -qulacs_dipole_y.get_expectation_value(Quket.state)
+    dz = -qulacs_dipole_z.get_expectation_value(Quket.state)
     d = np.array([dx, dy, dz])
-    d += QuketData.atom_charges*QuketData.atom_coords
+    d += np.sum((Quket.atom_charges*Quket.atom_coords), axis=0)
     d = d/0.393456
 
     prints("\nDipole moment (in Debye) :")
@@ -48,16 +49,16 @@ def dipole(QuketData):
     prints(f"| mu | = {np.linalg.norm(d):.5f}")
 
 
-def get_1RDM(QuketData, print_level=1):
+def get_1RDM(Quket, print_level=1):
     """Function
-    Compute 1RDM of QuantmState `state` in QuketData.
+    Compute 1RDM of QuantmState `state` in Quket.
 
     Author(s): Taisei Nishimaki, Takashi Tsuchimochi
     """
     prints("\n === Computing 1RDM === ")
 
-    n_qubits = QuketData.n_qubits
-    norbs = QuketData.n_orbitals
+    n_qubits = Quket.n_qubits
+    norbs = Quket.n_orbitals
 
     Daa = np.zeros((norbs, norbs))
     Dbb = np.zeros((norbs, norbs))
@@ -76,7 +77,7 @@ def get_1RDM(QuketData, print_level=1):
             string = f"{i}^ {j}"
             Epq = FermionOperator(string)
             Epq_qu = FermionOperator_to_Operator(Epq, n_qubits)
-            Epq_expect = Epq_qu.get_expectation_value(QuketData.state).real
+            Epq_expect = Epq_qu.get_expectation_value(Quket.state).real
             Dpq = Epq_expect
 
             if i%2 == 0 and j%2 == 0:

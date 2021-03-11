@@ -338,7 +338,7 @@ def VQE_driver(Quket, kappa_guess, theta_guess, mix_level, opt_method,
                 Quket,
                 0,
                 theta_list,
-                )
+                )[0]
         cost_callback = lambda theta_list, print_control: cost_jmucc(
                 Quket,
                 print_control,
@@ -351,7 +351,7 @@ def VQE_driver(Quket, kappa_guess, theta_guess, mix_level, opt_method,
                 qulacs_hamiltonian,
                 qulacs_s2,
                 theta_list,
-                )
+                )[0]
         cost_callback = lambda theta_list, print_control: cost_ic_mrucc(
                 Quket,
                 print_control,
@@ -595,7 +595,7 @@ def VQE_driver(Quket, kappa_guess, theta_guess, mix_level, opt_method,
 
     if Quket.state is not None:
         if Quket.model == 'chemical':
-            dipole(Quket)
+            dipole(Quket, n_qubits)
         if Quket.Do1RDM:
             Daa, Dbb = get_1RDM(Quket, print_level=1)
         ### Test
