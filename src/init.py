@@ -198,13 +198,13 @@ class Multi():
     Multi/Excited-State calculation section.
 
     Attributes:
-        act2act_ops (bool): ??
+        act2act_opt (bool): ??
         states (list): Initial determinants (bits)
                        for multi-state calculations; JM-UCC or ic-MRUCC.
         weights (list): Weight for state-average calculations;
                         usually 1 for all.
     """
-    act2act_ops: bool = False
+    act2act_opt: bool = False
 
     states: List = field(default_factory=list)
     weights: List = field(default_factory=list)

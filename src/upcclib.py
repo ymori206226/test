@@ -68,7 +68,7 @@ def upcc_Gsingles(circuit, n_orbitals, theta_list, ndim1, ndim2, p):
     """
     ia = ndim2 + (ndim1+ndim2)*p
     for a in range(n_orbitals):
-        a2 = 2*
+        a2 = 2*a
         for i in range(a):
             i2 = 2*i
             single_ope_Pauli(a2, i2, circuit, theta_list[ia])

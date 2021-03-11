@@ -157,20 +157,20 @@ def set_circuit_Ug(circuit, n_qubit_system, beta):
     ### Ug
     for i in range(0, n_qubit_system, 2):
         circuit.add_H_gate(i)
-        circuit.add_RX_gate(i+1, np.pi/)
+        circuit.add_RX_gate(i+1, np.pi*0.5)
         circuit.add_CNOT_gate(i+1, i)
-        circuit.add_RZ_gate(i, -beta/2)
+        circuit.add_RZ_gate(i, -beta*0.5)
         circuit.add_CNOT_gate(i+1, i)
         circuit.add_H_gate(i)
-        circuit.add_RX_gate(i+1, -np.pi/2)
+        circuit.add_RX_gate(i+1, -np.pi*0.5)
 
         circuit.add_H_gate(i+1)
-        circuit.add_RX_gate(i, np.pi/2)
+        circuit.add_RX_gate(i, np.pi*0.5)
         circuit.add_CNOT_gate(i+1, i)
-        circuit.add_RZ_gate(i, beta/2)
+        circuit.add_RZ_gate(i, beta*0.5)
         circuit.add_CNOT_gate(i+1, i)
         circuit.add_H_gate(i+1)
-        circuit.add_RX_gate(i, -np.pi/2)
+        circuit.add_RX_gate(i, -np.pi*0.5)
 
 
 def set_circuit_ExpSy(circuit, n_qubit_system, angle):

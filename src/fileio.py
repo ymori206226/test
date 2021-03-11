@@ -183,7 +183,7 @@ def print_amplitudes(theta_list, noa, nob, nva, nvb,
         for i in range(nob):
             ii = i + 1
             if abs(theta_list[ia]) > threshold:
-                prints(f"{ii}b -> {aa}b : {theta_list[ia]:2.10f}"
+                prints(f"{ii}b -> {aa}b : {theta_list[ia]:2.10f}",
                        filepath=filepath)
             ia += 1
     ### print doubles amplitudes ###
@@ -198,7 +198,7 @@ def print_amplitudes(theta_list, noa, nob, nva, nvb,
                     ii = i + 1
                     if abs(theta_list[ijab]) > threshold:
                         prints(f"{ii}a {jj}a -> {aa}a {bb}a : "
-                               f"{theta_list[ijab]:2.10f}"
+                               f"{theta_list[ijab]:2.10f}",
                                filepath=filepath)
                     ijab += 1
 
@@ -214,7 +214,7 @@ def print_amplitudes(theta_list, noa, nob, nva, nvb,
                     # b > a, j > i
                     if abs(theta_list[ijab]) > threshold:
                         prints(f"{ii}a {jj}b -> {aa}a {bb}b : "
-                               f"{theta_list[ijab]:2.10f}"
+                               f"{theta_list[ijab]:2.10f}",
                                filepath=filepath)
                     ijab += 1
                 for i in range(j+1, noa):
@@ -222,7 +222,7 @@ def print_amplitudes(theta_list, noa, nob, nva, nvb,
                     # b > a, i > j
                     if abs(theta_list[ijab]) > threshold:
                         prints(f"{ii}a {jj}b -> {aa}a {bb}b : "
-                               f"{theta_list[ijab]:2.10f}"
+                               f"{theta_list[ijab]:2.10f}",
                                filepath=filepath)
                     ijab += 1
         for a in range(min(b+1, nva), nva):
@@ -234,7 +234,7 @@ def print_amplitudes(theta_list, noa, nob, nva, nvb,
                     # a > b, j > i
                     if abs(theta_list[ijab]) > threshold:
                         prints(f"{ii}a {jj}b -> {aa}a {bb}b : "
-                               f"{theta_list[ijab]:2.10f}"
+                               f"{theta_list[ijab]:2.10f}",
                                filepath=filepath)
                     ijab += 1
                 for i in range(j+1, noa):
@@ -242,7 +242,7 @@ def print_amplitudes(theta_list, noa, nob, nva, nvb,
                     # a > b, i > j
                     if abs(theta_list[ijab]) > threshold:
                         prints(f"{ii}a {jj}b -> {aa}a {bb}b : "
-                               f"{theta_list[ijab]:2.10f}"
+                               f"{theta_list[ijab]:2.10f}",
                                filepath=filepath)
                     ijab += 1
 
@@ -257,7 +257,7 @@ def print_amplitudes(theta_list, noa, nob, nva, nvb,
                     ii = i + 1
                     if abs(theta_list[ijab]) > threshold:
                         prints(f"{ii}b {jj}b -> {aa}b {bb}b : "
-                               f"{theta_list[ijab]:2.10f}"
+                               f"{theta_list[ijab]:2.10f}",
                                filepath=filepath)
                     ijab += 1
 
@@ -298,9 +298,9 @@ def print_amplitudes_spinfree(theta_list, no, nv,
                     abji = get_baji(a, b, j, i, no) + ia
                     theta = theta_list[baji] + theta_list[abji]
                     if abs(theta) > threshold:
-                        prints(f"{ii}a {jj}a -> {aa}a {bb}a : {theta:2.10f}"
+                        prints(f"{ii}a {jj}a -> {aa}a {bb}a : {theta:2.10f}",
                                filepath=filepath)
-                        prints(f"{ii}b {jj}b -> {aa}b {bb}b : {theta:2.10f}"
+                        prints(f"{ii}b {jj}b -> {aa}b {bb}b : {theta:2.10f}",
                                filepath=filepath)
 
     ### ab -> ab ###
@@ -324,7 +324,7 @@ def print_amplitudes_spinfree(theta_list, no, nv,
                     baji = get_baji(b, a, j, i, no) + ia
                     if abs(theta_list[baji]) > threshold:
                         prints(f"{ii}a {jj}b -> {aa}a {bb}b : "
-                               f"{theta_list[baji]:2.10f}"
+                               f"{theta_list[baji]:2.10f}",
                                filepath=filepath)
         for a in range(b+1, nv):
             aa = a + 1 + no
@@ -336,7 +336,7 @@ def print_amplitudes_spinfree(theta_list, no, nv,
                     baji = get_baji(b, a, j, i, no) + ia
                     if abs(theta_list[baji]) > threshold:
                         prints(f"{ii}a {jj}b -> {aa}a {bb}b : "
-                               f"{theta_list[baji]:2.10f}"
+                               f"{theta_list[baji]:2.10f}",
                                filepath=filepath)
                 for i in range(j+1, no):
                     ii = i + 1
@@ -344,7 +344,7 @@ def print_amplitudes_spinfree(theta_list, no, nv,
                     baji = get_baji(b, a, j, i, no) + ia
                     if abs(theta_list[baji]) > threshold:
                         prints(f"{ii}a {jj}b -> {aa}a {bb}b : "
-                               f"{theta_list[baji]:2.10f}"
+                               f"{theta_list[baji]:2.10f}",
                                filepath=filepath)
 
     prints("------------------")

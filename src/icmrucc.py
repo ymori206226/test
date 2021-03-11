@@ -7,9 +7,7 @@ from scipy.special import comb
 from qulacs import QuantumState, QuantumCircuit
 
 from . import config as cf
-from .init import int2occ
 from .utils import root_inv
-from .jmucc import create_HS2S
 from .expope import Gdouble_ope
 from .ucclib import single_ope_Pauli
 from .fileio import prints, print_state, SaveTheta, printmat
@@ -359,6 +357,9 @@ def cost_ic_mrucc(Quket, print_level, qulacs_hamiltonian, qulacs_s2,
     """ Function
     Author(s): Yuto Mori
     """
+    from .init import int2occ
+    from .jmucc import create_HS2S
+
     t1 = time.time()
     #nstates = len(cf.multi_weights)
 

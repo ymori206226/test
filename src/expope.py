@@ -8,6 +8,7 @@ expope.py
 Functions to prepare several types of rotations, including singles and doubles rotations.
 
 """
+import numpy as np
 from qulacs.gate import PauliRotation
 
 from . import config as cf
@@ -116,13 +117,11 @@ def Gdoubles_pqrs(p, q, r, s, circuit, theta, approx=cf.approx_exp):
     ### (6)   Exp[-i theta/8  Prod_{k=i1+1}^{i2-1} Z_k  Prod_{l=i3+1}^{i4-1} Z_l  (X_p X_q Y_r X_s)]
     ### (7)   Exp[-i theta/8  Prod_{k=i1+1}^{i2-1} Z_k  Prod_{l=i3+1}^{i4-1} Z_l  (Y_p X_q Y_r Y_s)]
     ### (8)   Exp[-i theta/8  Prod_{k=i1+1}^{i2-1} Z_k  Prod_{l=i3+1}^{i4-1} Z_l  (X_p Y_q Y_r Y_s)]
-    target_list = np.empty(ndim)
-    target_list[:ndim1] = np.arange(i1+1, i2)
-    target_list[ndim1:ndim2] = np.arange(i3+1, i4)
+    target_list = [0]*ndim
+    target_list[:ndim1] = list(range(i1+1, i2))
+    target_list[ndim1:ndim2] = list(range(i3+1, i4))
     target_list[ndim2:] = p, q, r, s
-
-    pauli_index = np.empty(ndim)
-    pauli_index[:ndim2] = 3
+    pauli_index = [3]*ndim
 
     ### (1)              Yp,Xq,Xr,Xs
     pauli_index[ndim2:] = 2, 1, 1, 1
@@ -179,12 +178,10 @@ def Gdoubles_pqps(p, q, s, circuit, theta):
     ### (2)   Exp[ i theta/4  Prod_{k=s+1}^{q-1} Z_k (    Y_q X_s)]
     ### (3)   Exp[-i theta/4  Prod_{k=s+1}^{q-1} Z_k (Z_p Y_q X_s)]
     ### (4)   Exp[-i theta/4  Prod_{k=s+1}^{q-1} Z_k (    X_q Y_s)]
-    target_list = np.empty(ndim)
-    target_list[:ndim1] = np.arange(s+1, q)
+    target_list = [0]*ndim
+    target_list[:ndim1] = list(range(s+1, q))
     target_lsit[ndim1:] = p, q, s
-
-    pauli_index = np.empty(ndim)
-    pauli_index[:ndim1] = 3
+    pauli_index = [3]*ndim
 
     ### (1)              Zp,Xq,Ys
     pauli_index[ndim1:] = 3, 1, 2
@@ -222,13 +219,11 @@ def Gdoubles_pqqs(p, q, s, circuit, theta):
     ### (2)   Exp[ i theta/4  Prod_{k=s+1}^{q-1} Z_k  Prod_{l=q+1}^{p-1} Z_l  (Y_p     X_s)]
     ### (3)   Exp[-i theta/4  Prod_{k=s+1}^{q-1} Z_k  Prod_{l=q+1}^{p-1} Z_l  (Y_p Z_q X_s)]
     ### (4)   Exp[-i theta/4  Prod_{k=s+1}^{q-1} Z_k  Prod_{l=q+1}^{p-1} Z_l  (X_p     Y_s)]
-    target_list = np.empty(ndim)
-    target_list[:ndim1] = np.arange(s+1, q)
-    target_list[ndim1:ndim2] = np.arange(q+1, p)
+    target_list = [0]*ndim
+    target_list[:ndim1] = list(range(s+1, q))
+    target_list[ndim1:ndim2] = list(range(q+1, p))
     target_list[ndim2:] = p, q, s
-
-    pauli_index = np.empty(ndim)
-    pauli_index[:ndim2] = 3
+    pauli_index = [3]*ndim
 
     ### (1)              Xp,Zq,Ys
     pauli_index[ndim2:] = 1, 3, 2
@@ -265,12 +260,10 @@ def Gdoubles_pqrq(p, q, r, circuit, theta):
     ### (2)   Exp[ i theta/4  Prod_{k=r+1}^{p-1} Z_k  (Y_p     X_r)]
     ### (3)   Exp[-i theta/4  Prod_{k=r+1}^{p-1} Z_k  (Y_p Z_q X_r)]
     ### (4)   Exp[-i theta/4  Prod_{k=r+1}^{p-1} Z_k  (X_p     Y_r)]
-    target_list = np.empty(ndim)
-    target_list[:ndim1] = np.arange(r+1, p)
+    target_list = [0]*ndim
+    target_list[:ndim1] = list(range(r+1, p))
     target_list[ndim1:] = p, q, r
-
-    pauli_index = np.empty(ndim)
-    pauli_index[:ndim1] = 3
+    pauli_index = [3]*ndim
 
     ### (1)              Xp,Zq,Yr
     pauli_index[ndim1:] = 1, 3, 2

@@ -4,7 +4,7 @@ from qulacs import QuantumState, QuantumCircuit
 from qulacs.gate import PauliRotation
 
 from . import config as cf
-from .fileio import SaveTheta, printmat, print_state, prints,
+from .fileio import SaveTheta, printmat, print_state, prints
 from .upcclib import upcc_Gsingles
 from .utils import orthogonal_constraint
 
@@ -13,7 +13,7 @@ def set_circuit_bcs(ansatz, n_qubits, n_orbitals, ndim1, ndim, theta_list, k):
     circuit = QuantumCircuit(n_qubits)
     target_list = pauli_index = np.empty(2)
     for i in range(k):
-        ioff  = i * ndim
+        ioff  = i*ndim
         for p in range(n_orbitals):
             pa = 2*p
             pb = 2*p + 1
@@ -28,7 +28,7 @@ def set_circuit_bcs(ansatz, n_qubits, n_orbitals, ndim1, ndim, theta_list, k):
             circuit.add_gate(gate)
 
             if "ebcs" in ansatz:
-                if p < n_orbitals - 1
+                if p < n_orbitals - 1:
                     circuit.add_CNOT_gate(pa, pa+2)
                     circuit.add_CNOT_gate(pb, pb+2)
         upcc_Gsingles(circuit, n_orbitals, theta_list, ndim1, n_orbitals, i)

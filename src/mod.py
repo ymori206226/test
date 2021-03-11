@@ -24,6 +24,7 @@ from openfermionpyscf._run_pyscf import (compute_scf, compute_integrals,
                                          PyscfMolecularData)
 
 from . import config as cf
+from . import mpilib as mpi
 from .fileio import error
 
 
@@ -165,8 +166,10 @@ def run_pyscf_mod(guess, n_active_orbitals, n_active_electrons, molecule,
     #pyscf_scf = compute_scf_mod(pyscf_molecule)
     pyscf_scf = compute_scf(pyscf_molecule)
     pyscf_scf.verbose = 0
-    pyscf_scf.run(chkfile=cf.chk, init_guess=guess,
-                  conv_tol=1e-12, conv_tol_grad=1e-12)
+# chkファイルのパスを指定すると並列計算時にOSErrorが出る
+    #pyscf_scf.run(chkfile=cf.chk, init_guess=guess,
+    #              conv_tol=1e-12, conv_tol_grad=1e-12)
+    pyscf_scf.run(init_guess=guess, conv_tol=1e-12, conv_tol_grad=1e-12)
     molecule.hf_energy = float(pyscf_scf.e_tot)
 
     # Set number of active electrons/orbitals.
@@ -200,8 +203,9 @@ def run_pyscf_mod(guess, n_active_orbitals, n_active_electrons, molecule,
         else:
             pyscf_mp2 = mp.MP2(pyscf_scf)
             pyscf_mp2.verbose = 0
-            pyscf_mp2.run(chkfile=cf.chk, init_guess=guess,
-                          conv_tol=1e-12, conv_tol_grad=1e-12)
+            #pyscf_mp2.run(chkfile=cf.chk, init_guess=guess,
+            #              conv_tol=1e-12, conv_tol_grad=1e-12)
+            pyscf_mp2.run(init_guess=guess, conv_tol=1e-12, conv_tol_grad=1e-12)
             # molecule.mp2_energy = pyscf_mp2.e_tot  # pyscf-1.4.4 or higher
             molecule.mp2_energy = pyscf_scf.e_tot + pyscf_mp2.e_corr
             pyscf_data["mp2"] = pyscf_mp2
@@ -214,8 +218,9 @@ def run_pyscf_mod(guess, n_active_orbitals, n_active_electrons, molecule,
     if run_cisd:
         pyscf_cisd = ci.CISD(pyscf_scf)
         pyscf_cisd.verbose = 0
-        pyscf_cisd.run(chkfile=cf.chk, init_guess=guess,
-                       conv_tol=1e-12, conv_tol_grad=1e-12)
+        #pyscf_cisd.run(chkfile=cf.chk, init_guess=guess,
+        #               conv_tol=1e-12, conv_tol_grad=1e-12)
+        pyscf_cisd.run(init_guess=guess, conv_tol=1e-12, conv_tol_grad=1e-12)
         molecule.cisd_energy = pyscf_cisd.e_tot
         pyscf_data["cisd"] = pyscf_cisd
         if verbose:
@@ -227,8 +232,9 @@ def run_pyscf_mod(guess, n_active_orbitals, n_active_electrons, molecule,
     if run_ccsd:
         pyscf_ccsd = cc.CCSD(pyscf_scf)
         pyscf_ccsd.verbose = 0
-        pyscf_ccsd.run(chkfile=cf.chk, init_guess=guess,
-                       conv_tol=1e-12, conv_tol_grad=1e-12)
+        #pyscf_ccsd.run(chkfile=cf.chk, init_guess=guess,
+        #               conv_tol=1e-12, conv_tol_grad=1e-12)
+        pyscf_ccsd.run(init_guess=guess, conv_tol=1e-12, conv_tol_grad=1e-12)
         molecule.ccsd_energy = pyscf_ccsd.e_tot
         pyscf_data["ccsd"] = pyscf_ccsd
         if verbose:

@@ -219,7 +219,7 @@ def fermi_to_str(fermionic_hamiltonian, threshold=0):
     """
     フェルミ演算子をstring型のリストに変える
     """
-    if isinstance(fermionic_hamiltonian, FermionOperator)
+    if isinstance(fermionic_hamiltonian, FermionOperator):
         string = str(fermionic_hamiltonian).replace("]", "")
     else:
         string = str(get_fermion_operator(fermionic_hamiltonian))

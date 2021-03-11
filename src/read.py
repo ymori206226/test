@@ -146,7 +146,7 @@ def read_input(job_no):
                 #----- Symmetry-Projection -----
                 "spinproj": "SpinProj",
                 #----- For Multi/Excited-state -----
-                "act2act": "act2act_ops",
+                "act2act": "act2act_opt",
                 }
         strings = {
                 #----- For General -----
@@ -531,7 +531,7 @@ def read_input(job_no):
 #                        iline += -1
 #
 #            elif words[0].lower() == "act2act":
-#                Quket.multi.act2act_ops = chkbool(words[1])
+#                Quket.multi.act2act_opt = chkbool(words[1])
 #
 #### QITE
 #            elif words[0].lower() in ("timestep","db","dt"):

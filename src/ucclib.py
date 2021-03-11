@@ -20,9 +20,7 @@ from . import config as cf
 from .fileio import (SaveTheta, print_state, print_amplitudes,
                      print_amplitudes_spinfree, prints)
 from .expope import Gdouble_ope
-from .init import get_occvir_lists
 from .utils import orthogonal_constraint
-from .hflib import set_circuit_rhf
 
 
 def single_ope_Pauli(a, i, circuit, theta, approx=cf.approx_exp):
@@ -37,10 +35,10 @@ def single_ope_Pauli(a, i, circuit, theta, approx=cf.approx_exp):
     ### Purpose:
     ### (1)   Exp[ i theta*0.5  Prod_{k=i+1}^{a-1} Z_k Y_i X_a]
     ### (2)   Exp[-i theta*0.5  Prod_{k=i+1}^{a-1} Z_k Y_a X_i]
-    target_list = pauli_index = np.empty(ndim, dtype=int)
-    target_list[:ndim1] = np.arange(i+1, a)
+    target_list = [0]*ndim
+    target_list[:ndim1] = list(range(i+1, a))
     target_list[ndim1:] = i, a
-    pauli_index[:ndim1] = 3
+    pauli_index = [3]*ndim
 
     # (1)                Yi,Xa
     pauli_index[ndim1:] = 2, 1
@@ -73,11 +71,11 @@ def double_ope_Pauli(b, a, j, i, circuit, theta):
     ### (6)   Exp[-i theta/8  Prod_{k=i+1}^{j-1} Z_k  Prod_{l=a+1}^{b-1} Z_l  (X_i Y_j X_a X_b)]
     ### (7)   Exp[-i theta/8  Prod_{k=i+1}^{j-1} Z_k  Prod_{l=a+1}^{b-1} Z_l  (Y_i Y_j Y_a X_b)]
     ### (8)   Exp[-i theta/8  Prod_{k=i+1}^{j-1} Z_k  Prod_{l=a+1}^{b-1} Z_l  (Y_i Y_j X_a Y_b)]
-    target_list = pauli_index = np.empty(ndim, dtype=int)
-    target_list[:ndim1] = np.arange(i+1, min(a, j))
-    target_list[ndim1:ndim2] = np.arange(max(a, j)+1, b)
+    target_list = [0]*ndim
+    target_list[:ndim1] = list(range(i+1, min(a, j)))
+    target_list[ndim1:ndim2] = list(range(max(a, j)+1, b))
     target_list[ndim2:] = i, j, a, b
-    pauli_index[:ndim2] = 3
+    pauli_index = [3]*ndim
 
     ### (1)              Xi,Xj,Ya,Xb
     pauli_index[ndim2:] = 1, 1, 2, 1
@@ -192,7 +190,6 @@ def double_ope_2(b, a, j, i, circuit, theta):
 
     Author(s): Yuto Mori
     """
-
     circuit.add_RX_gate(b, -np.pi*0.5)
     circuit.add_H_gate(a)
     circuit.add_RX_gate(j, -np.pi*0.5)
@@ -295,7 +292,6 @@ def double_ope_5(b, a, j, i, circuit, theta):
 
     Author(s): Yuto Mori
     """
-
     circuit.add_RX_gate(b, -np.pi*0.5)
     circuit.add_H_gate(a)
     circuit.add_H_gate(j)
@@ -330,7 +326,6 @@ def double_ope_6(b, a, j, i, circuit, theta):
 
     Author(s): Yuto Mori
     """
-
     circuit.add_H_gate(b)
     circuit.add_RX_gate(a, -np.pi*0.5)
     circuit.add_H_gate(j)
@@ -365,7 +360,6 @@ def double_ope_7(b, a, j, i, circuit, theta):
 
     Author(s): Yuto Mori
     """
-
     circuit.add_RX_gate(b, -np.pi*0.5)
     circuit.add_RX_gate(a, -np.pi*0.5)
     circuit.add_RX_gate(j, -np.pi*0.5)
@@ -400,7 +394,6 @@ def double_ope_8(b, a, j, i, circuit, theta):
 
     Author(s): Yuto Mori
     """
-
     circuit.add_RX_gate(b, -np.pi*0.5)
     circuit.add_RX_gate(a, -np.pi*0.5)
     circuit.add_H_gate(j)
@@ -653,6 +646,8 @@ def cost_uccd(Quket, print_level, kappa_list, theta_list, threshold=1e-2):
 
     Author(s): Takashi Tsuchimochi
     """
+    from .hflib import set_circuit_rhf
+
     t1 = time.time()
 
     rho = Quket.rho
@@ -796,7 +791,6 @@ def cost_uccsdX(Quket, print_level, kappa_list, theta_list, threshold=0.01):
 
     Author(s): Takashi Tsuchimochi
     """
-
     t1 = time.time()
 
     ansatz = Quket.ansatz
@@ -963,6 +957,8 @@ def create_uccsd_state(n_qubits, rho, DS, theta_list, det, ndim1,
 
     Author(s):  Yuto Mori, Takashi Tsuchimochi
     """
+    from .init import get_occvir_lists
+
     ### Form RHF bits
     state = QuantumState(n_qubits)
     state.set_computational_basis(det)
