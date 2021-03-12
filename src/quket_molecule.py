@@ -47,7 +47,8 @@ class QuketMolecule(MolecularData):
 
             mo_coeff = self.canonical_orbitals.astype(float)
             natom = pyscf_mol.natm
-            atom_charges = pyscf_mol.atom_charges().reshape(-1, 1)
+            #atom_charges = pyscf_mol.atom_charges().reshape(-1, 1)
+            atom_charges = pyscf_mol.atom_charges().reshape(1, -1)
             atom_coords = pyscf_mol.atom_coords()
             rint = pyscf_mol.intor("int1e_r")
 

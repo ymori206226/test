@@ -41,7 +41,8 @@ def dipole(Quket, n_qubits):
     dy = -qulacs_dipole_y.get_expectation_value(Quket.state)
     dz = -qulacs_dipole_z.get_expectation_value(Quket.state)
     d = np.array([dx, dy, dz])
-    d += np.sum((Quket.atom_charges*Quket.atom_coords), axis=0)
+    #d += np.sum((Quket.atom_charges*Quket.atom_coords), axis=0)
+    d += (Quket.atom_charges@Quket.atom_coords).reshape(-1)
     d = d/0.393456
 
     prints("\nDipole moment (in Debye) :")
