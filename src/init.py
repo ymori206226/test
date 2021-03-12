@@ -114,7 +114,7 @@ class Projection():
 
     def __post_init__(self, ansatz, *args, **kwds):
         if ansatz is not None:
-            if ansatz in ["phf", "suhf", "sghf", "opt_puccsd", "opt_pucccd"]:
+            if ansatz in ["phf", "suhf", "sghf", "opt_puccsd", "opt_puccd"]:
                 self.SpinProj = True
 
     def set_projection(self, trap=True):

@@ -507,7 +507,6 @@ def cost_proj(Quket, print_level, qulacs_hamiltonianZ, qulacs_s2Z,
 
     t2 = time.time()
     cpu1 = t2 - t1
-# 0じゃない?
     if print_level == -1:
         prints(f"Initial E[{ref}] = {Ep:.12f}  <S**2> = {S2:17.15f}  "
                             f"rho = {rho}")

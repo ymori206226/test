@@ -44,8 +44,8 @@ def VQE_driver(Quket, kappa_guess, theta_guess, mix_level, opt_method,
     nob = Quket.nob
     nva = Quket.nva
     nvb = Quket.nvb
-    nca = 0 # Number of Core orbitals of Alpha
-    ncb = 0 # Number of Core orbitals of Beta
+    nca = Quket.nca # Number of Core orbitals of Alpha
+    ncb = Quket.ncb # Number of Core orbitals of Beta
 
     t1 = time.time()
     cf.t_old = t1
@@ -71,9 +71,9 @@ def VQE_driver(Quket, kappa_guess, theta_guess, mix_level, opt_method,
     ndim2 = ndim2aa + ndim2ab + ndim2bb
     if ansatz in ("uhf", "phf", "suhf"):
         ndim = ndim1
-    elif ansatz == ("uccd", "puccd"):
+    elif ansatz in ("uccd", "puccd"):
         ndim = ndim2
-    elif ansatz == ("uccsd", "opt_puccd", "puccsd"):
+    elif ansatz in ("uccsd", "opt_puccd", "puccsd"):
         ndim = ndim1 + ndim2
     elif ansatz == "sghf":
         ndim1 = (noa+nob)*(nva+nvb)
