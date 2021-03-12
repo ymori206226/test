@@ -59,9 +59,10 @@ while Finish is False:
     # Set projection parameters
     Quket.set_projection()
 
-    if Quket.n_electrons == 0:
-        error("# electrons = 0 !")
-    if Quket.basis != "hubbard":
+    if Quket.model in ("hubbard", "chemical"):
+        if Quket.n_electrons == 0:
+            error("# electrons = 0 !")
+    if Quket.model in ("heisenberg", "chemical"):
         if Quket.n_orbitals == 0:
             error("# orbitals = 0 !")
     else:

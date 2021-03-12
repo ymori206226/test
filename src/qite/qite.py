@@ -20,6 +20,7 @@ def QITE_driver(Quket):
     model = Quket.model
     ansatz = Quket.ansatz
     det = Quket.det
+    n_orbitals = Quket.n_orbitals
     n_qubits = Quket.n_qubits
     ftol = Quket.ftol
     truncate = Quket.truncate

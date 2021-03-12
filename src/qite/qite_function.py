@@ -287,11 +287,11 @@ def conv_id2XYZ(pauli_id):
     pauli_str = ""
     for i in pauli_id:
         if i == 1:
-            pauli_str += f" X{k}"
+            pauli_str += f" X{i}"
         elif i == 2:
-            pauli_str += f" Y{k}"
+            pauli_str += f" Y{i}"
         elif i == 3:
-            pauli_str += f" Z{k}"
+            pauli_str += f" Z{i}"
     return pauli_str
 
 
@@ -367,7 +367,7 @@ def uccsd_fermi(nspin, det):
     """
     uccsdのfermionic_hamiltonianをつくる
     """
-    occ_list, vir_list = get_occvir_lists(2*spin, det)
+    occ_list, vir_list = get_occvir_lists(2*nspin, det)
     fermionic_hamiltonian_1 = ucc_singles_fermi(occ_list, vir_list)
     fermionic_hamiltonian_2 = ucc_doubles_fermi(occ_list, vir_list)
     fermionic_hamiltonian = fermionic_hamiltonian_1 + fermionic_hamiltonian_2
@@ -609,8 +609,10 @@ def qite_s_operators(id_set, n):
 
     #T3 = time.time()
     ij = 0
-    sigma_ij_index = my_sigma_ij_index = np.zeros(sizeT, dtype=int)
-    sigma_ij_coef = my_sigma_ij_coef = np.zeros(sizeT, dtype=complex)
+    sigma_ij_coef = np.zeros(sizeT, dtype=complex)
+    sigma_ij_index = np.zeros(sizeT, dtype=int)
+    my_sigma_ij_coef = np.zeros(sizeT, dtype=complex)
+    my_sigma_ij_index = np.zeros(sizeT, dtype=int)
     for i in range(size):
         pauli_i = conv_id2XYZ(id_set[i])
         sigma_i = QubitOperator(pauli_i)

@@ -16,7 +16,7 @@ from itertools import combinations
 
 import numpy as np
 import scipy as sp
-from scipy.linalg import expm, logm, lstsq
+from scipy.linalg import expm, logm
 from qulacs import QuantumState
 from qulacs.state import inner_product
 
@@ -282,11 +282,11 @@ def lstsq(a, b,
     """
     for i in range(5):
         try:
-            x, res, rnk, s = lstsq(a, b, cond=cond,
-                                   overwrite_a=overwrite_a,
-                                   overwrite_b=overwrite_b,
-                                   check_finite=check_finite,
-                                   lapack_driver=lapack_driver)
+            x, res, rnk, s = sp.linalg.lstsq(a, b, cond=cond,
+                                             overwrite_a=overwrite_a,
+                                             overwrite_b=overwrite_b,
+                                             check_finite=check_finite,
+                                             lapack_driver=lapack_driver)
             break
         except:
             pass

@@ -303,6 +303,7 @@ class QuketData():
 
             init_dict = get_func_kwds(Heisenberg.__init__, kwds)
             obj = Heisenberg(**init_dict)
+
             if self.det is None:
                 self.det = 1
             self.current_det = self.det
@@ -343,7 +344,6 @@ class QuketData():
             jw_Hamiltonian = obj.get_operators()
             self.operators = Operators()
             self.operators.jw_Hamiltonian = jw_Hamiltonian
-            return
         elif self.model == "chemical":
             if cf._geom_update:
                 # New geometry found. Run PySCF and get operators.
@@ -377,6 +377,9 @@ class QuketData():
         for k in dir(obj):
             if k not in dir(self):
                 setattr(self, k, getattr(mol, k))
+
+        if self.model == "heisenberg":
+            return
 
         # Initializing parameters
         self.n_qubits = self.n_orbitals*2

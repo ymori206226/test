@@ -17,13 +17,16 @@ from ..utils import lstsq
 
 def make_hamiltonian(model, nspin, nterm):
     if model == "heisenberg":
-        sx = sy = sz = []
+        sx = []
+        sy = []
+        sz = []
         for i in range(nspin):
             sx.append(QubitOperator(f"X{i}"))
             sy.append(QubitOperator(f"Y{i}"))
             sz.append(QubitOperator(f"Z{i}"))
 
-        H = active = []
+        H = []
+        active = []
         for term in range(nterm):
             jw_hamiltonian = 0*QubitOperator("")
             if term == nspin-1:
@@ -134,7 +137,7 @@ def qite_inexact(Quket, nterm, D):
             for i in range(size):
                 S[i, i] = 1
 
-            sigma = np.empty(size)
+            sigma = [None]*size
             for i in range(size):
                 state_i = make_state1(i, n, active_qubit, index, psi_dash)
                 sigma[i] = state_i
@@ -162,9 +165,9 @@ def qite_inexact(Quket, nterm, D):
             #xv[term] = x.copy()
             x, res, rnk, s = lstsq(Amat, b_l, cond=1.0e-8)
             ### Just in case, broadcast a...
+            a = x.copy()
             mpi.comm.Bcast(a, root=0)
 
-            a = x.copy()
             psi_dash = calc_psi(psi_dash_copy, n, index, a, active_qubit)
 
         value = observable_full.get_expectation_value(psi_dash)

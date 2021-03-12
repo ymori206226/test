@@ -27,9 +27,12 @@ input_file=sys.argv[1]
 input_dir, base_name = os.path.split(input_file)
 input_dir = "." if input_dir == "" else input_dir
 input_name, ext = os.path.splitext(base_name)
-ext = ".inp" if ext == "" else ext
-#input_file = input_name+ext
-input_file += ext
+if ext == "":
+    ext = ".inp"
+elif ext not in ".inp":
+    input_name += ext
+    ext = ".inp"
+input_file = f"{input_dir}/{input_name+ext}"
 
 # Define the names of other useful files
 theta_list_file = f"{input_dir}/{input_name}.theta"
