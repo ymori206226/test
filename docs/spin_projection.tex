@@ -1,0 +1,136 @@
+% !TEX encoding = MacOSRoman
+\documentclass[prb,amsmath,amsfonts,amssymb]{revtex4}
+
+\usepackage{graphicx}
+\usepackage{color}
+\usepackage{bm}
+\definecolor{grey}{rgb}{0.7,0.7,0.7}
+\newcommand{\blue}{\color{blue}{}}
+\newcommand{\red}{\color{red}{}}
+\newcommand{\black}{\color{black}{}}
+\newcommand{\cyan}{\color{cyan}{}}
+\newcommand{\magenta}{\color{magenta}{}}
+\newcommand{\grey}{\color{grey}{}}
+\pagestyle{empty}
+\usepackage{fancyvrb}
+\newcommand{\bra}{\langle}
+\newcommand{\ket}{\rangle}
+
+\begin{document}
+\title{量子力学的スピン及びスピン射影について}
+\author{Takashi Tsuchimochi}
+\date{\today}
+\maketitle
+
+\section{スピンの概要}
+フェルミ粒子の波動関数にはスピン$S$というものがあります。$\alpha$電子と下向き方向の$\beta$電子はそれぞれ$s=1/2. -1/2$のスピンを持っていますが、これは観測すると上向き方向・下向き方向になるベクトルと思ってください。分子中の電子が作り出す系全体としてスピンをベクトルとして足した長さを$S$とします。詳しくはWikipediaなどで調べてください。
+
+厳密な波動関数はスピンの対称性というものを満たします。これはスピン演算子$\hat S^2$と$\hat S_z$の固有関数になっているということを意味します。$\hat S^2$は具体的に第二量子化の生成消滅演算子で書けますが、ここでは割愛します。FCIの波動関数は
+\begin{align}
+\hat S^2 |\Psi_{\rm FCI}\rangle &= S(S+1)|\Psi_{\rm FCI}\rangle \label{eq:S2}\\
+\hat S_z |\Psi_{\rm FCI}\rangle &= M_s|\Psi_{\rm FCI}\rangle	 \label{eq:Sz}
+\end{align}
+となり、$S=0,1/2,1,3/2,...$の半整数です。また、$M_s$は、$N_\alpha$と$N_\beta$を$\alpha$電子数と$\beta$電子数としたとき、$M_s = \frac{1}{2}(N_\alpha-N_\beta)$で表されます。
+
+ある$S$を持つFCI波動関数が与えられた時、$2S+1$個の全く同じエネルギーを持つ縮退状態があります。この$2S+1$をスピン多重度と呼びます。$S=0$のとき、1個のエネルギー状態しかなく、このような状態を1重項と呼びます。この場合、常に$N_\alpha-N_\beta = 0$です。一方で、$S=1$の時3重項と呼ばれ、3個の状態が縮退しています。この3個の状態とは、$Ms =1, 0, -1$の状態です。つまり、それぞれ不対電子が$\alpha\alpha$, $\alpha\beta$, $\beta\beta$となるような状態です。
+
+近似波動関数では、式\ref{eq:S2}を満たしているとは限りません（式\ref{eq:Sz}は通常満たされています）。そこで、$\hat S^2$の期待値を取って判断します。これが正しく$S(S+1)$になっていれば、（平均的には）スピンは$S$である（スピン多重度は$2S+1$重項である）ということが言えます。
+
+\section{スピン混入}
+多くの場合、近似波動関数$|\psi\rangle$はスピンの固有関数となっていません。線形代数で習ったように、固有関数以外の関数は固有関数の線形結合で必ず展開できるので、
+\begin{align}
+|\psi\rangle = \sum_{J = M_s, M_s+1,\cdots}^{N_e/2} c_J |\psi_J\rangle	\label{eq:psi}
+\end{align}
+と書けます。ここで、$J=M_s, M_s+1, M_s + 2, ...$はスピンを表し、$|\psi_J\rangle$は$\hat S^2|\psi_J\rangle = J(J+1)|\psi_J\rangle$を満たすスピン固有関数、$c_J$は各スピン固有関数の係数です。例えば、$M_s=0$の場合、
+\begin{align}
+|\psi\rangle =  c_0 |\psi_0 \rangle + c_1 |\psi_1 \rangle + c_2 \psi_2\rangle + \cdots \label{eq:Ms=0}	
+\end{align}
+となり、1重項$|\psi_0\rangle$, 3重項$|\psi_1\rangle$, 5重項$|\psi_2\rangle$, ...が係数に応じて混ざっています。このように、$|\psi\rangle$が様々なスピンを含むと、$|\psi\rangle$はスピン混入を起こしていると言い、エネルギー期待値や物性値などが不正確になります。例えば、$M_s=0$における式\ref{eq:Ms=0}のエネルギー期待値は
+\begin{align}
+	E &= \langle \psi |\hat H |\psi\rangle \nonumber\\
+	&= \sum_{J=0, 1,\cdots}^{N_e/2} c_J^2\langle \psi_J|\hat H |\psi_J\rangle \nonumber\\
+	&=c_{0}^2\langle \psi_{0}|\hat H |\psi_{0}\rangle + c_{1}^2\langle \psi_{1}|\hat H |\psi_{1}\rangle +\cdots\nonumber\\
+	&= c_{0}^2 E_{0} + c_1^2 E_{1} + \cdots
+\end{align}
+となり、1重項エネルギー$E_0$と3重項エネルギー$E_1$と・・・の加重平均になってしまいます。
+
+スピン混入が起こる原因は、$\alpha$と$\beta$のスピンの取り扱いが不平等だからです。そこで多くの手法では、$\alpha$スピンと$\beta$スピンの取り扱いを同じにすることでスピン混入が起こらないようにします（もしくは求めたいスピンの係数がほぼ1になるようにします）。これをスピン制限（restricted）などと呼びます。HFなどでRHFと呼ぶのは、restricted-HFを意味しています。この場合、スピンは正しく得られます。
+
+また、例えば、k-UpCCGSDなどでは1電子励起部分は$\alpha$と$\beta$で同じパラメータを使っています。また、2電子励起はペア励起なので、$\alpha$と$\beta$は同様に同じ動きをします。
+こうすることで、k-UpCCGSDは最初のRHFのスピン状態を保存します。このため、k-UpCCGSDは「スピン純粋状態」であり、正しい$\langle \hat S^2\rangle$が得られます。
+
+一方で、通常のUCCSDではこれが満たされません。詳しくは文献\onlinecite{puccd}を見てください。
+
+\section{スピン射影}
+スピン混入問題を解決するもう一つの方法として、スピン射影があります。スピン射影では、$|\psi\rangle$にスピン混入をわざと許容しておき（$\alpha$と$\beta$のスピンの取り扱いに制限をかけない）、式(\ref{eq:psi})の中からほしいスピン状態$|\psi_S\rangle$を射影演算子$\hat P_S$によって抜き出します。具体的には、
+\begin{align}
+	\hat P_S |\psi\rangle = c_S |\psi_S\rangle
+\end{align}
+となり、他の$|\psi_{J\ne S}\rangle$をすべて消す作業を行っています。つまり、正しいスピン空間にベクトル（波動関数）を射影していると捉えてください。このような$\hat P_S$は以下の式で書けます：
+\begin{align}
+	\hat P_S = \frac{2S+1}{8\pi^2}\int_0^{2\pi} d\alpha \int_0^\pi \sin\beta d\beta \int_0^{2\pi} d\gamma\; D(S,M_s,\alpha,\beta,\gamma)\; \hat U(\alpha,\beta,\gamma)
+\end{align}
+ここで、$\frac{2S+1}{8\pi^2}$は定数、$\alpha,\beta,\gamma$はオイラー回転角、$D$はWignerの$D$行列と呼ばれる重み係数で、自動的に決まります。また、
+\begin{align}
+	\hat U(\alpha,\beta,\gamma) = e^{-i \alpha \hat S_z}e^{-i \beta \hat S_y}e^{-i \gamma \hat S_z} 
+\end{align}
+は{\bf ユニタリな}スピン回転演算子で（$\hat S_z$と$\hat S_y$がエルミートのため）、$\alpha,\beta,\gamma$を変えることですべてのスピンの状態を網羅できます。このままでは取り扱いが困難なので、$\hat P_S$をグリッド数$N_g$の数値積分に置き換えると、
+\begin{align}
+	\hat P_S \approx \sum_{g=1}^{N_g} w_g \hat U_g \label{eq:Ps}
+\end{align}
+と簡略化して書けます。ただし$w_g$と$\hat U_g$はグリッド点$g=(\alpha_g,\beta_g,\gamma_g)$における重みとスピン回転演算子$e^{-i \alpha_g \hat S_z}e^{-i \beta_g \hat S_y}e^{-i \gamma_g \hat S_z}$です。
+
+つまり、$\hat U_g$で様々に$|\psi\rangle$を回転させた状態$\hat U_g|\psi\rangle$を計算し、それを重み$w_g$で足し合わせたものがスピン射影状態となります。この$\hat U_g|\psi\rangle$の演算は古典コンピュータでは多くの場合困難ですが、$\hat U_g$がユニタリ演算子のため量子コンピュータでは簡単に実装できます。これも詳細は文献\onlinecite{puccd}を見てください。
+
+\subsection{quketにおける実装}
+quketでは式\label{eq:Ps}をQulacsのQuantumStateクラスのオブジェクト{\tt Q}にかける関数{\tt S2Proj(Q)}が{\tt phflib.py}の中にあります。これを射影したい場所（量子状態を回路に通し、$|\psi\rangle$ができた直後など）で以下のように呼び出してください。
+
+\begin{Verbatim}[frame=single, xleftmargin=4mm, xrightmargin=10mm]
+import config
+if config.SpinProj:
+    from .phflib import S2Proj
+    state_P = S2Proj(state)
+\end{Verbatim}
+ここでbool型{\tt SpinProj}はinput内で指定します。こうすることでQuantumStateクラスの{\tt state}がスピン射影されたものがQuantumStateクラスの{\tt state\_P}に格納されて出てきます。
+
+
+\subsection{使い方}
+input内で
+\begin{Verbatim}[frame=single, xleftmargin=4mm, xrightmargin=10mm]
+SpinProj     = true
+spin         = (2S+1)
+multiplicity = (2Ms+1)
+euler        = (α, β, γそれぞれのグリッド点数)
+\end{Verbatim}
+とすると{\tt S2Proj}へ情報が渡され、スピン射影が行われ、波動関数は規格化されてリターンされます。通常は量子状態$|\psi\rangle$は$\hat S_z$の固有関数なので、$\gamma$のグリッド点は必要ありません（$\hat e^{-i\gamma\hat S_z}|\psi\rangle = e^{-i \gamma M_s}|\psi\rangle$なので解析的に積分できる）。なので省略可です。期待値だけを計算したい場合は、うまく実装すれば$\alpha$のグリッド点も不必要ですが、S2Projを使ってスピン射影状態を得たい場合では$\alpha$のグリッド点は必要です。
+
+たとえば、
+\begin{Verbatim}[frame=single, xleftmargin=4mm, xrightmargin=10mm]
+SpinProj     = true
+spin         = 1
+multiplicity = 1
+euler        = 4, 2
+\end{Verbatim}
+とすると$\alpha$と$\beta$に対してそれぞれ4つ,2つのグリッド点数を使った数値積分をし、$S=0$の状態へと射影します。通常、グリッド点数は(4,2)で十分です。$\langle \hat S^2\rangle$の値を確認して設定してください。
+
+
+\section{利用例：スピン射影を用いたk-UpCCGSDのスピン多重度計算}
+k-UpCCGSDはその波動関数の形から、$M_s>0$の状態（例えば$\alpha$スピンが2つ立っている3重項状態）においては、不対電子に対してペア励起が作用しません。その結果、3重項状態のエネルギーが1重項状態のエネルギーに比べて悪いということが起こります。これらの励起が正しく起こる方法を考える必要があります。ここでスピン射影を利用することを考えます。
+
+不対電子がペアになるような状態を作り出すためには、今まで計算してきた3重項状態は $M_s = 1$ では不可能です。これをやめて $M_s = 0$ の3重項状態を取り扱うこととします。つまり、1重項と同様に{\tt noa = nob}です。しかしながら、オリジナルのk-UpCCGSDではスピンは常に平等に取り扱われているため（スピン対称性を保持するため）、原理的にスピン混入が起きません。スピン混入していない状態にスピン射影を施しても何も起きません。
+
+そこでこのスピン対称性を崩すために、1電子励起の形を変えます。通常は
+\begin{align}
+	\hat T_1 = \sum_{p>q} t_{pq} \Big((a_{p\alpha}^\dag a_{q\alpha} -  a_{q\alpha}^\dag a_{p\alpha}) + (a_{p\beta}^\dag a_{q\beta} -  a_{q\beta}^\dag a_{p\beta})\Big)
+\end{align}
+とすることで、同じ係数を使っていました。そこで、これを
+\begin{align}
+	\hat T_1' = \sum_{p>q} t_{pq} \Big((a_{p\alpha}^\dag a_{q\alpha} -  a_{q\alpha}^\dag a_{p\alpha}) - (a_{p\beta}^\dag a_{q\beta} -  a_{q\beta}^\dag a_{p\beta})\Big)
+\end{align}
+とすることで符号が逆のものを使うことを考えます。これは必ずスピン対称性を破り、スピン混入を起こします。このような状態で$\hat P_{S=1}$をかけることで、3重項を計算することが可能になります。また、1重項も$\hat P_{S=0}$をかけることで全く同様に計算が可能です。
+
+\begin{thebibliography}{99}
+  \bibitem{puccd} Takashi Tsuchimochi, Yuto Mori, and Seiichiro L. Ten-no, "Spin-projection for quantum computation: A low-depth approach to strong correlation", PHYSICAL REVIEW RESEARCH 2, 043142 (2020).
+\end{thebibliography}
+
+\end{document}

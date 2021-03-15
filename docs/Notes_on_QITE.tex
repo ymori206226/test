@@ -1,0 +1,154 @@
+% !TEX encoding = MacOSRoman
+\documentclass[prb,amsmath,amsfonts,amssymb]{revtex4}
+
+\usepackage{graphicx}
+\usepackage{color}
+\usepackage{bm}
+\definecolor{grey}{rgb}{0.7,0.7,0.7}
+\newcommand{\blue}{\color{blue}{}}
+\newcommand{\red}{\color{red}{}}
+\newcommand{\black}{\color{black}{}}
+\newcommand{\cyan}{\color{cyan}{}}
+\newcommand{\magenta}{\color{magenta}{}}
+\newcommand{\grey}{\color{grey}{}}
+\pagestyle{empty}
+\usepackage{fancyvrb}
+\newcommand{\bra}{\langle}
+\newcommand{\ket}{\rangle}
+
+\begin{document}
+\title{Notes on an operator set for QITE}
+\author{Takashi Tsuchimochi}
+\date{\today}
+\maketitle
+
+In the original QITE, the imaginary time step with a Pauli operation $\hat P_\mu$ to the state $|\Phi\rangle$ is approximated by a unitary operation,
+\begin{align}
+\frac{e^{-\Delta \beta \hat P_\mu}|\Phi\rangle}{\langle\Phi|e^{-2\Delta \beta \hat P_\mu}|\Phi\rangle}
+\approx
+e^{- i \Delta \beta \hat A_\mu}|\Phi\rangle
+\end{align}
+The Hermitian operator $\hat A_\mu$ is expanded as a linear combination of Pauli operators applied to $N$ qubits,
+\begin{align}
+	\hat A_\mu = \sum_{i\in \{I,X,Y,Z\}^{\otimes N}}^{4^N} a^{[\mu]}_i \hat P_i \;\;\;\; 
+\end{align} 
+Therefore, with the number of qubits $N$, the size of ${\bf a}^{[\mu]}$ increases exponentially. To ameliorate this prohibitive scaling, it was first proposed to introduce the domain $D < N$ as a cut-off parameter. The previous work showed such a local treatment can produce reasonable accuracy if the Hamiltonian is local. However, when it comes to chemical systems, where the Coulomb interaction is long range. Chemical Hamiltonian is usually very sparse, and most $\{\hat P_i\}$ is 
+
+In this note, we work out the derivation for approximation in terms of fermion operator, but not Pauli operator. We begin by writing a Hamiltonian as a linear combination of fermion operators,
+\begin{align}
+	\hat H = \sum_{J} h_J \left(\hat E_J + \hat E_J^\dag\right)
+\end{align}
+where $\hat E_J$ are generally described as
+\begin{align}
+	\hat E_J = a_p^\dag a_q^\dag \cdots a_ s a_r
+\end{align}
+Note that, in chemistry, $E_J$ contains up to two-electron operators. We propose fermion-based QITE as
+\begin{align}
+\frac{e^{-\Delta \beta (\hat E_J + \hat E_J^\dag)}|\Phi\rangle}{\langle\Phi|e^{-2\Delta \beta(\hat E_J + \hat E_J^\dag)}|\Phi\rangle}
+\approx 
+e^{- \Delta \beta \hat T_J}|\Phi\rangle\label{eq:FB-QITE}
+\end{align}
+where $\hat T_J$ is an anti-hermitian operator,
+\begin{align}
+	\hat T_J = \sum_{K} f^{[J]}_{K}(\hat F_K - \hat F_K^\dag)
+\end{align}
+Here, $\hat F_K$ generally takes one-, two-, ..., $N_e$-body fermion operators,
+\begin{align}
+	\hat F_K = \begin{cases}
+		a_p^\dag a_q\\
+		a_p^\dag a_q^\dag a_s a_r\\
+		a_p^\dag a_q^\dag a_r^\dag a_u a_t a_s \\
+		\cdots
+	\end{cases}
+\end{align} 
+and therefore the dimention of $\hat T_J$ still scales exponentially; however, the number-conserving operators eliminate Pauli operators that change electron numbers. Similarly to the original QITE, we determine parameters $f^{[J]}_K$ by minimizing the following function to first order,
+\begin{align}
+	\left\|\underbrace{\frac{\frac{e^{-\Delta \beta h_J (\hat E_J + \hat E_J^\dag)}}{\sqrt{c_J}}|\Phi\rangle - |\Phi\rangle}{\Delta \beta}}_{|\Delta_0\rangle} - \underbrace{\hat T |\Phi\rangle}_{|\Delta\rangle} \right\|^2
+	&= \underbrace{\langle \Delta_0|\Delta_0\rangle}_{const} + \langle \Phi|\hat T^\dag \hat T|\Phi\rangle \nonumber\\
+	&- \frac{1}{\Delta \beta\sqrt{c_J}} \left(\langle \Phi|e^{-\Delta \beta h_J (\hat E_J +\hat E_J^\dag)}\hat T|\Phi\rangle  + \langle \Phi|\hat T^\dag e^{-\Delta \beta h_J (\hat E_J +\hat E_J^\dag)}|\Phi\rangle\right)\nonumber\\
+	&+ \frac{1}{\Delta\beta} \underbrace{\langle \Phi | (\hat T + \hat T^\dag ) | \Phi\rangle}_0\nonumber\\
+%
+	&= const +  \langle \Phi|\hat T^\dag \hat T|\Phi\rangle \nonumber\\
+	&- \frac{1}{\Delta \beta\sqrt{c_J}} \Bigl(\langle \Phi|\hat T|\Phi\rangle  + \Delta \beta h_J \langle \Phi|  (\hat E_J +\hat E_J^\dag) \hat T|\Phi\rangle\nonumber\\
+	&+\langle \Phi|\hat T^\dag|\Phi\rangle  + \Delta \beta h_J\langle \Phi|\hat T^\dag(\hat E_J +\hat E_J^\dag)|\Phi\rangle + {\cal O}(\Delta \beta^2) \Bigr)\nonumber\\
+%
+	&= const +   \sum_{KL} f^{[J]}_K f^{[J]}_L \langle \Phi| \left( \hat F_L^\dag - \hat F_L\right)  \left( \hat F_K - \hat F_K^\dag\right) |\Phi\rangle\nonumber\\
+	&+   \sum_K f^{[J]}_K 
+	\langle \Phi| \left[(\hat E_J + \hat E_J^\dag), (\hat F_K-\hat F_K^\dag)\right]|\Phi\rangle + {\cal O}(\Delta\beta)
+\end{align}
+Taking the derivative with respect to $f^{[J]}_K$ and setting to zero, we finally find the linear system,
+\begin{align}
+	\sum_L S^{[J]}_{KL} f^{[J]}_L  + b^{[J]}_K= 0
+\end{align}
+with
+\begin{align}
+	& S_{KL}^{[J]} =\langle \Phi| \left( \hat F_L^\dag - \hat F_L\right)  \left( \hat F_K - \hat F_K^\dag\right) |\Phi\rangle
+	\\
+	&b^{[J]}_K = \frac{1}{2}\langle \Phi| \left[(\hat E_J + \hat E_J^\dag), (\hat F_K-\hat F_K^\dag)\right]|\Phi\rangle \nonumber\\
+%	&= \frac{1}{2} \langle \Phi|(\hat E_J + \hat E_J^\dag)(\hat F_K-\hat F_K^\dag)|\Phi\rangle -\frac{1}{2} \langle \Phi|(\hat F_K-\hat F_K^\dag)(\hat E_J + \hat E_J^\dag)|\Phi\rangle  \nonumber\\
+%	&= \frac{1}{2} \langle \Phi|(\hat E_J \hat F_K - \hat E_J \hat F_K^\dag + \hat E_J^\dag \hat F_K - \hat E_J^\dag \hat F_K^\dag)|\Phi\rangle -\frac{1}{2} \langle \Phi|(\hat F_K\hat E_J +\hat F_K \hat E_J^\dag -\hat F_K^\dag\hat E_J - \hat F_K^\dag \hat E_J^\dag)|\Phi\rangle  \nonumber\\
+\end{align}
+
+Now, what kind of subset of $\hat F_K$ can produce a good approximation for Eq.~(\ref{eq:FB-QITE})? To find such $f^{[J]}_K$ with large contribution to $\hat F_K$, we simply require those $K$ with large $b^{[J]}_K$. Suppose we choose $\hat F_K = a^\dag_t a^\dag_u a_w a_v$ for $\hat E_J = a^\dag_p a^\dag_q a_s a_r$, we find
+\begin{align}
+	\langle \Phi| \left[\hat E_J , \hat F_K\right]|\Phi\rangle & = \langle \Phi|\Big((\delta_{rt} \delta_{su} - \delta_{st} \delta_{ru}) a^\dag_p a^\dag_q a_w a_v +(\delta_{qv} \delta_{pw}-\delta_{pv }\delta_{qw}) a_t^\dag a_u^\dag    a_s 	a_r \nonumber\\ 
+	&+{\cal P}(r,s) {\cal P}(t,u) \delta_{st}  a^\dag_p a^\dag_q a^\dag_u a_r  a_w a_v 
+	+{\cal P}(p,q){\cal P}(v,w)\delta_{qw}a_t^\dag a_u^\dag a_p^\dag a_v  a_s 	a_r \Big)|\Phi\rangle\label{eq:[EJ,FK]}
+\end{align}
+and other terms needed for $b_K^{[J]}$ can be similarly obtained. Here, ${\cal P}(p,q)$ is a permutation operator, i.e., ${\cal P}(p,q) X(p,q) = X(p,q) - X(q,p)$. Therefore, if $\hat E_J$ and $\hat F_K$ do not share the same orbitals, $b_K^{[J]} = 0$, and do not contribute. The most effective choice is $\hat F_K = \hat E_J$ (or $\hat E_J^\dag$), in which case $b^{[J]}_J$ is composed of the diagonal elements of $n$-PDM, where $n$ is the order of $\hat E_J$. In particular, for $n=2$, using the result Eq.~(\ref{eq:[EJ,FK]}), 
+\begin{align}
+	b_J^{[J]} = \langle \Phi| \left(a_p^\dag a_p a_q^\dag a_q (1 - a_r^\dag a_r - a_s^\dag a_s) - (1 - a_p^\dag a_p - a_q^\dag a_q) a_r^\dag a_r a_s^\dag a_s\right)|\Phi\rangle
+\end{align}
+
+For strongly correlated systems, $n$-PDMs may have significantly large elements in the off-diagonal. However, their structure is governed by $\hat H$ ($\{\hat E_J\}$), and therefore the use of the set $\hat F_K \in \{\hat E_J\}$ can efficiently include such transitions. 
+
+
+\if0
+\begin{align}
+	a^\dag_p a^\dag_q a_s a_r a^\dag_t a^\dag_u a_w a_v &= \delta_{tr} a^\dag_p a^\dag_q a_s  a^\dag_u a_w a_v - a^\dag_p a^\dag_q a_s a^\dag_t  a_r a^\dag_u a_w a_v \nonumber\\
+	&= \delta_{tr} (\delta_{su} a^\dag_p a^\dag_q a_w a_v - a^\dag_p a^\dag_q  a^\dag_u a_s  a_w a_v ) - \delta_{st} a^\dag_p a^\dag_q  a_r a^\dag_u a_w a_v + a^\dag_p a^\dag_q a^\dag_t a_s   a_r a^\dag_u a_w a_v \nonumber\\
+	&= \delta_{tr} (\delta_{su} a^\dag_p a^\dag_q a_w a_v - a^\dag_p a^\dag_q  a^\dag_u a_s  a_w a_v ) - \delta_{st}( \delta_{ru} a^\dag_p a^\dag_q   a_w a_v -  a^\dag_p a^\dag_q a^\dag_u a_r  a_w a_v) \nonumber\\
+	&+ \delta _{ru} a^\dag_p a^\dag_q a^\dag_t a_s   a_w a_v 	 
+	- \delta_{su} a_p^\dag a_q^\dag a_t^\dag 	a_r a_w a_v
+	+a_p^\dag a_q^\dag a_t^\dag a_u^\dag  a_s 	a_r a_w a_v\nonumber\\
+	&= \delta_{tr} (\delta_{su} a^\dag_p a^\dag_q a_w a_v - a^\dag_p a^\dag_q  a^\dag_u a_s  a_w a_v ) - \delta_{st}( \delta_{ru} a^\dag_p a^\dag_q   a_w a_v -  a^\dag_p a^\dag_q a^\dag_u a_r  a_w a_v) \nonumber\\
+	&+ \delta _{ru} a^\dag_p a^\dag_q a^\dag_t a_s   a_w a_v 	 
+	- \delta_{su} a_p^\dag a_q^\dag a_t^\dag 	a_r a_w a_v
+	+ \delta_{qw}a_t^\dag a_u^\dag a_p^\dag a_v  a_s 	a_r
+	- \delta_{pw }a_t^\dag a_u^\dag a_q^\dag  a_v  a_s 	a_r
+	-a_t^\dag a_u^\dag   a_w a_p^\dag a_q^\dag  a_v  a_s 	a_r\nonumber\\	
+	&= \delta_{tr} (\delta_{su} a^\dag_p a^\dag_q a_w a_v - a^\dag_p a^\dag_q  a^\dag_u a_s  a_w a_v ) - \delta_{st}( \delta_{ru} a^\dag_p a^\dag_q   a_w a_v -  a^\dag_p a^\dag_q a^\dag_u a_r  a_w a_v) \nonumber\\
+	&+ \delta _{ru} a^\dag_p a^\dag_q a^\dag_t a_s   a_w a_v 	 
+	- \delta_{su} a_p^\dag a_q^\dag a_t^\dag 	a_r a_w a_v
+	+ \delta_{qw}a_t^\dag a_u^\dag a_p^\dag a_v  a_s 	a_r
+	- \delta_{pw }a_t^\dag a_u^\dag a_q^\dag  a_v  a_s 	a_r
+	\nonumber\\
+	&+\delta_{qv} a_t^\dag a_u^\dag   a_w a_p^\dag   a_s 	a_r
+	-\delta_{pv }a_t^\dag a_u^\dag   a_w  a_q^\dag  a_s 	a_r
+	+a_t^\dag a_u^\dag   a_w  a_v  a_p^\dag  a_q^\dag  a_s 	a_r\nonumber\\	\end{align}
+	\fi
+	
+\if0	
+\begin{align}
+	\left[a^\dag_p a^\dag_q a_s a_r, a^\dag_t a^\dag_u a_w a_v\right]	
+%		&= \delta_{tr} (\delta_{su} a^\dag_p a^\dag_q a_w a_v - a^\dag_p a^\dag_q  a^\dag_u a_s  a_w a_v ) - \delta_{st}( \delta_{ru} a^\dag_p a^\dag_q   a_w a_v -  a^\dag_p a^\dag_q a^\dag_u a_r  a_w a_v) \nonumber\\
+%	&+ \delta _{ru} a^\dag_p a^\dag_q a^\dag_t a_s   a_w a_v 	 
+%	- \delta_{su} a_p^\dag a_q^\dag a_t^\dag 	a_r a_w a_v
+%	+ \delta_{qw}a_t^\dag a_u^\dag a_p^\dag a_v  a_s 	a_r
+%	- \delta_{pw }a_t^\dag a_u^\dag a_q^\dag  a_v  a_s 	a_r
+%	\nonumber\\
+%	&+\delta_{qv}(\delta_{pw} a_t^\dag a_u^\dag    a_s 	a_r -a_t^\dag a_u^\dag   a_p^\dag  a_w  a_s 	a_r)
+%	-\delta_{pv }(\delta_{qw} a_t^\dag a_u^\dag   a_s 	a_r-
+%	a_t^\dag a_u^\dag   a_w  a_q^\dag  a_s 	a_r)\nonumber\\
+	&= (\delta_{rt} \delta_{su} - \delta_{st} \delta_{ru}) a^\dag_p a^\dag_q a_w a_v +(\delta_{qv} \delta_{pw}-\delta_{pv }\delta_{qw}) a_t^\dag a_u^\dag    a_s 	a_r \nonumber\\ 
+	&+{\cal P}(r,s) {\cal P}(t,u) \delta_{st}  a^\dag_p a^\dag_q a^\dag_u a_r  a_w a_v 
+	+{\cal P}(p,q){\cal P}(v,w)\delta_{qw}a_t^\dag a_u^\dag a_p^\dag a_v  a_s 	a_r\end{align}
+\fi
+\if0	
+\begin{align}
+	\left[a^\dag_r a^\dag_s a_q a_p, a^\dag_t a^\dag_u a_w a_v\right]	
+	&= (\delta_{pt} \delta_{qu} - \delta_{qt} \delta_{pu}) a^\dag_r a^\dag_s a_w a_v +(\delta_{sv} \delta_{rw}-\delta_{rv }\delta_{sw}) a_t^\dag a_u^\dag    a_q 	a_p \nonumber\\ 
+	&+{\cal P}(p,q) {\cal P}(t,u) \delta_{qt}  a^\dag_r a^\dag_s a^\dag_u a_p  a_w a_v 
+	+{\cal P}(r,s){\cal P}(v,w)\delta_{sw}a_t^\dag a_u^\dag a_r^\dag a_v  a_q 	a_p\end{align}	
+\fi
+\end{document}

@@ -1,0 +1,20 @@
+basis        = sto-3G
+multiplicity = 1
+charge       = 0
+geometry:
+H  0  0  0  
+H  0  0  2.0
+H  0  2.0  2.0
+H  0  2.0  0
+multi:
+00001111   0.25
+00110011   0.25
+00011011   0.25
+00100111   0.25
+maxiter      = 200
+method       = vqe
+ansatz       = ic_mrucc
+rho          = 1
+theta_guess  = zero
+npar         = 2
+act2act      = false
