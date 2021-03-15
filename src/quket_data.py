@@ -209,6 +209,35 @@ class Multi():
 
 
 @dataclass
+class Adapt():
+    """
+    Adapt section.
+
+    Atrributes:
+        eps (float): ??
+        max (int): ??
+        a_list (List): Occupied alpha list.
+        b_list (List): Occupied beta List
+        i_list (List): Virtual alpha list.
+        j_list (List): Virtual beta list.
+        spin_list (List): Spin list.
+        init_theta_list (List): Initial wave function's list.
+    """
+    eps: float = 0.1
+    max: int = 50
+
+    a_list: List = field(default_factory=list)
+    b_list: List = field(default_factory=list)
+    i_list: List = field(default_factory=list)
+    j_list: List = field(default_factory=list)
+    spin_list: List = field(default_factory=list)
+    init_theta_list: List = field(default_factory=list)
+
+    def __post_init__(self, *args, **kwds):
+        pass
+
+
+@dataclass
 class QuketData():
     """Data class for Quket.
 
@@ -316,13 +345,6 @@ class QuketData():
         # Get Operators #
         #################
         if self.model == "hubbard":
-            # self.jw_Hamiltonian, self.jw_S2 = get_hubbard(
-            #    hubbard_u,
-            #    hubbard_nx,
-            #    hubbard_ny,
-            #    n_electrons,
-            #    run_fci,
-            # )
             Hamiltonian, S2, Number = obj.get_operators(guess=pyscf_guess)
             self.operators = Operators(Hamiltonian=Hamiltonian, S2=S2,
                                        Number=Number)
@@ -386,23 +408,19 @@ class QuketData():
         self.state = None
 
         # Check multiplicity.
-        if (self.n_electrons+self.multiplicity-1)%2 != 0:
+        if (self.n_active_electrons+self.multiplicity-1)%2 != 0:
             prints(f"Incorrect specification for "
-                   f"n_electrons = {self.n_electrons} "
+                   f"n_active_electrons = {self.n_active_electrons} "
                    f"and multiplicity = {self.multiplicity}")
 
 # フローズンコアに対応?
         # NOA; Number of Occupied orbitals of Alpha.
-        #self.noa = (self.n_electrons+self.multiplicity-1)//2
         self.noa = (self.n_active_electrons+self.multiplicity-1)//2
         # NOB; Number of Occupied orbitals of Beta.
-        #self.nob = self.n_electrons - self.noa
         self.nob = self.n_active_electrons - self.noa
         # NVA; Number of Virtual orbitals of Alpha.
-        #self.nva = self.n_orbitals - self.noa
         self.nva = self.n_active_orbitals - self.noa
         # NVB; Number of Virtual orbitals of Beta.
-        #self.nvb = self.n_orbitals - self.nob
         self.nvb = self.n_active_orbitals - self.nob
         # NCA; Number of Core orbitals of Alpha.
         self.nca = (self.n_electrons+self.multiplicity-1)//2 - self.noa

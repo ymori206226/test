@@ -351,7 +351,7 @@ def cost_proj(Quket, print_level, qulacs_hamiltonianZ, qulacs_s2Z,
     nob = Quket.nob
     nva = Quket.nva
     nvb = Quket.nvb
-    n_electrons = Quket.n_electrons
+    n_electrons = Quket.n_active_electrons
     rho = Quket.rho
     DS = Quket.DS
     anc = Quket.anc

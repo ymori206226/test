@@ -11,7 +11,7 @@ from .utils import chkbool#, chkmethod
 #############################
 # How to write; 'option's name': 'attribute's name'
 integers = {
-        #----- For config -----
+        #----- For Config -----
         "print_level": "print_level",
         "mix_level": "mix_level",
         "kappa_to_t1": "Kappa_to_T1",
@@ -33,9 +33,6 @@ integers = {
         "spin": "spin",
         }
 floats = {
-        #----- For config -----
-        "eps": "eps",
-        "lambda": "constraint_lambda",
         #----- For Config -----
         "eps": "ops",
         "lambda": "constraint_lambda",
@@ -44,15 +41,14 @@ floats = {
         "gtol": "gtol",
         "ftol": "ftol",
         "print_amp_thres": "print_amp_thres",
-        #-----For QITE -----
+        #----- For QITE -----
         "timestep": "dt", "db": "dt", "dt": "dt",
         "truncate": "truncate",
+        #----- For Adapt-VQE -----
+        "adapt_eps": "eps",
+        "adapt_max": "max"
         }
 bools = {
-        #----- For config -----
-        "print_fci": "print_fci",
-        "approx_exp": "approx_exp",
-        "debug": "debug",
         #----- For Config -----
         "print_fci": "print_fci",
         "approx_exp": "approx_exp",
@@ -67,12 +63,6 @@ bools = {
         "act2act": "act2act_opt",
         }
 strings = {
-        #----- For config -----
-        "opt_method": "opt_method",
-        "pyscf_guess": "pyscf_guess",
-        "kappa_guess": "kappa_guess",
-        "theta_guess": "theta_guess",
-        "npar": "nthreads",
         #----- For Config -----
         "opt_method": "opt_method",
         "pyscf_guess": "pyscf_guess",

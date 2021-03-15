@@ -391,7 +391,7 @@ def cost_phf_sample(Quket, print_level,
     nob = Quket.nob
     nva = Quket.nva
     nvb = Quket.nvb
-    n_electrons = Quket.n_electrons
+    n_electrons = Quket.n_active_electrons
     n_qubit_system = n_qubits
     n_qubits = Quket.n_qubits + 1
     anc = n_qubit_system
@@ -635,7 +635,7 @@ def cost_uhf_sample(Quket, print_level, qulacs_hamiltonian, qulacs_s2,
     nob = Quket.nob
     nva = Quket.nva
     nvb = Quket.nvb
-    n_electrons = Quket.n_electrons
+    n_electrons = Quket.n_active_electrons
     n_qubit_system = n_qubits
     n_qubits = Quket.n_qubits + 1
     anc = n_qubit_system
@@ -690,7 +690,7 @@ def cost_phf_sample_oneshot(print_level, qulacs_hamiltonianZ, qulacs_s2Z,
     nob = Quket.nob
     nva = Quket.nva
     nvb = Quket.nvb
-    n_electrons = Quket.n_electrons
+    n_electrons = Quket.n_active_electrons
     n_qubit_system = n_qubits
     n_qubits = Quket.n_qubits + 1
     anc = n_qubit_system

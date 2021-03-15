@@ -83,9 +83,7 @@ def cost_uhf(Quket, print_level, kappa_list):
     nva = Quket.nva
     nvb = Quket.nvb
     ndim1 = Quket.ndim1
-# 全部の電子使う?
-#    n_electrons = Quket.n_active_electrons
-    n_electrons = Quket.n_electrons
+    n_electrons = Quket.n_active_electrons
     n_qubit_system = Quket.n_qubits
 
     t1 = time.time()

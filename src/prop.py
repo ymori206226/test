@@ -59,7 +59,7 @@ def get_1RDM(Quket,  print_level=1):
     prints("\n === Computing 1RDM === ")
 
     n_qubits = Quket.n_qubits
-    norbs = Quket.n_orbitals
+    norbs = Quket.n_active_orbitals
 
     Daa = np.zeros((norbs, norbs))
     Dbb = np.zeros((norbs, norbs))

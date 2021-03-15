@@ -208,7 +208,7 @@ def cost_jmucc(Quket, print_level, theta_lists):
     nva = Quket.nva
     nvb = Quket.nvb
     nocc = noa + nob
-    n_electrons = Quket.n_electrons
+    n_electrons = Quket.n_active_electrons
     n_qubits = Quket.n_qubits
     nstates = len(Quket.multi.weights)
     ndim1 = Quket.ndim1

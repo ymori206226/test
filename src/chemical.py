@@ -82,11 +82,11 @@ class Chemical(MolecularData):
 
             # Dipole operators from dipole integrals (AO)
             rx = create_1body_operator(mo_coeff, rint[0], ao=True,
-                                       n_active_orbitals=self.n_orbitals)
+                                       n_active_orbitals=self.n_active_orbitals)
             ry = create_1body_operator(mo_coeff, rint[1], ao=True,
-                                       n_active_orbitals=self.n_orbitals)
+                                       n_active_orbitals=self.n_active_orbitals)
             rz = create_1body_operator(mo_coeff, rint[2], ao=True,
-                                       n_active_orbitals=self.n_orbitals)
+                                       n_active_orbitals=self.n_active_orbitals)
             Dipole = np.array([rx, ry, rz])
         else:
             Hamiltonian = None
@@ -122,7 +122,7 @@ class Chemical(MolecularData):
         prints("E[HF]  = ", hf_energy)
         prints("")
 
-        S2 = s_squared_operator(self.n_orbitals)
-        Number = number_operator(self.n_orbitals)
+        S2 = s_squared_operator(self.n_active_orbitals)
+        Number = number_operator(self.n_active_orbitals)
 
         return Hamiltonian, S2, Number, Dipole

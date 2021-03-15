@@ -56,7 +56,7 @@ def VQE_driver(Quket, kappa_guess, theta_guess, mix_level, opt_method,
     # cf.constraint_lambda = 100
 
     ### set up the number of orbitals and such ###
-    n_electrons = Quket.n_electrons
+    n_electrons = Quket.n_active_electrons
     n_qubit_system = Quket.n_qubits
     n_qubits = n_qubit_system + 1
     anc = n_qubit_system

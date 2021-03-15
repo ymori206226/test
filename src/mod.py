@@ -159,7 +159,6 @@ def run_pyscf_mod(guess, n_active_orbitals, n_active_electrons, molecule,
     #pyscf_molecule = prepare_pyscf_molecule_mod(molecule)
     pyscf_molecule = prepare_pyscf_molecule(molecule)
     molecule.n_orbitals = int(pyscf_molecule.nao_nr())
-    molecule.n_qubits = 2*molecule.n_orbitals
     molecule.nuclear_repulsion = float(pyscf_molecule.energy_nuc())
 
     # Run SCF.

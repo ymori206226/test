@@ -85,7 +85,7 @@ def cost_upccgsd(Quket, print_level, kappa_list, theta_list, k):
     """
     t1 = time.time()
 
-    norbs = Quket.n_orbitals
+    norbs = Quket.n_active_orbitals
     n_qubits = Quket.n_qubits
     det = Quket.det
     ndim1 = Quket.ndim1

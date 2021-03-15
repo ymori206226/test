@@ -350,8 +350,6 @@ def create_icmr_uccsd_state(n_qubit_system, nv, na, nc, rho, DS, theta_list,
 #    return int(ndim1), int(ndim2)
 
 
-#def cost_ic_mrucc(print_level, n_qubit_system, n_electrons, nv, na, nc, rho, DS,
-#                  qulacs_hamiltonian, qulacs_s2, theta_list, threshold):
 def cost_ic_mrucc(Quket, print_level, qulacs_hamiltonian, qulacs_s2,
                   theta_list):
     """ Function

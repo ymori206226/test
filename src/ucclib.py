@@ -656,7 +656,7 @@ def cost_uccd(Quket, print_level, kappa_list, theta_list, threshold=1e-2):
     nva = Quket.nva
     nvb = Quket.nvb
     n_qubits = Quket.n_qubits
-    n_electrons = Quket.n_electrons
+    n_electrons = Quket.n_active_electrons
     ndim = Quket.ndim
 
     state = QuantumState(n_qubits)
