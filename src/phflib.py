@@ -580,6 +580,7 @@ def S2Proj(Quket, Q, threshold=1e-8):
 
     # Normalize
     norm2 = state_P.get_squared_norm()
+# ここでエラートラップしてる
     if norm2 < threshold:
         error("Norm of spin-projected state is too small!\n",
               "This usually means the broken-symmetry state has NO component ",

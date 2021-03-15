@@ -8,24 +8,19 @@ init.py
 Initializing state.
 
 """
-from typing import Any, List
+from typing import List
 from dataclasses import dataclass, field, InitVar, make_dataclass
 
 import numpy as np
 from qulacs import Observable
-from qulacs.state import inner_product
 from qulacs.observable import create_observable_from_openfermion_text
-from qulacs.quantum_operator import create_quantum_operator_from_openfermion_text
 from openfermion.ops import InteractionOperator, QubitOperator
-from openfermion.utils import (number_operator, s_squared_operator, commutator,
-                               QubitDavidson)
+from openfermion.utils import QubitDavidson
 from openfermion.transforms import jordan_wigner
-from openfermion.hamiltonians import fermi_hubbard
 
 from . import mpilib as mpi
-from . import config as cf
-from .mod import run_pyscf_mod
-from .fileio import error, prints, openfermion_print_state, print_geom
+from .utils import chkmethod
+from .fileio import error, prints
 from .phflib import weightspin, trapezoidal, simpson
 #from .icmrucc import calc_num_ic_theta
 
@@ -260,8 +255,12 @@ class QuketData():
     multi: Multi = field(init=False, default=None)
 
     def __post_init__(self, *args, **kwds):
-        # Set some initialization.
-        pass
+        if self.ansatz is None and self.maxiter > 0:
+            error(f"Unspecified ansatz.")
+        elif not chkmethod(self.method, self.ansatz):
+            error(f"No method option {self.method} "
+                  f"with {self.ansatz} available.")
+
 
     def initialize(self, *, pyscf_guess="minao", **kwds):
         """Function
@@ -312,19 +311,6 @@ class QuketData():
 
             init_dict = get_func_kwds(QuketMolecule.__init__, kwds)
             obj = QuketMolecule(**init_dict)
-# 全部の軌道と電子を使う？
-            obj, pyscf_mol = run_pyscf_mod(pyscf_guess, obj.n_orbitals,
-                                           obj.n_electrons, obj,
-                                           run_casci=self.run_fci)
-
-            if "n_electrons" in kwds:
-                obj.n_active_electrons = kwds["n_electrons"]
-            else:
-                obj.n_active_electrons = obj.n_electrons
-            if "n_orbitals" in kwds:
-                obj.n_active_orbitals = kwds["n_orbitals"]
-            else:
-                obj.n_active_orbitals = obj.n_orbitals
 
         #################
         # Get Operators #
@@ -340,20 +326,32 @@ class QuketData():
             Hamiltonian, S2, Number = obj.get_operators(guess=pyscf_guess)
             self.operators = Operators(Hamiltonian=Hamiltonian, S2=S2,
                                        Number=Number)
+            if self.run_fci:
+                self.operators.jw_Hamiltonian.compress()
+                qubit_eigen = QubitDavidson(self.operators.jw_Hamiltonian,
+                                            obj.n_qubits)
+                # Initial guess :  | 0000...00111111>
+                #                             ~~~~~~ = n_electrons
+                guess = np.zeros((2**obj.n_qubits, 1))
+                guess[2**obj.n_electrons - 1][0] = 1.0
+                n_state = 1
+                results = qubit_eigen.get_lowest_n(n_state, guess)
+                prints("Convergence?           : ", results[0])
+                prints("Ground State Energy    : ", results[1][0])
+                obj.fci_energy = results[1][0]
+                #prints("Wave function          : ")
+                #openfermion_print_state(results[2], n_qubits, 0)
         elif self.model == "heisenberg":
             jw_Hamiltonian = obj.get_operators()
             self.operators = Operators()
             self.operators.jw_Hamiltonian = jw_Hamiltonian
         elif self.model == "chemical":
-            if cf._geom_update:
-                # New geometry found. Run PySCF and get operators.
-                Hamiltonian, S2, Number, Dipole \
-                        = obj.get_operators(guess=pyscf_guess,
-                                             pyscf_mol=pyscf_mol)
-                cf._geom_update = False
-
-                self.operators = Operators(Hamiltonian=Hamiltonian, S2=S2,
-                                           Number=Number, Dipole=Dipole)
+            # New geometry found. Run PySCF and get operators.
+            Hamiltonian, S2, Number, Dipole \
+                    = obj.get_operators(guess=pyscf_guess,
+                                        run_fci=self.run_fci)
+            self.operators = Operators(Hamiltonian=Hamiltonian, S2=S2,
+                                       Number=Number, Dipole=Dipole)
 
         #######################################
         # Inherit parent class                #
@@ -378,25 +376,16 @@ class QuketData():
             if k not in dir(self):
                 setattr(self, k, getattr(mol, k))
 
+        # End initializaton of 'heisenberg' model.
         if self.model == "heisenberg":
             return
 
         # Initializing parameters
-        self.n_qubits = self.n_orbitals*2
-#hubbardにmultiplicityないのでは？
-        self.projection.Ms = self.multiplicity - 1
         self.n_qubits_anc = self.n_qubits + 1
         self.anc = self.n_qubits
         self.state = None
 
-        # Check spin, multiplicity, and Ms
-        if self.projection.spin is None:
-            self.projection.spin = self.multiplicity  # Default
-        if (self.projection.spin-self.multiplicity)%2 != 0 \
-                or self.projection.spin < self.multiplicity:
-            prints(f"Spin = {self.projection.spin}    "
-                   f"Ms = {self.projection.Ms}")
-            error("Spin and Ms not cosistent.")
+        # Check multiplicity.
         if (self.n_electrons+self.multiplicity-1)%2 != 0:
             prints(f"Incorrect specification for "
                    f"n_electrons = {self.n_electrons} "
@@ -464,7 +453,20 @@ class QuketData():
         if number_ngrids is not None:
             self.projection.number_ngrids = number_ngrids
 
+        # Check spin, multiplicity, and Ms
+#hubbardにmultiplicityないのでは？
+        self.projection.Ms = self.multiplicity - 1
+        if self.projection.spin is None:
+            self.projection.spin = self.multiplicity  # Default
+        if (self.projection.spin-self.multiplicity)%2 != 0 \
+                or self.projection.spin < self.multiplicity:
+            prints(f"Spin = {self.projection.spin}    "
+                   f"Ms = {self.projection.Ms}")
+            error("Spin and Ms not cosistent.")
+
         self.projection.set_projection(trap=trap)
+
+
 
 #    def get_ic_ndim(self):
 #        core_num = self.n_qubits

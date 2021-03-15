@@ -595,7 +595,7 @@ def VQE_driver(Quket, kappa_guess, theta_guess, mix_level, opt_method,
 
     if Quket.state is not None:
         if Quket.model == 'chemical':
-            dipole(Quket, n_qubits)
+            dipole(Quket)
         if Quket.Do1RDM:
             Daa, Dbb = get_1RDM(Quket, print_level=1)
         ### Test

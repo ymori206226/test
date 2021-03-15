@@ -5,7 +5,9 @@ import numpy as np
 from openfermion.utils import number_operator, s_squared_operator
 from openfermion.hamiltonians import MolecularData
 
+from . import config as cf
 from . import mpilib as mpi
+from .mod import run_pyscf_mod
 from .opelib import create_1body_operator
 from .fileio import prints, print_geom
 
@@ -19,38 +21,60 @@ class QuketMolecule(MolecularData):
     description: str = ""
     filename: str = ""
     data_directory: str = None
+    n_active_orbitals: int = None
+    n_active_electrons: int = None
 
     n_qubits: int = field(init=False, default=None)
 
     def __post_init__(self, *args, **kwds):
+        if self.n_active_orbitals is not None:
+            if self.n_active_orbitals <= 0:
+                error(f"# orbitals = {self.n_active_orbitals}!")
+        if self.n_active_electrons is not None:
+            if self.n_active_electrons <= 0:
+                error(f"# electrons = {self.n_active_electrons}!")
+
         super().__init__(geometry=self.geometry, basis=self.basis,
                          multiplicity=self.multiplicity, charge=self.charge,
                          description=self.description, filename=self.filename,
                          data_directory=self.data_directory)
 
-    def get_operators(self, guess="minao", pyscf_mol=None):
+        self._guess = cf.pyscf_guess
+        self, self._pyscf_mol = run_pyscf_mod(cf.pyscf_guess,
+                                              self.n_active_orbitals,
+                                              self.n_active_electrons,
+                                              self)
+
+        if self.n_active_orbitals is None:
+            self.n_active_orbitals = self.n_orbitals
+        if self.n_active_electrons is None:
+            self.n_active_electrons = self.n_electrons
+
+        self.n_qubits = self.n_active_orbitals*2
+
+
+    def get_operators(self, guess="minao", run_fci=True):
         if mpi.main_rank:
             # Run electronic structure calculations
-            if pyscf_mol is None:
-                self, pyscf_mol = run_pyscf_mod(guess, self.n_orbitals,
-                                                self.n_electrons, self,
-                                                run_casci=self.run_fci)
+            if guess != self._guess:
+                self, self._pyscf_mol = run_pyscf_mod(guess,
+                                                      self.n_active_orbitals,
+                                                      self.n_active_electrons,
+                                                      self,
+                                                      run_fci=run_fci)
 
-            # 'n_electrons' and 'n_orbitals' must not be 'None'.
-            n_core_orbitals = (self.n_electrons-self.n_electrons)//2
-            occupied_indices = list(range(n_core_orbitals))
-            active_indices = list(range(n_core_orbitals,
-                                        n_core_orbitals+self.n_orbitals))
+            # Number of core orbitals is 0.
+            occupied_indices = list(range(0))
+            active_indices = list(range(self.n_active_orbitals))
 
             hf_energy = self.hf_energy
             fci_energy = self.fci_energy
 
             mo_coeff = self.canonical_orbitals.astype(float)
-            natom = pyscf_mol.natm
-            #atom_charges = pyscf_mol.atom_charges().reshape(-1, 1)
-            atom_charges = pyscf_mol.atom_charges().reshape(1, -1)
-            atom_coords = pyscf_mol.atom_coords()
-            rint = pyscf_mol.intor("int1e_r")
+            natom = self._pyscf_mol.natm
+            atom_charges = self._pyscf_mol.atom_charges().reshape(1, -1)
+            atom_coords = self._pyscf_mol.atom_coords()
+            rint = self._pyscf_mol.intor("int1e_r")
 
             Hamiltonian = self.get_molecular_hamiltonian(
                     occupied_indices=occupied_indices,

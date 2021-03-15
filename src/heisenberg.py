@@ -1,4 +1,4 @@
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, InitVar
 
 from openfermion.ops import QubitOperator
 
@@ -15,16 +15,26 @@ class Heisenberg():
 
     Author(s): Yuma Shimomoto
     """
+    # Note; rename 'n_orbitals' to 'n_active_orbitals' when read input file.
+    n_active_orbitals: InitVar[int] = None
+
     basis: str = "lr-heisenberg"
     n_orbitals: int = None
 
     nspin: int = field(init=False)
     n_qubits: int = field(init=False)
 
-    def __post_init__(self, *args, **kwds):
-        if self.n_orbitals is None:
+    def __post_init__(self, n_active_orbitals, *args, **kwds):
+        if n_active_orbitals is None:
             error("'n_orbitals' is None.")
-        self.nspin = self.n_qubits = self.n_orbitals
+        if n_active_orbitals <= 0:
+            error("# orbitals <= 0!")
+
+        self.nspin = self.n_qubits = self.n_orbitals = n_active_orbitals
+
+    @property
+    def n_active_orbitals(self):
+        return self.n_orbitals
 
     def get_operators(self):
         sx = []
@@ -51,5 +61,4 @@ class Heisenberg():
             for i in range(self.nspin):
                 j = (i+1)%self.nspin
                 jw_Hamiltonian += sx[i]*sx[j] + sy[i]*sy[j] + sz[i]*sz[j]
-
         return jw_Hamiltonian

@@ -117,7 +117,7 @@ def cost_uhf(Quket, print_level, kappa_list):
         SaveTheta(ndim1, kappa_list, cf.tmp)
     if print_level > 1:
         prints("(UHF state)")
-        print_state(state, n_qubits=n_qubits)
+        print_state(state, n_qubits=n_qubit_system)
 
     # Store HF wave function
     Quket.state = state

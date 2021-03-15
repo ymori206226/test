@@ -243,7 +243,10 @@ def cost_jmucc(Quket, print_level, theta_lists):
         state = create_uccsd_state(
                 n_qubits, rho, DS,
                 theta_lists[ndim_i*istate : ndim_i*(istate+1)],
-                det, ndim1, SpinProj=Quket.projection.SpinProj)
+                det, ndim1)
+        if Quket.projection.SpinProj:
+            from .phflib import S2Proj
+            state = S2Proj(Quket, state)
         #prints('\n State {}?'.format(istate))
         #print_state(state)
         states.append(state)

@@ -22,6 +22,7 @@ def set_circuit_upccgsd(n_qubits, norbs, theta_list, ndim1, ndim2, k):
 #        upcc_Gsingles(circuit, norbs, theta_list, ndim1, ndim2, i)
 #        i = i + 1
     for i in range(0, k, 2):
+    #for i in range(k):
         upcc_Gdoubles(circuit, norbs, theta_list, ndim1, ndim2, i)
         upcc_Gsingles(circuit, norbs, theta_list, ndim1, ndim2, i)
     return circuit

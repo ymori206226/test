@@ -810,8 +810,10 @@ def cost_uccsdX(Quket, print_level, kappa_list, theta_list, threshold=0.01):
         state = create_sauccsd_state(n_qubit_system, noa, nva, rho, DS,
                                      theta_list, det, ndim1)
     else:
-        state = create_uccsd_state(n_qubits, rho, DS, theta_list, det, ndim1,
-                                   SpinProj=Quket.projection.SpinProj)
+        state = create_uccsd_state(n_qubits, rho, DS, theta_list, det, ndim1)
+        if Quket.projection.SpinProj:
+            from .phflib import S2Proj
+            state = S2Proj(Quket, state)
 
     Euccsd = Quket.qulacs.Hamiltonian.get_expectation_value(state)
     S2 = Quket.qulacs.S2.get_expectation_value(state)
@@ -948,8 +950,7 @@ def ucc_doublesX(circuit, theta_list, occ_list, vir_list, ndim1=0):
             ijab += 1
 
 
-def create_uccsd_state(n_qubits, rho, DS, theta_list, det, ndim1,
-                       SpinProj=False):
+def create_uccsd_state(n_qubits, rho, DS, theta_list, det, ndim1):
     """Function
     Prepare a UCC state based on theta_list.
     The initial determinant 'det' contains the base-10 integer
@@ -970,9 +971,6 @@ def create_uccsd_state(n_qubits, rho, DS, theta_list, det, ndim1,
     for i in range(rho):
         circuit.update_quantum_state(state)
 
-    if SpinProj:
-        from .phflib import S2Proj
-        state = S2Proj(Quket, state)
     return state
 
 

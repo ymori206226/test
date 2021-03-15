@@ -1,0 +1,11 @@
+phf_h2o
+sghf_h2o
+puccd_Be
+puccd_h2
+puccd_n2
+bsauccd_Beがindex out of range
+uccsd_o_tripletがindex out of range
+S2Proj_1-upccgsd_c_tripletがHermitianじゃない＆index out of range＆gate must be applied to qubits of which the indices are smaller than qubit_count
+S2Proj_1-upccgsd_c_singletがHermitianじゃない＆gate must be applied to qubits of which the indices are smaller than qubit_count
+
+upccd_h2はそもそもupccd未実装?

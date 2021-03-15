@@ -17,7 +17,7 @@ from .fileio import prints, printmat, SaveTheta
 from .opelib import FermionOperator_to_Observable, FermionOperator_to_Operator
 
 
-def dipole(Quket, n_qubits):
+def dipole(Quket):
     """Function
     Prepare the dipole operator and get expectation value.
 
@@ -27,15 +27,15 @@ def dipole(Quket, n_qubits):
     qulacs_dipole_x \
             = FermionOperator_to_Observable(
                     Quket.operators.Dipole[0],
-                    n_qubits)
+                    Quket.n_qubits)
     qulacs_dipole_y \
             = FermionOperator_to_Observable(
                     Quket.operators.Dipole[1],
-                    n_qubits)
+                    Quket.n_qubits)
     qulacs_dipole_z \
             = FermionOperator_to_Observable(
                     Quket.operators.Dipole[2],
-                    n_qubits)
+                    Quket.n_qubits)
 
     dx = -qulacs_dipole_x.get_expectation_value(Quket.state)
     dy = -qulacs_dipole_y.get_expectation_value(Quket.state)
@@ -50,7 +50,7 @@ def dipole(Quket, n_qubits):
     prints(f"| mu | = {np.linalg.norm(d):.5f}")
 
 
-def get_1RDM(Quket, print_level=1):
+def get_1RDM(Quket,  print_level=1):
     """Function
     Compute 1RDM of QuantmState `state` in Quket.
 
@@ -92,6 +92,6 @@ def get_1RDM(Quket, print_level=1):
         printmat(Daa_mat, name="Daa")
         printmat(Dbb_mat, name="Dbb")
 
-    SaveTheta(norbs**2, Daa_mat.ravel(), cf.rdm1, opentype="w")
-    SaveTheta(norbs**2, Dbb_mat.ravel(), cf.rdm1, opentype="a")
+    SaveTheta(norbs**2, Daa_mat.ravel(), cf.rdm1)
+    SaveTheta(norbs**2, Dbb_mat.ravel(), cf.rdm1)
     return Daa_mat, Dbb_mat
