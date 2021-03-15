@@ -307,10 +307,10 @@ class QuketData():
                 self.det = 1
             self.current_det = self.det
         elif self.model == "chemical":
-            from .quket_molecule import QuketMolecule
+            from .chemical import Chemical
 
-            init_dict = get_func_kwds(QuketMolecule.__init__, kwds)
-            obj = QuketMolecule(**init_dict)
+            init_dict = get_func_kwds(Chemical.__init__, kwds)
+            obj = Chemical(**init_dict)
 
         #################
         # Get Operators #
