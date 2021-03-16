@@ -7,7 +7,7 @@ H  0  0  2.0
 H  0  2.0  2.0
 H  0  2.0  0
 multi:
-00001111   0.25
+00001111   1
 # 00110011   0.25
 # 00011011   0.25
 # 00100111   0.25
@@ -16,5 +16,5 @@ method       = vqe
 ansatz       = ic_mrucc_spinfree
 rho          = 1
 theta_guess  = zero
-npar         = 2
-act2act      = False
+npar         = 1
+# act2act      = True
