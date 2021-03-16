@@ -49,11 +49,11 @@ class Operators():
     jw_Number: QubitOperator = field(init=False, default=None)
 
     def __post_init__(self, *args, **kwds):
-        if self.Hamiltonian:
+        if self.Hamiltonian is not None:
             self.jw_Hamiltonian = jordan_wigner(self.Hamiltonian)
-        if self.S2:
+        if self.S2 is not None:
             self.jw_S2 = jordan_wigner(self.S2)
-        if self.Number:
+        if self.Number is not None:
             self.jw_Number = jordan_wigner(self.Number)
 
 
