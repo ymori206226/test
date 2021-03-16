@@ -8,7 +8,7 @@ from src.vqe import VQE_driver
 from src.qite.qite import QITE_driver
 from src.fileio import error, prints
 from src.read import read_input, set_config
-from src.init import QuketData, get_func_kwds
+from src.quket_data import QuketData, get_func_kwds
 
 
 prints("///////////////////////////////////////////////////////////////////////////////////", opentype="w")

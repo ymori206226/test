@@ -26,7 +26,7 @@ from .ucclib import cost_uccd, cost_uccsdX
 from .upcclib import cost_upccgsd
 from .agpbcs import cost_bcs
 from .jmucc import cost_jmucc
-from .icmrucc import cost_ic_mrucc
+from .icmrucc import cost_ic_mrucc, cost_ic_mrucc_spinfree
 from .prop import dipole, get_1RDM
 
 
@@ -116,32 +116,39 @@ def VQE_driver(Quket, kappa_guess, theta_guess, mix_level, opt_method,
         if "epccgsd" in ansatz:
             ndim += ndim1
     elif ansatz == "ic_mrucc":
+        from .icmrucc import calc_num_ic_theta
+        ndim1, ndim2 = calc_num_ic_theta(Quket)
+        ndim = ndim1  + ndim2
         # assume that noa = nob and nva = nvb
 # そういやフローズンコアに対応してないよなQuketData
-        ndim1 = (nca*noa + nca*nva + noa*(noa-1)//2 + noa*nva
-               + ncb*nob + ncb*nvb + nob*(nob-1)//2 + nob*nvb)
-        if cf.act2act_opt:
-            ndim2aa = ((nca*(nca-1)//2 + nca*noa + noa*(noa-1)//2)
-                      *(noa*(noa-1)//2 + noa*nva + nva*(nva-1)//2)
-                      - noa*(noa-1)//2)
-            ndim2ab = ((noa*noa + noa*nva*2 + nva*nva)
-                      *(nob*nob + ncb*nob*2 + ncb*ncb)
-                      - noa*nob)
-            ndim2bb = ((ncb*(ncb-1)//2 + ncb*nob + nob*(nob-1)//2)
-                      *(nob*(nob-1)//2 + nob*nvb + nvb*(nvb-1)//2)
-                      - nob*(nob-1)//2)
-        else:
-            ndim2aa = ((nca*(nca-1)//2 + nca*noa + noa*(noa-1)//2)
-                      *(noa*(noa-1)//2 + noa*nva + nva*(nva-1)//2)
-                      - noa*(noa-1)//2)
-            ndim2ab = ((noa*noa + noa*nva*2 + nva*nva)
-                      *(nob*nob + ncb*nob*2 + ncb*ncb)
-                      - noa*noa*nob*nob)
-            ndim2bb = ((ncb*(ncb-1)//2 + ncb*nob + nob*(nob-1)//2)
-                      *(nob*(nob-1)//2 + nob*nvb + nvb*(nvb-1)//2)
-                      - noa*(noa-1)*nob*(nob-1)//4)
-        ndim2 = ndim2aa + ndim2ab + ndim2bb
-        ndim = ndim1 + ndim2
+        # ndim1 = (nca*noa + nca*nva + noa*(noa-1)//2 + noa*nva
+        #        + ncb*nob + ncb*nvb + nob*(nob-1)//2 + nob*nvb)
+        # if cf.act2act_opt:
+        #     ndim2aa = ((nca*(nca-1)//2 + nca*noa + noa*(noa-1)//2)
+        #               *(noa*(noa-1)//2 + noa*nva + nva*(nva-1)//2)
+        #               - noa*(noa-1)//2)
+        #     ndim2ab = ((noa*noa + noa*nva*2 + nva*nva)
+        #               *(nob*nob + ncb*nob*2 + ncb*ncb)
+        #               - noa*nob)
+        #     ndim2bb = ((ncb*(ncb-1)//2 + ncb*nob + nob*(nob-1)//2)
+        #               *(nob*(nob-1)//2 + nob*nvb + nvb*(nvb-1)//2)
+        #               - nob*(nob-1)//2)
+        # else:
+        #     ndim2aa = ((nca*(nca-1)//2 + nca*noa + noa*(noa-1)//2)
+        #               *(noa*(noa-1)//2 + noa*nva + nva*(nva-1)//2)
+        #               - noa*(noa-1)//2)
+        #     ndim2ab = ((noa*noa + noa*nva*2 + nva*nva)
+        #               *(nob*nob + ncb*nob*2 + ncb*ncb)
+        #               - noa*noa*nob*nob)
+        #     ndim2bb = ((ncb*(ncb-1)//2 + ncb*nob + nob*(nob-1)//2)
+        #               *(nob*(nob-1)//2 + nob*nvb + nvb*(nvb-1)//2)
+        #               - noa*(noa-1)*nob*(nob-1)//4)
+        # ndim2 = ndim2aa + ndim2ab + ndim2bb
+        # ndim = ndim1 + ndim2
+    elif ansatz == "ic_mrucc_spinfree":
+        from .icmrucc import calc_num_ic_theta_spinfree
+        ndim1, ndim2 = calc_num_ic_theta_spinfree(Quket)
+        ndim = ndim1  + ndim2
     elif ansatz == "jmucc":
         if Quket.multi.nstates == 0:
             error("JM-UCC specified without state specification!")
@@ -348,15 +355,22 @@ def VQE_driver(Quket, kappa_guess, theta_guess, mix_level, opt_method,
         cost_wrap = lambda theta_list : cost_ic_mrucc(
                 Quket,
                 0,
-                qulacs_hamiltonian,
-                qulacs_s2,
                 theta_list,
                 )[0]
         cost_callback = lambda theta_list, print_control: cost_ic_mrucc(
                 Quket,
                 print_control,
-                qulacs_hamiltonian,
-                qulacs_s2,
+                theta_list,
+                )
+    elif ansatz == "ic_mrucc_spinfree":
+        cost_wrap = lambda theta_list : cost_ic_mrucc_spinfree(
+                Quket,
+                0,
+                theta_list,
+                )[0]
+        cost_callback = lambda theta_list, print_control: cost_ic_mrucc_spinfree(
+                Quket,
+                print_control,
                 theta_list,
                 )
 

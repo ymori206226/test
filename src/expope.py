@@ -180,7 +180,7 @@ def Gdoubles_pqps(p, q, s, circuit, theta):
     ### (4)   Exp[-i theta/4  Prod_{k=s+1}^{q-1} Z_k (    X_q Y_s)]
     target_list = [0]*ndim
     target_list[:ndim1] = list(range(s+1, q))
-    target_lsit[ndim1:] = p, q, s
+    target_list[ndim1:] = p, q, s
     pauli_index = [3]*ndim
 
     ### (1)              Zp,Xq,Ys

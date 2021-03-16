@@ -93,6 +93,7 @@ vqe_ansatz_list = [
         "puccsd",
         "opt_psauccd",
         "ic_mrucc",
+        "ic_mrucc_spinfree",
         ]
 qite_ansatz_list = [
         "exact",

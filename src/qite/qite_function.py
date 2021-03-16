@@ -14,7 +14,7 @@ from .. import config as cf
 from .. import mpilib as mpi
 from ..opelib import QubitOperator_to_Observable
 from ..fileio import prints
-from ..init import get_occvir_lists
+from ..quket_data import get_occvir_lists
 
 
 def make_gate(n, index, pauli_id):

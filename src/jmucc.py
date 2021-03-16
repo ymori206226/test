@@ -20,7 +20,7 @@ from . import config as cf
 from .fileio import SaveTheta, print_state, prints, printmat
 from .utils import root_inv
 from .ucclib import create_uccsd_state
-from .init import int2occ
+from .quket_data import int2occ
 
 
 def create_kappalist(ndim1, occ_list, noa, nob, nva, nvb):
